@@ -13,7 +13,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    namespace "com.neyimvar.karpuz"
+    namespace "com.nuhkozan.karpuz"
     compileSdk 34
     ndkVersion "26.3.11579264"
 
@@ -27,7 +27,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.neyimvar.karpuz"
+        applicationId "com.nuhkozan.karpuz"
         minSdk 21
         targetSdk 34
         versionCode 1
