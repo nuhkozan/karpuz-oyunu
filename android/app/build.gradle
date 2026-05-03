@@ -4,14 +4,6 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
-def keystoreProperties = new Properties()
-def keystorePropertiesFile = rootProject.file('key.properties')
-if (keystorePropertiesFile.exists()) {
-    keystorePropertiesFile.withReader('UTF-8') { reader ->
-        keystoreProperties.load(reader)
-    }
-}
-
 android {
     namespace "com.neyimvar.karpuz"
     compileSdk 34
@@ -30,35 +22,19 @@ android {
         applicationId "com.neyimvar.karpuz"
         minSdk 21
         targetSdk 34
-        versionCode flutter.versionCode
-        versionName flutter.versionName
-    }
-
-    signingConfigs {
-        release {
-            if (keystorePropertiesFile.exists()) {
-                keyAlias keystoreProperties['keyAlias']
-                keyPassword keystoreProperties['keyPassword']
-                storeFile file(keystoreProperties['storeFile'])
-                storePassword keystoreProperties['storePassword']
-            }
-        }
+        versionCode 1
+        versionName "1.0.0"
     }
 
     buildTypes {
         release {
-            signingConfig signingConfigs.release
             minifyEnabled false
             shrinkResources false
+            signingConfig signingConfigs.debug
         }
     }
 }
 
 flutter {
     source "../.."
-}
-
-dependencies {
-    implementation "io.flutter:flutter_embedding_release:1.0.0-3316dd8728419ad3534e3f6112aa6291f587078a"
-    implementation "com.google.android.gms:play-services-ads:22.6.0"
 }
