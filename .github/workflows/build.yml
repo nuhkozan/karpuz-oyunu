@@ -22,7 +22,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
+          flutter-version: '3.19.6'
           channel: 'stable'
 
       - name: Flutter pub get
@@ -34,12 +34,12 @@ jobs:
 
       - name: Create key.properties
         run: |
-          cat > android/key.properties << EOF
+          cat > android/key.properties << EOF2
           storePassword=${{ secrets.STORE_PASSWORD }}
           keyPassword=${{ secrets.KEY_PASSWORD }}
           keyAlias=${{ secrets.KEY_ALIAS }}
           storeFile=keystore.jks
-          EOF
+          EOF2
 
       - name: Build AAB
         run: flutter build appbundle --release
