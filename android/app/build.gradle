@@ -1,9 +1,3 @@
-plugins {
-    id "com.android.application"
-    id "kotlin-android"
-    id "dev.flutter.flutter-gradle-plugin"
-}
-
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
@@ -20,9 +14,13 @@ if (keystorePropertiesFile.exists()) {
     }
 }
 
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
+
 android {
     namespace "com.neyimvar.karpuz"
-    compileSdk 34
+    compileSdkVersion 34
     ndkVersion flutter.ndkVersion
 
     compileOptions {
@@ -42,8 +40,8 @@ android {
         applicationId "com.neyimvar.karpuz"
         minSdkVersion 21
         targetSdkVersion 34
-        versionCode flutter.versionCode
-        versionName flutter.versionName
+        versionCode flutterVersionCode.toInteger()
+        versionName flutterVersionName
     }
 
     signingConfigs {
