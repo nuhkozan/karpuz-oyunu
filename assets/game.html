@@ -1,0 +1,1978 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>🍉 Karpuz Oyunu v10</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body {
+  min-height:100vh;
+  display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+  font-family:'Segoe UI',Arial,sans-serif;
+  color:#fff; padding:0 8px 28px;
+  transition:background 1.2s ease;
+  user-select:none; -webkit-user-select:none;
+  overflow-x:hidden;
+}
+
+.screen { display:none; flex-direction:column; align-items:center; width:100%; max-width:440px; padding-top:12px; }
+.screen.active { display:flex; }
+
+/* ── WHATSAPP FLOATING BAR ── */
+#wa-bar {
+  width:100%; max-width:440px;
+  background:linear-gradient(90deg,#25D366,#128C7E);
+  padding:10px 16px;
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  cursor:pointer; font-size:14px; font-weight:800; letter-spacing:.3px;
+  position:sticky; top:0; z-index:100;
+  box-shadow:0 3px 16px rgba(0,0,0,.35);
+  transition:opacity .2s;
+}
+#wa-bar:active { opacity:.85; }
+#wa-bar span { font-size:20px; }
+
+/* ── MUSIC TOGGLE ── */
+#mus-btn {
+  position:fixed; top:12px; right:12px; z-index:200;
+  background:rgba(0,0,0,.45); border:1.5px solid rgba(255,255,255,.2);
+  border-radius:50%; width:38px; height:38px;
+  font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  transition:background .2s;
+}
+#mus-btn:hover { background:rgba(0,0,0,.65); }
+
+/* ── USERNAME ── */
+.brand     { font-size:58px; margin-bottom:6px; }
+.brand-name{ font-size:28px; font-weight:900; letter-spacing:5px; margin-bottom:4px; }
+.brand-sub { font-size:13px; color:rgba(255,255,255,.45); margin-bottom:30px; letter-spacing:1px; }
+.input-lbl { font-size:11px; color:rgba(255,255,255,.5); letter-spacing:2px; margin-bottom:8px; }
+.txt-in {
+  width:280px; padding:14px 20px;
+  border-radius:18px; border:2px solid rgba(255,255,255,.18);
+  background:rgba(255,255,255,.08); color:#fff;
+  font-size:20px; font-weight:700; text-align:center;
+  outline:none; margin-bottom:18px;
+}
+.txt-in::placeholder { color:rgba(255,255,255,.25); }
+.txt-in:focus { border-color:rgba(255,255,255,.45); }
+.btn-main {
+  padding:14px 44px; border-radius:22px; border:none;
+  background:linear-gradient(90deg,#e94560,#f5a623);
+  color:#fff; font-size:17px; font-weight:800; cursor:pointer;
+  box-shadow:0 4px 24px rgba(233,69,96,.38);
+  letter-spacing:.5px; transition:transform .1s;
+}
+.btn-main:active { transform:scale(.95); }
+.btn-out {
+  padding:10px 24px; border-radius:20px;
+  border:1.5px solid rgba(255,255,255,.2); background:transparent;
+  color:rgba(255,255,255,.6); font-size:13px; font-weight:700; cursor:pointer;
+  transition:all .15s;
+}
+.btn-out:hover { border-color:rgba(255,255,255,.5); color:#fff; }
+
+/* ── HUD ── */
+.hud {
+  width:100%; display:grid; grid-template-columns:repeat(5,1fr);
+  gap:3px; margin-bottom:4px;
+}
+.hud-box { background:rgba(0,0,0,.38); border-radius:8px; padding:3px 2px; text-align:center; }
+.hud-lbl { font-size:7px; color:rgba(255,255,255,.45); letter-spacing:1px; margin-bottom:0px; }
+.hud-val { font-size:13px; font-weight:800; }
+.hud-time { background:rgba(233,69,96,.22); }
+.hud-time.warn { background:rgba(233,69,96,.65); animation:pulse .5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.55} }
+
+.next-row {
+  display:flex; align-items:center; gap:6px;
+  background:rgba(0,0,0,.3); border-radius:10px;
+  padding:3px 10px; margin-bottom:4px;
+  font-size:11px; color:rgba(255,255,255,.5); width:100%;
+}
+.next-fruit-big { font-size:20px; }
+
+/* Auto-drop bar */
+.autodrop-wrap { width:100%; margin-bottom:3px; height:3px; background:rgba(255,255,255,.1); border-radius:2px; overflow:hidden; }
+.autodrop-fill  { height:100%; background:linear-gradient(90deg,#e94560,#f5a623); border-radius:2px; transition:width .1s linear; }
+
+/* Progress */
+.prog-wrap { width:100%; margin-bottom:3px; }
+.prog-lbl  { display:flex; justify-content:space-between; font-size:8px; color:rgba(255,255,255,.38); margin-bottom:2px; }
+.prog-bg   { height:4px; background:rgba(255,255,255,.1); border-radius:3px; overflow:hidden; }
+.prog-fill { height:100%; background:linear-gradient(90deg,#e94560,#f5a623); border-radius:3px; transition:width .35s; }
+
+canvas { display:block; cursor:crosshair; touch-action:none; border-radius:14px; border:3px solid rgba(255,255,255,.15); }
+
+/* ── RESULT ── */
+.r-card {
+  background:rgba(0,0,0,.55); border:1.5px solid rgba(255,255,255,.12);
+  border-radius:26px; padding:26px 20px; width:100%; max-width:320px;
+  text-align:center; margin-bottom:14px;
+}
+.r-emoji { font-size:52px; }
+.r-title { font-size:22px; font-weight:900; margin:10px 0 3px; }
+.r-sub   { font-size:12px; color:rgba(255,255,255,.5); margin-bottom:14px; }
+.stat-row { display:flex; gap:6px; margin-bottom:10px; }
+.stat-box { flex:1; background:rgba(255,255,255,.06); border-radius:12px; padding:10px 4px; }
+.stat-v   { font-size:19px; font-weight:800; color:#f5a623; }
+.stat-l   { font-size:9px; color:rgba(255,255,255,.45); letter-spacing:1px; }
+.rank-badge { background:linear-gradient(90deg,#e94560,#f5a623); border-radius:10px; padding:8px 14px; font-size:12px; font-weight:700; margin:10px 0 4px; }
+.btn-row { display:flex; gap:10px; width:100%; max-width:320px; }
+.btn-row .btn-out  { flex:1; text-align:center; }
+.btn-row .btn-main { flex:1.5; }
+
+/* ── COMBO ── */
+.combo-pop { position:absolute; pointer-events:none; font-weight:900; font-size:22px;
+  text-shadow:0 2px 8px rgba(0,0,0,.7); animation:comboPop .7s ease forwards; z-index:200; }
+@keyframes comboPop { 0%{opacity:1;transform:scale(1.3) translateY(0)} 100%{opacity:0;transform:scale(0.8) translateY(-40px)} }
+
+/* ── POWER-UPS ── */
+.pu-bar { display:flex; gap:5px; justify-content:center; margin-bottom:4px; width:100%; }
+.pu-btn {
+  flex:1; max-width:90px; padding:4px 3px; border-radius:10px;
+  border:1.5px solid rgba(255,255,255,.18); background:rgba(0,0,0,.45);
+  color:#fff; font-size:10px; font-weight:700; cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; gap:1px;
+  transition:all .15s; position:relative; overflow:hidden;
+}
+.pu-btn:disabled { opacity:.35; cursor:not-allowed; }
+.pu-btn.active  { border-color:#f5a623; background:rgba(245,166,35,.22); animation:puPulse .6s infinite; }
+@keyframes puPulse { 0%,100%{box-shadow:0 0 0 0 rgba(245,166,35,.4)} 50%{box-shadow:0 0 0 6px rgba(245,166,35,0)} }
+.pu-icon { font-size:16px; }
+.pu-cnt  { position:absolute; top:3px; right:5px; font-size:8px; background:#e94560; border-radius:8px; padding:1px 4px; }
+
+/* ── BADGES ── */
+.badge-toast {
+  position:fixed; top:80px; left:50%; transform:translateX(-50%);
+  background:linear-gradient(90deg,#f5a623,#e94560); color:#fff;
+  padding:10px 22px; border-radius:30px; font-size:14px; font-weight:800;
+  z-index:999; animation:badgeIn .5s ease, badgeOut .5s 2.5s ease forwards;
+  box-shadow:0 4px 20px rgba(233,69,96,.5);
+}
+@keyframes badgeIn  { from{opacity:0;transform:translateX(-50%) translateY(-20px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+@keyframes badgeOut { to{opacity:0;transform:translateX(-50%) translateY(-20px)} }
+
+/* ── GÜNLÜK GÖREVLER ── */
+.mission-btn {
+  background:rgba(0,0,0,.7); border:1.5px solid rgba(255,255,255,.2);
+  border-radius:12px; padding:5px 10px; cursor:pointer;
+  display:flex; align-items:center; gap:5px;
+  font-size:11px; color:rgba(255,255,255,.7); font-weight:700;
+}
+.store-btn {
+  background:rgba(0,0,0,.7); border:1.5px solid rgba(255,215,0,.4);
+  border-radius:12px; padding:5px 10px; cursor:pointer;
+  display:flex; align-items:center; gap:5px;
+  font-size:11px; color:rgba(255,215,0,.8); font-weight:700;
+}.mission-overlay {
+  display:none; position:fixed; top:0;left:0;width:100%;height:100%;
+  background:rgba(0,0,0,.88); z-index:400;
+  flex-direction:column; align-items:center; justify-content:center;
+  font-family:'Segoe UI',Arial,sans-serif;
+}
+.mission-card {
+  background:#1a1a2e; border:1.5px solid rgba(255,255,255,.12);
+  border-radius:22px; padding:22px; width:90%; max-width:320px;
+}
+.mission-title { font-size:18px; font-weight:900; color:#f5a623; margin-bottom:16px; text-align:center; }
+.mission-item  { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.mission-icon  { font-size:24px; }
+.mission-info  { flex:1; }
+.mission-name  { font-size:13px; font-weight:700; color:#fff; }
+.mission-prog  { height:5px; background:rgba(255,255,255,.1); border-radius:3px; margin-top:4px; overflow:hidden; }
+.mission-fill  { height:100%; background:linear-gradient(90deg,#e94560,#f5a623); border-radius:3px; transition:width .4s; }
+.mission-reward{ font-size:11px; color:#44ff88; font-weight:700; }
+.mission-done  { font-size:18px; }
+
+/* ── EXTRA LIFE ── */
+.extralife-overlay {
+  display:none; position:fixed; top:0;left:0;width:100%;height:100%;
+  background:rgba(0,0,0,.92); z-index:450;
+  flex-direction:column; align-items:center; justify-content:center;
+  font-family:'Segoe UI',Arial,sans-serif; text-align:center;
+}
+/* ── STORE / AD-FREE ── */
+/* store-overlay */
+.store-overlay {
+  display:none; position:fixed; top:0;left:0;width:100%;height:100%;
+  background:rgba(0,0,0,.92); z-index:400;
+  flex-direction:column; align-items:center; justify-content:center;
+  overflow-y:auto;
+}
+
+.lb-title { font-size:20px; font-weight:900; letter-spacing:2px; margin-bottom:14px; }
+.lb-wrap  { width:100%; max-width:320px; background:rgba(0,0,0,.42); border-radius:18px; overflow:hidden; margin-bottom:16px; }
+.lb-row   { display:flex; align-items:center; gap:8px; padding:10px 14px; border-bottom:1px solid rgba(255,255,255,.05); font-size:13px; }
+.lb-row:last-child { border-bottom:none; }
+.lb-row.me { background:rgba(245,166,35,.14); }
+.lb-rank   { width:26px; font-weight:800; color:rgba(255,255,255,.35); font-size:12px; }
+.lb-rank.g { color:#f5a623; } .lb-rank.s { color:#bbb; } .lb-rank.b { color:#cd7f32; }
+.lb-name   { flex:1; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.lb-score  { font-weight:800; color:#f5a623; }
+.lb-lv     { font-size:10px; color:rgba(255,255,255,.35); margin-left:3px; }
+</style>
+</head>
+<body>
+
+<!-- ══ GÖREV OVERLAY ══ -->
+<div class="mission-overlay" id="mis-overlay">
+  <div class="mission-card">
+    <div class="mission-title">📋 GÜNLÜK GÖREVLER</div>
+    <div id="mis-list"></div>
+    <div style="text-align:center;margin-top:8px;font-size:10px;color:rgba(255,255,255,.35)">Her gün sıfırlanır · Görev ödülleri güçlendirme olarak verilir</div>
+  </div>
+  <button class="btn-main" style="margin-top:14px" onclick="closeMissions()">Kapat</button>
+</div>
+
+<!-- ══ EXTRA LIFE OVERLAY ══ -->
+<div class="extralife-overlay" id="el-overlay">
+  <div style="font-size:72px;margin-bottom:12px">💔</div>
+  <div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:6px">OYUN BİTTİ!</div>
+  <div style="font-size:13px;color:rgba(255,255,255,.5);margin-bottom:24px" id="el-rsn">—</div>
+  <div style="background:#1a1a2e;border-radius:20px;padding:20px;width:85%;max-width:300px;margin-bottom:16px">
+    <div style="font-size:15px;font-weight:800;color:#f5a623;margin-bottom:10px">❤️ 1 EXTRA CAN</div>
+    <div style="font-size:12px;color:rgba(255,255,255,.6);margin-bottom:14px">Reklam izle ve kaldığın yerden devam et!</div>
+    <button class="btn-main" style="width:100%;padding:12px" onclick="useExtraLife()">📺 Reklam İzle (Ücretsiz)</button>
+  </div>
+  <button class="btn-out" onclick="elSkip()">Vazgeç → Ana Sayfa</button>
+</div>
+
+<!-- ══ MAĞAZA OVERLAY ══ -->
+<div class="store-overlay" id="store-overlay">
+  <div style="font-family:'Segoe UI',Arial;color:#fff;width:90%;max-width:340px;padding:20px 0">
+    <div style="font-size:22px;font-weight:900;text-align:center;margin-bottom:18px">💎 MAĞAZA</div>
+
+    <!-- Reklamsız paket -->
+    <div style="background:#1a1a2e;border-radius:18px;padding:16px;margin-bottom:12px;border:1.5px solid rgba(255,215,0,.3)">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:36px">🚫📺</span>
+        <div style="flex:1">
+          <div style="font-weight:800;font-size:15px">Reklamsız</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.5);margin:3px 0">Hiç reklam görmeden oyna</div>
+          <button onclick="buyAdFree()" id="adfree-btn" style="
+            margin-top:6px; padding:7px 16px; border-radius:12px; border:none;
+            background:linear-gradient(90deg,#f5a623,#e94560); color:#fff;
+            font-size:12px; font-weight:800; cursor:pointer;">
+            ₺29,99 Satın Al
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Güçlendirme paketleri -->
+    <div style="font-size:12px;color:rgba(255,255,255,.4);letter-spacing:2px;margin:14px 0 8px">GÜÇLENDİRME PAKETLERİ</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+      <div style="background:#1a1a2e;border-radius:14px;padding:12px;text-align:center;border:1px solid rgba(255,255,255,.1)">
+        <div style="font-size:28px">💣</div>
+        <div style="font-size:12px;font-weight:700;margin:4px 0">×3 Bomba</div>
+        <button onclick="buyPower('bomb',3)" style="padding:5px 12px;border-radius:10px;border:none;background:#e94560;color:#fff;font-size:11px;font-weight:700;cursor:pointer;width:100%">₺9,99</button>
+      </div>
+      <div style="background:#1a1a2e;border-radius:14px;padding:12px;text-align:center;border:1px solid rgba(255,255,255,.1)">
+        <div style="font-size:28px">❄️</div>
+        <div style="font-size:12px;font-weight:700;margin:4px 0">×3 Dondurucu</div>
+        <button onclick="buyPower('freeze',3)" style="padding:5px 12px;border-radius:10px;border:none;background:#4466ff;color:#fff;font-size:11px;font-weight:700;cursor:pointer;width:100%">₺9,99</button>
+      </div>
+      <div style="background:#1a1a2e;border-radius:14px;padding:12px;text-align:center;border:1px solid rgba(255,255,255,.1)">
+        <div style="font-size:28px">⚡</div>
+        <div style="font-size:12px;font-weight:700;margin:4px 0">×3 2× Puan</div>
+        <button onclick="buyPower('x2',3)" style="padding:5px 12px;border-radius:10px;border:none;background:#f5a623;color:#fff;font-size:11px;font-weight:700;cursor:pointer;width:100%">₺9,99</button>
+      </div>
+      <div style="background:#1a1a2e;border-radius:14px;padding:12px;text-align:center;border:1px solid rgba(255,215,0,.4)">
+        <div style="font-size:28px">🎁</div>
+        <div style="font-size:12px;font-weight:700;margin:4px 0">Mega Paket</div>
+        <button onclick="buyPower('all',5)" style="padding:5px 12px;border-radius:10px;border:none;background:linear-gradient(90deg,#f5a623,#e94560);color:#fff;font-size:11px;font-weight:700;cursor:pointer;width:100%">₺24,99</button>
+      </div>
+    </div>
+
+    <button class="btn-out" style="width:100%" onclick="closeStore()">Kapat</button>
+  </div>
+</div>
+
+<!-- ══ REKLAM OVERLAY (AdMob Placeholder) ══ -->
+<div id="ad-overlay" style="
+  display:none; position:fixed; top:0;left:0;width:100%;height:100%;
+  background:#000; z-index:500;
+  flex-direction:column; align-items:center; justify-content:center;
+  font-family:'Segoe UI',Arial,sans-serif;">
+
+  <!-- Üst bar -->
+  <div style="position:absolute;top:0;left:0;right:0;
+    background:#1a1a1a; padding:10px 16px;
+    display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #333">
+    <span style="font-size:11px;color:#888;letter-spacing:1px">REKLAM</span>
+    <div id="ad-skip-wrap" style="display:flex;align-items:center;gap:8px">
+      <span id="ad-countdown" style="font-size:12px;color:#aaa"></span>
+      <button id="ad-skip-btn" onclick="closeAd()" style="
+        display:none; padding:6px 14px; border-radius:20px; border:1.5px solid #fff;
+        background:transparent; color:#fff; font-size:12px; font-weight:700; cursor:pointer;">
+        Atla ✕
+      </button>
+    </div>
+  </div>
+
+  <!-- Reklam içeriği — değişen fake reklamlar -->
+  <div id="ad-content" style="width:100%;max-width:380px;padding:20px;text-align:center;margin-top:44px">
+
+    <!-- Fake App Ad -->
+    <div style="background:#1c1c1e;border-radius:20px;padding:28px 20px;border:1px solid #333">
+      <div id="ad-icon" style="font-size:72px;margin-bottom:12px">🎮</div>
+      <div id="ad-title" style="font-size:22px;font-weight:900;color:#fff;margin-bottom:4px">Puzzle Masters</div>
+      <div id="ad-cat" style="font-size:12px;color:#888;margin-bottom:12px">Bulmaca · Ücretsiz</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:16px">
+        <span id="ad-stars" style="color:#f5a623;font-size:13px">★★★★☆  4.2 · 2M+ indirme</span>
+      </div>
+      <!-- Fake ekran görüntüleri -->
+      <div style="display:flex;gap:6px;justify-content:center;margin-bottom:18px">
+        <div style="width:80px;height:52px;background:linear-gradient(135deg,#e94560,#f5a623);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px">🧩</div>
+        <div style="width:80px;height:52px;background:linear-gradient(135deg,#4466ff,#44ccff);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px">🏆</div>
+        <div style="width:80px;height:52px;background:linear-gradient(135deg,#22cc66,#88ff44);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px">🎯</div>
+      </div>
+      <button onclick="adClick()" style="
+        width:100%; padding:14px; border-radius:14px; border:none;
+        background:linear-gradient(90deg,#4CAF50,#2e7d32);
+        color:#fff; font-size:16px; font-weight:800; cursor:pointer;
+        letter-spacing:.5px; box-shadow:0 4px 20px rgba(76,175,80,.4)">
+        ▶ ÜCRETSİZ İNDİR
+      </button>
+      <div id="ad-pkg" style="margin-top:10px;font-size:10px;color:#555">
+        Google Play · com.puzzlemasters.game
+      </div>
+    </div>
+
+    <!-- AdMob branding (gerçek entegrasyonda burası otomatik gelecek) -->
+    <div style="margin-top:14px;display:flex;align-items:center;justify-content:center;gap:6px">
+      <span style="font-size:10px;color:#444">Powered by</span>
+      <span style="font-size:11px;font-weight:800;color:#4285f4">Google</span>
+      <span style="font-size:10px;color:#444">AdMob</span>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes adIn{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+#ad-content{animation:adIn .4s ease}
+</style>
+
+<!-- Level Geçiş Overlay -->
+<div id="lv-overlay" style="
+  display:none; position:fixed; top:0;left:0;width:100%;height:100%;
+  background:rgba(0,0,0,0.88); z-index:300;
+  flex-direction:column; align-items:center; justify-content:center;
+  font-family:'Segoe UI',Arial,sans-serif; color:#fff; text-align:center;
+  animation:lvIn .3s ease;">
+  <div style="font-size:64px;margin-bottom:8px">🍉</div>
+  <div style="font-size:15px;letter-spacing:3px;color:rgba(255,255,255,.5);margin-bottom:4px">TAMAMLANDI</div>
+  <div style="font-size:34px;font-weight:900;letter-spacing:2px" id="lv-done">LEVEL 1</div>
+  <div style="width:180px;height:2px;background:linear-gradient(90deg,#e94560,#f5a623);margin:14px auto;border-radius:2px"></div>
+  <div style="font-size:28px;font-weight:900;color:#f5a623" id="lv-score">0 puan</div>
+  <div style="font-size:16px;font-weight:700;color:#44ff88;margin-top:6px" id="lv-rank">🏆 #1. Sırada</div>
+  <div style="margin-top:20px;font-size:13px;color:rgba(255,255,255,.4);letter-spacing:1px" id="lv-next">LEVEL 2 BAŞLIYOR…</div>
+  <div style="margin-top:16px;width:160px;height:3px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden">
+    <div id="lv-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#e94560,#f5a623);transition:width 2.5s linear;border-radius:2px"></div>
+  </div>
+</div>
+<style>
+@keyframes lvIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+</style>
+
+<!-- WhatsApp bar — her zaman üstte -->
+<div id="wa-bar" onclick="shareWA()">
+  <span>📲</span> Arkadaşını Davet Et (WhatsApp)
+</div>
+
+<!-- Müzik toggle -->
+<button id="mus-btn" onclick="toggleMusic()" title="Müzik Aç/Kapat">🔊</button>
+
+<!-- ① USERNAME -->
+<div id="s-user" class="screen active">
+  <div class="brand">🍉</div>
+  <div class="brand-name">KARPUZ</div>
+  <div class="brand-sub">Meyveleri birleştir · Sonsuz level · Şampiyona!</div>
+
+  <!-- MOD A: Dönen kullanıcı -->
+  <div id="u-return" style="display:none;width:100%;text-align:center">
+    <div style="font-size:13px;color:rgba(255,255,255,.5);letter-spacing:2px;margin-bottom:6px">HOŞ GELDİN</div>
+    <div id="u-welcome" style="font-size:26px;font-weight:900;color:#f5a623;margin-bottom:18px">—</div>
+    <button class="btn-main" style="width:220px" onclick="continueUser()">🚀 OYNA</button>
+    <div style="margin-top:12px">
+      <button class="btn-out" style="font-size:12px;padding:8px 18px" onclick="showNewUser()">
+        ✏️ Yeni Kullanıcı Adı Oluştur
+      </button>
+    </div>
+  </div>
+
+  <!-- MOD B: Yeni kullanıcı -->
+  <div id="u-new" style="display:none;width:100%;text-align:center">
+    <div class="input-lbl" id="u-new-lbl">YENİ KULLANICI ADI</div>
+    <input id="uname" class="txt-in" type="text" maxlength="14" placeholder="Adını gir...">
+    <div id="uname-err" style="color:#ff6688;font-size:12px;margin-bottom:8px;min-height:18px;font-weight:700"></div>
+    <button class="btn-main" style="width:220px" onclick="registerUser()">KAYDET & OYNA 🚀</button>
+    <div style="margin-top:10px" id="u-back-wrap" style="display:none">
+      <button class="btn-out" style="font-size:12px;padding:8px 18px" onclick="showReturn()">
+        ← Geri Dön
+      </button>
+    </div>
+  </div>
+
+  <div style="margin-top:18px">
+    <button class="btn-out" onclick="openLB()">🏆 Şampiyona Tablosu</button>
+  </div>
+</div>
+
+<!-- ② GAME -->
+<div id="s-game" class="screen">
+  <div class="prog-wrap">
+    <div class="prog-lbl"><span>Level <span id="h-lv">1</span> / 99</span><span id="prog-txt">0 / 400</span></div>
+    <div class="prog-bg"><div class="prog-fill" id="prog-f" style="width:0%"></div></div>
+  </div>
+  <div class="hud">
+    <div class="hud-box"><div class="hud-lbl">PUAN</div><div class="hud-val" id="h-sc">0</div></div>
+    <div class="hud-box"><div class="hud-lbl">TOPLAM</div><div class="hud-val" id="h-tot">0</div></div>
+    <div class="hud-box" id="tbox"><div class="hud-lbl">SÜRE</div><div class="hud-val" id="h-tm">0</div></div>
+    <div class="hud-box" style="background:rgba(34,170,68,.18)"><div class="hud-lbl">ÇARPAN</div><div class="hud-val" id="h-mult">×1.00</div></div>
+    <div class="hud-box" style="background:rgba(255,80,80,.15);border:1.5px solid rgba(255,80,80,.3)"><div class="hud-lbl">HEDEF</div><div class="hud-val" style="font-size:20px">🍉</div></div>
+  </div>
+  <div class="next-row">
+    <span style="flex:1;font-size:11px">Sıradaki: <span id="nxt" class="next-fruit-big">🍒</span></span>
+    <span style="font-size:11px;opacity:.55">🍈+🍈 → <span style="color:#ff6655;font-weight:800">🍉</span> Hedef!</span>
+    <span id="ubadge" style="font-size:11px;opacity:.5;margin-left:8px"></span>
+  </div>
+  <!-- Canvas -->
+  <div style="position:relative;display:inline-block;width:100%">
+    <canvas id="c"></canvas>
+    <div id="combo-layer" style="position:absolute;top:0;left:0;pointer-events:none;width:100%;height:100%"></div>
+  </div>
+  <div class="autodrop-wrap"><div class="autodrop-fill" id="adf" style="width:100%"></div></div>
+  <!-- Power-up + Mağaza + Görev bar -->
+  <div style="display:flex;gap:5px;align-items:center;margin-bottom:4px;width:100%">
+    <button class="pu-btn" id="pu-bomb"   onclick="usePower('bomb')"   title="Bomba">
+      <span class="pu-icon">💣</span><span style="font-size:8px">BOMBA</span>
+      <span class="pu-cnt" id="pu-bomb-cnt">0</span>
+    </button>
+    <button class="pu-btn" id="pu-freeze" onclick="usePower('freeze')" title="Dondurucu">
+      <span class="pu-icon">❄️</span><span style="font-size:8px">DONDUR</span>
+      <span class="pu-cnt" id="pu-freeze-cnt">0</span>
+    </button>
+    <button class="pu-btn" id="pu-x2"    onclick="usePower('x2')"    title="2× Puan">
+      <span class="pu-icon">⚡</span><span style="font-size:8px">2×PUAN</span>
+      <span class="pu-cnt" id="pu-x2-cnt">0</span>
+    </button>
+    <div class="store-btn" onclick="openStore()">💎<span>MAĞAZA</span></div>
+    <div class="mission-btn" id="mis-btn" onclick="openMissions()">📋<span>GÖREV</span>
+      <span id="mis-badge" style="background:#e94560;color:#fff;border-radius:6px;padding:1px 4px;font-size:8px;display:none">!</span>
+    </div>
+  </div>
+</div>
+
+<!-- ③ LEVEL COMPLETE -->
+<div id="s-ok" class="screen">
+  <div class="r-card">
+    <div class="r-emoji">🎉</div>
+    <div class="r-title" id="ok-title">LEVEL TAMAM!</div>
+    <div class="r-sub" id="ok-sub">Harika!</div>
+    <div class="stat-row">
+      <div class="stat-box"><div class="stat-v" id="ok-sc">0</div><div class="stat-l">LEVEL PUAN</div></div>
+      <div class="stat-box"><div class="stat-v" id="ok-bn">+0</div><div class="stat-l">SÜRE BONUS</div></div>
+      <div class="stat-box"><div class="stat-v" id="ok-tot">0</div><div class="stat-l">TOPLAM</div></div>
+    </div>
+    <div class="rank-badge" id="ok-rank">🏆 #1 Sıraya Girdin!</div>
+  </div>
+  <div class="btn-row">
+    <button class="btn-out" onclick="openLB()">🏆 Tablo</button>
+    <button class="btn-main" id="ok-next" onclick="nextLv()">Level 2 →</button>
+  </div>
+</div>
+
+<!-- ④ GAME OVER -->
+<div id="s-over" class="screen">
+  <div class="r-card">
+    <div class="r-emoji">💥</div>
+    <div class="r-title">OYUN BİTTİ</div>
+    <div class="r-sub" id="ov-rsn">Alan taştı!</div>
+    <div class="stat-row">
+      <div class="stat-box"><div class="stat-v" id="ov-lv">1</div><div class="stat-l">LEVEL</div></div>
+      <div class="stat-box"><div class="stat-v" id="ov-sc">0</div><div class="stat-l">TOPLAM PUAN</div></div>
+    </div>
+    <div class="rank-badge" id="ov-rank">🎖 #3 Sırada!</div>
+  </div>
+  <div class="btn-row">
+    <button class="btn-out" onclick="openLB()">🏆 Tablo</button>
+    <button class="btn-main" onclick="retry()">🔄 Tekrar</button>
+  </div>
+  <button class="btn-out" style="margin-top:10px;width:200px" onclick="home()">🏠 Ana Sayfa</button>
+</div>
+
+<!-- ⑤ LEADERBOARD -->
+<div id="s-lb" class="screen">
+  <div class="lb-title">🏆 ŞAMPİYONA TABLOSU</div>
+  <div class="lb-wrap" id="lb-tbl"></div>
+  <div class="btn-row">
+    <button class="btn-out" onclick="home()">🏠 Ana Sayfa</button>
+    <button class="btn-main" onclick="backGame()">Oyuna Dön</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* roundRect polyfill (Safari < 15.4) */
+if(!CanvasRenderingContext2D.prototype.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){
+    this.beginPath();this.moveTo(x+r,y);this.lineTo(x+w-r,y);
+    this.arcTo(x+w,y,x+w,y+r,r);this.lineTo(x+w,y+h-r);
+    this.arcTo(x+w,y+h,x+w-r,y+h,r);this.lineTo(x+r,y+h);
+    this.arcTo(x,y+h,x,y+h-r,r);this.lineTo(x,y+r);
+    this.arcTo(x,y,x+r,y,r);this.closePath();
+  };
+}
+
+/* ══════════════════════════════════════════
+   FRUITS  [emoji, r, pts, freq, wave, color, darkColor]
+══════════════════════════════════════════ */
+const FR = [
+  /* idx  emoji  radius  puan   freq    oscType   col1        col2      */
+  [  '🍒', 13,    2,   440,'sine',     '#ff6688','#cc2244'],  // 0  Kiraz
+  [  '🫐', 16,    3,   466,'triangle', '#6655ff','#3322cc'],  // 1  Yaban mersini (YENİ)
+  [  '🍓', 20,    5,   494,'sine',     '#ff4466','#cc1133'],  // 2  Çilek
+  [  '🍋', 24,    9,   523,'triangle', '#ffee22','#ccaa00'],  // 3  Limon (YENİ)
+  [  '🍇', 28,   14,   554,'sine',     '#bb66ff','#7722aa'],  // 4  Üzüm
+  [  '🍊', 33,   22,   587,'triangle', '#ff9933','#cc6600'],  // 5  Mandalina
+  [  '🥝', 37,   34,   622,'square',   '#77cc33','#448800'],  // 6  Kivi (YENİ)
+  [  '🍎', 41,   50,   659,'triangle', '#ff4422','#aa1100'],  // 7  Elma
+  [  '🍐', 45,   72,   698,'sine',     '#99dd22','#558800'],  // 8  Armut
+  [  '🍑', 49,  100,   740,'triangle', '#ffbb55','#cc7700'],  // 9  Şeftali
+  [  '🥭', 53,  140,   784,'sine',     '#ff9944','#cc6600'],  // 10 Mango
+  [  '🍍', 58,  190,   830,'sawtooth', '#ffdd00','#aa9900'],  // 11 Ananas
+  [  '🥥', 63,  260,   880,'sine',     '#d4a96a','#8b5e3c'],  // 12 Hindistan cevizi (YENİ)
+  [  '🍈', 67,  360,   930,'triangle', '#aaddaa','#558855'],  // 13 Kavun (YENİ)
+  [  '🫒', 70,  500,   975,'sine',     '#556633','#334422'],  // 14 Zeytin → bonus (YENİ)
+  [  '🍉', 76, 1200,  1050,'triangle', '#33cc55','#117722'],  // 15 KARPUZ (hedef)
+];
+
+/* ══════════════════════════════════════════
+   LEVEL CONFIG
+══════════════════════════════════════════ */
+function lvlCfg(lv){
+  const eff = ((lv-1)%99)+1;
+  const br = Math.floor((eff-1)/5);
+  const cw = Math.min(380, 260+br*16);
+  const ch = 300;
+  const wt = 8;
+  return {
+    targetScore:200+eff*200,
+    timeLimit:Math.max(18,82-eff*0.75)|0,
+    gravity:1200+eff*36,          /* başlangıç hızı artırıldı */
+    cw,ch, wL:wt,wR:cw-wt,floor:ch-wt,
+    dangerY:72,
+    maxDrop:Math.min(14, 7 + Math.floor((eff-1)/2)),
+  };
+}
+
+/* ══════════════════════════════════════════
+   🌲 ORMAN ARKA PLAN SİSTEMİ
+══════════════════════════════════════════ */
+const FORESTS = [
+  /* 0 — Çam Ormanı (Gece) */
+  {sky:['#0a0e1a','#1a2a1a'], ground:'#0d1a08', treeCol:'#0a1505', treeCol2:'#122010', fog:'rgba(20,30,15,0.35)', moon:true, stars:true},
+  /* 1 — Sonbahar Ormanı */
+  {sky:['#1a0800','#2e1200'], ground:'#1a0a00', treeCol:'#3d1500', treeCol2:'#5c2200', fog:'rgba(40,15,0,0.3)', moon:false, stars:false, autumn:true},
+  /* 2 — Tropikal */
+  {sky:['#001a2e','#003a5c'], ground:'#002210', treeCol:'#00350f', treeCol2:'#00451a', fog:'rgba(0,30,15,0.3)', moon:false, stars:true, tropical:true},
+  /* 3 — Kar Ormanı */
+  {sky:['#0d1a2e','#1a2e4a'], ground:'#d8e8f0', treeCol:'#0d2210', treeCol2:'#183a1e', fog:'rgba(200,220,240,0.25)', moon:true, stars:true, snow:true},
+  /* 4 — Gün Batımı Ormanı */
+  {sky:['#3a0a00','#8c2200'], ground:'#1a0800', treeCol:'#0f0500', treeCol2:'#200a00', fog:'rgba(80,20,0,0.28)', moon:false, stars:false, sunset:true},
+  /* 5 — Mistik Mor Orman */
+  {sky:['#0e0020','#200040'], ground:'#150025', treeCol:'#1a003a', treeCol2:'#25005c', fog:'rgba(80,0,120,0.25)', moon:true, stars:true, mystic:true},
+  /* 6 — Bambu Ormanı */
+  {sky:['#0a1a08','#152e10'], ground:'#0a1a05', treeCol:'#0d2008', treeCol2:'#183510', fog:'rgba(10,30,5,0.3)', moon:false, stars:false, bamboo:true},
+  /* 7 — Buz Mağarası */
+  {sky:['#001018','#002030'], ground:'#003045', treeCol:'#001a28', treeCol2:'#002535', fog:'rgba(0,30,50,0.35)', moon:false, stars:true, ice:true},
+];
+
+function drawForest(W, H){
+  const fi = (S.lv - 1) % FORESTS.length;
+  const f  = FORESTS[fi];
+
+  /* Gökyüzü degradesi */
+  const sky = ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0, f.sky[0]);
+  sky.addColorStop(1, f.sky[1]);
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, W, H);
+
+  /* Yıldızlar */
+  if(f.stars){
+    ctx.fillStyle='rgba(255,255,255,0.7)';
+    const rng = mulberry32(fi*7919);
+    for(let i=0;i<28;i++){
+      const sx=rng()*W, sy=rng()*(H*0.55);
+      const sr=rng()*1.2+0.3;
+      ctx.beginPath();ctx.arc(sx,sy,sr,0,Math.PI*2);ctx.fill();
+    }
+  }
+
+  /* Ay */
+  if(f.moon){
+    ctx.fillStyle='rgba(255,248,200,0.85)';
+    ctx.beginPath();ctx.arc(W*0.78, H*0.14, 14, 0, Math.PI*2);ctx.fill();
+    ctx.fillStyle=f.sky[0];
+    ctx.beginPath();ctx.arc(W*0.78+7, H*0.14-4, 12, 0, Math.PI*2);ctx.fill();
+  }
+
+  /* Sunset gradient */
+  if(f.sunset){
+    const sg=ctx.createRadialGradient(W/2,H*0.3,0,W/2,H*0.3,W*0.8);
+    sg.addColorStop(0,'rgba(255,120,0,0.45)');
+    sg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=sg;ctx.fillRect(0,0,W,H);
+  }
+
+  /* Mystic glow */
+  if(f.mystic){
+    ctx.fillStyle='rgba(120,0,200,0.12)';ctx.fillRect(0,0,W,H);
+    const mg=ctx.createRadialGradient(W*0.3,H*0.2,0,W*0.3,H*0.2,W*0.5);
+    mg.addColorStop(0,'rgba(160,0,255,0.25)');
+    mg.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=mg;ctx.fillRect(0,0,W,H);
+  }
+
+  /* Arka plan ağaçlar (büyük, koyu) */
+  const rng2=mulberry32(fi*1337+1);
+  const treeCount=10;
+  for(let i=0;i<treeCount;i++){
+    const tx=( i/(treeCount-1) )*(W+40)-20;
+    const th=H*(0.45+rng2()*0.25);
+    const tw=28+rng2()*20;
+    if(f.bamboo){
+      drawBamboo(tx, H*0.95, th, tw*0.35, f.treeCol);
+    } else if(f.tropical){
+      drawPalm(tx, H*0.95, th, f.treeCol);
+    } else if(f.ice){
+      drawIceTree(tx, H*0.95, th, tw, f.treeCol);
+    } else {
+      drawPine(tx, H*0.95, th, tw, f.treeCol);
+    }
+  }
+
+  /* Ön plan ağaçlar (biraz daha açık) */
+  const rng3=mulberry32(fi*2741+3);
+  const fgCount=6;
+  for(let i=0;i<fgCount;i++){
+    const tx=( i/(fgCount-1) )*(W+60)-30;
+    const th=H*(0.35+rng3()*0.2);
+    const tw=22+rng3()*16;
+    if(f.bamboo){
+      drawBamboo(tx, H*0.98, th*0.8, tw*0.3, f.treeCol2);
+    } else if(f.tropical){
+      drawPalm(tx, H*0.98, th*0.8, f.treeCol2);
+    } else if(f.ice){
+      drawIceTree(tx, H*0.98, th*0.7, tw, f.treeCol2);
+    } else {
+      drawPine(tx, H*0.98, th*0.7, tw, f.treeCol2);
+    }
+  }
+
+  /* Kar tozu (kar ormanı) */
+  if(f.snow){
+    const sr2=mulberry32(fi*999+S.lv);
+    ctx.fillStyle='rgba(220,240,255,0.6)';
+    for(let i=0;i<20;i++){
+      const sx=sr2()*W, sy=H*0.4+sr2()*(H*0.55);
+      ctx.beginPath();ctx.arc(sx,sy,sr2()*2+0.5,0,Math.PI*2);ctx.fill();
+    }
+  }
+
+  /* Zemin */
+  const groundH=H*0.07;
+  const grd=ctx.createLinearGradient(0,H-groundH,0,H);
+  grd.addColorStop(0,f.ground);
+  grd.addColorStop(1,'rgba(0,0,0,0.6)');
+  ctx.fillStyle=grd;ctx.fillRect(0,H-groundH,W,groundH);
+
+  /* Sis/bulanıklık */
+  const fog=ctx.createLinearGradient(0,H*0.55,0,H);
+  fog.addColorStop(0,'rgba(0,0,0,0)');
+  fog.addColorStop(1,f.fog);
+  ctx.fillStyle=fog;ctx.fillRect(0,0,W,H);
+
+  /* Koyu overlay — meyveleri ön plana çıkar */
+  ctx.fillStyle='rgba(0,0,0,0.38)';ctx.fillRect(0,0,W,H);
+}
+
+/* Küçük, deterministik random (seed'li) */
+function mulberry32(a){
+  return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+}
+
+function drawPine(x,y,h,w,col){
+  ctx.fillStyle=col;
+  const layers=4;
+  for(let i=0;i<layers;i++){
+    const ly=y-h*(i/layers);
+    const lw=w*(1-i/layers*0.5);
+    const lh=h/layers*1.4;
+    ctx.beginPath();ctx.moveTo(x,ly-lh);ctx.lineTo(x+lw/2,ly);ctx.lineTo(x-lw/2,ly);ctx.closePath();ctx.fill();
+  }
+  ctx.fillRect(x-w*0.08,y-h*0.15,w*0.16,h*0.18);
+}
+
+function drawPalm(x,y,h,col){
+  ctx.strokeStyle=col;ctx.lineWidth=4;
+  ctx.beginPath();ctx.moveTo(x,y);ctx.quadraticCurveTo(x+15,y-h*0.5,x,y-h);ctx.stroke();
+  ctx.lineWidth=2;
+  const leaves=5;
+  for(let i=0;i<leaves;i++){
+    const a=(i/leaves)*Math.PI*2;
+    const lx=x+Math.cos(a)*25, ly=(y-h)+Math.sin(a)*10-5;
+    ctx.beginPath();ctx.moveTo(x,y-h);ctx.quadraticCurveTo((x+lx)/2,(y-h+ly)/2-12,lx,ly);ctx.stroke();
+  }
+}
+
+function drawBamboo(x,y,h,w,col){
+  ctx.fillStyle=col;ctx.fillRect(x-w/2,y-h,w,h);
+  ctx.strokeStyle='rgba(0,0,0,0.3)';ctx.lineWidth=1;
+  const segs=6;
+  for(let i=1;i<segs;i++){ctx.beginPath();ctx.moveTo(x-w/2,y-h*(i/segs));ctx.lineTo(x+w/2,y-h*(i/segs));ctx.stroke();}
+  ctx.fillStyle=col;ctx.globalAlpha=0.7;
+  ctx.beginPath();ctx.ellipse(x,y-h,w*2,w*0.7,-.3,0,Math.PI*2);ctx.fill();
+  ctx.globalAlpha=1;
+}
+
+function drawIceTree(x,y,h,w,col){
+  ctx.fillStyle=col;
+  ctx.beginPath();ctx.moveTo(x,y-h);ctx.lineTo(x+w/2,y);ctx.lineTo(x-w/2,y);ctx.closePath();ctx.fill();
+  ctx.fillStyle='rgba(180,220,255,0.2)';
+  ctx.beginPath();ctx.moveTo(x,y-h*1.0);ctx.lineTo(x+w*0.3,y-h*0.3);ctx.lineTo(x-w*0.3,y-h*0.3);ctx.closePath();ctx.fill();
+}
+
+/* ══════════════════════════════════════════
+   AUDIO
+══════════════════════════════════════════ */
+let AC=null;
+function ensureAC(){
+  if(!AC)try{AC=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}
+  if(AC&&AC.state==='suspended')AC.resume();
+}
+
+/* Meyve sesi */
+function snd(type,merge){
+  if(!AC)return;
+  try{
+    const f=FR[Math.min(type,FR.length-1)];
+    const freq=f[3]*(merge?1.55:1);
+    const dur=merge?.55:.2;
+    const osc=AC.createOscillator(),g=AC.createGain();
+    osc.connect(g);g.connect(AC.destination);
+    osc.type=f[4];
+    osc.frequency.setValueAtTime(freq,AC.currentTime);
+    if(merge)osc.frequency.linearRampToValueAtTime(freq*1.35,AC.currentTime+dur*.35);
+    g.gain.setValueAtTime(merge?.28:.15,AC.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+dur);
+    osc.start();osc.stop(AC.currentTime+dur);
+  }catch(e){}
+}
+
+/* ══════════════════════════════════════════
+   🎵 MÜZİK SİSTEMİ  (130 BPM drum+bass+melody)
+══════════════════════════════════════════ */
+const MUS={
+  playing:false, muted:false,
+  step:0, nextT:0, schedId:null, masterG:null,
+
+  init(){
+    if(!AC||this.masterG)return;
+    this.masterG=AC.createGain();
+    this.masterG.gain.value=0.42;
+    this.masterG.connect(AC.destination);
+  },
+
+  start(){
+    this.init();
+    if(this.playing||!AC||this.muted)return;
+    this.playing=true;
+    this.step=0;
+    this.nextT=AC.currentTime+0.05;
+    this.sched();
+  },
+
+  stop(){
+    this.playing=false;
+    clearTimeout(this.schedId);
+  },
+
+  SD(){ return 60/130/4; }, /* 16th note ≈ 0.115s */
+
+  sched(){
+    if(!this.playing)return;
+    while(this.nextT<AC.currentTime+0.18){
+      this.playStep(this.step,this.nextT);
+      this.nextT+=this.SD();
+      this.step=(this.step+1)%32;
+    }
+    this.schedId=setTimeout(()=>this.sched(),22);
+  },
+
+  playStep(s,t){
+    /* Kick: beats 1 & 3 = steps 0,16 */
+    if(s===0||s===16)this.kick(t);
+    /* Snare: beats 2 & 4 = steps 8,24 */
+    if(s===8||s===24)this.snare(t);
+    /* Hihat: every 2 steps (8th notes) */
+    if(s%2===0)this.hat(t,s%8===0?.18:.10);
+    /* Bass pattern (quarter notes) */
+    const bass=[65.4,null,null,null, 98.0,null,null,null,
+                110.0,null,null,null, 87.3,null,null,null,
+                65.4,null,null,null, 73.4,null,null,null,
+                82.4,null,null,null, 65.4,null,null,null];
+    if(bass[s])this.bass(bass[s],t);
+    /* Melody (8th notes = every 2 steps) */
+    const mel=[523,null,659,null,784,null,659,null,
+               523,null,587,null,784,null,698,null,
+               523,null,659,null,880,null,784,null,
+               659,null,523,null,587,null,659,null];
+    if(mel[s])this.lead(mel[s],t);
+  },
+
+  kick(t){
+    try{
+      const o=AC.createOscillator(),g=AC.createGain();
+      o.connect(g);g.connect(this.masterG);
+      o.frequency.setValueAtTime(160,t);
+      o.frequency.exponentialRampToValueAtTime(1,t+0.45);
+      g.gain.setValueAtTime(1,t);
+      g.gain.exponentialRampToValueAtTime(.001,t+0.45);
+      o.start(t);o.stop(t+0.45);
+    }catch(e){}
+  },
+
+  snare(t){
+    try{
+      const len=AC.sampleRate*.18|0;
+      const buf=AC.createBuffer(1,len,AC.sampleRate);
+      const d=buf.getChannelData(0);
+      for(let i=0;i<len;i++)d[i]=Math.random()*2-1;
+      const src=AC.createBufferSource();src.buffer=buf;
+      const fl=AC.createBiquadFilter();fl.type='bandpass';fl.frequency.value=2800;fl.Q.value=.6;
+      const g=AC.createGain();
+      src.connect(fl);fl.connect(g);g.connect(this.masterG);
+      g.gain.setValueAtTime(.5,t);g.gain.exponentialRampToValueAtTime(.001,t+.18);
+      src.start(t);src.stop(t+.18);
+      /* tone */
+      const o=AC.createOscillator(),g2=AC.createGain();
+      o.connect(g2);g2.connect(this.masterG);
+      o.frequency.value=210;
+      g2.gain.setValueAtTime(.18,t);g2.gain.exponentialRampToValueAtTime(.001,t+.1);
+      o.start(t);o.stop(t+.1);
+    }catch(e){}
+  },
+
+  hat(t,vol){
+    try{
+      const len=AC.sampleRate*.04|0;
+      const buf=AC.createBuffer(1,len,AC.sampleRate);
+      const d=buf.getChannelData(0);
+      for(let i=0;i<len;i++)d[i]=Math.random()*2-1;
+      const src=AC.createBufferSource();src.buffer=buf;
+      const fl=AC.createBiquadFilter();fl.type='highpass';fl.frequency.value=9000;
+      const g=AC.createGain();
+      src.connect(fl);fl.connect(g);g.connect(this.masterG);
+      g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+.04);
+      src.start(t);src.stop(t+.04);
+    }catch(e){}
+  },
+
+  bass(freq,t){
+    try{
+      const o=AC.createOscillator(),fl=AC.createBiquadFilter(),g=AC.createGain();
+      o.type='sawtooth';fl.type='lowpass';fl.frequency.value=380;
+      o.connect(fl);fl.connect(g);g.connect(this.masterG);
+      o.frequency.value=freq;
+      g.gain.setValueAtTime(.4,t);g.gain.exponentialRampToValueAtTime(.001,t+.24);
+      o.start(t);o.stop(t+.24);
+    }catch(e){}
+  },
+
+  lead(freq,t){
+    try{
+      const o=AC.createOscillator(),fl=AC.createBiquadFilter(),g=AC.createGain();
+      o.type='square';fl.type='lowpass';fl.frequency.value=2200;
+      o.connect(fl);fl.connect(g);g.connect(this.masterG);
+      o.frequency.value=freq;
+      g.gain.setValueAtTime(.13,t);g.gain.exponentialRampToValueAtTime(.001,t+.14);
+      o.start(t);o.stop(t+.14);
+    }catch(e){}
+  },
+};
+
+let musicOn=true;
+function toggleMusic(){
+  musicOn=!musicOn;
+  document.getElementById('mus-btn').textContent=musicOn?'🔊':'🔇';
+  if(musicOn){ MUS.muted=false; if(S.cfg&&!S.dead)MUS.start(); }
+  else{ MUS.muted=true; MUS.stop(); }
+}
+
+/* ══════════════════════════════════════════
+   🍉 KAZANMA ANİMASYONU
+══════════════════════════════════════════ */
+const WA={
+  active:false, x:0, y:0,
+  /* 0=ekranda bekle(2s)  1=büyü(0.6s)  2=flash  3=partiküller */
+  phase:0, timer:0, scale:1,
+  particles:[],
+  info:null,  /* {rank, score, bonus, lv} */
+
+  start(x,y,info){
+    this.active=true; this.x=x; this.y=y;
+    this.phase=0; this.timer=0; this.scale=1;
+    this.info=info||null;
+    this.particles=[];
+    const cols=['#ff4466','#ff8800','#44ff66','#ffff00','#44ccff','#ff44ff','#ffffff','#ff2200','#ff6600'];
+    /* Karpuz dilimleri */
+    for(let i=0;i<16;i++){
+      const a=(i/16)*Math.PI*2;
+      const spd=200+Math.random()*350;
+      this.particles.push({x,y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd-150,
+        type:'slice',rot:Math.random()*Math.PI*2,rotSpd:(Math.random()-.5)*12,
+        size:30+Math.random()*26,alpha:1});
+    }
+    /* Konfeti */
+    for(let i=0;i<50;i++){
+      const a=Math.random()*Math.PI*2;
+      const spd=60+Math.random()*500;
+      this.particles.push({x,y,
+        vx:Math.cos(a)*spd+(Math.random()-.5)*100,
+        vy:Math.sin(a)*spd-400,
+        type:'conf',
+        color:cols[Math.floor(Math.random()*cols.length)],
+        rot:Math.random()*Math.PI*2,rotSpd:(Math.random()-.5)*16,
+        w:5+Math.random()*12,h:3+Math.random()*6,alpha:1});
+    }
+    /* Tebrikler sesi */
+    snd(9,true);
+  },
+
+  update(dt){
+    this.timer+=dt;
+    if(this.phase===0){
+      if(this.timer>2.0){this.phase=1;this.timer=0;}   /* 2 saniye bekle */
+    }else if(this.phase===1){
+      this.scale=1+this.timer*5;
+      if(this.timer>.65){this.phase=2;this.timer=0;}
+    }else if(this.phase===2){
+      this.phase=3;this.timer=0;
+    }else{
+      for(const p of this.particles){
+        p.x+=p.vx*dt;p.y+=p.vy*dt;
+        p.vy+=500*dt;
+        p.rot+=p.rotSpd*dt;
+        p.alpha=Math.max(0,1-this.timer/2.6);
+      }
+      if(this.timer>3.0){this.active=false;}
+    }
+  },
+
+  _drawInfoPanel(W,H,alpha){
+    if(!this.info)return;
+    const ri=this.info;
+    const pw=230,ph=80,px=(W-pw)/2,py=H-ph-12;
+    ctx.save();
+    ctx.globalAlpha=alpha;
+    /* Kart arka plan */
+    ctx.fillStyle='rgba(0,0,0,0.72)';
+    ctx.beginPath();
+    ctx.roundRect(px,py,pw,ph,14);
+    ctx.fill();
+    /* Rank */
+    ctx.textAlign='center';
+    ctx.fillStyle='#f5a623';
+    ctx.font='bold 13px Segoe UI,Arial';
+    ctx.fillText(`🏆  #${ri.rank}. Sıradasın`,W/2,py+22);
+    /* Puan */
+    ctx.fillStyle='#ffffff';
+    ctx.font='bold 22px Segoe UI,Arial';
+    ctx.fillText(ri.score.toLocaleString()+' puan',W/2,py+46);
+    /* Süre + level */
+    const mult=Math.max(10,Math.round(100*100/(100+ri.elapsed)));
+    ctx.fillStyle='rgba(255,255,255,0.52)';
+    ctx.font='11px Segoe UI,Arial';
+    ctx.fillText(`${ri.elapsed}s'de tamamlandı  ·  Puan çarpanı %${mult}`,W/2,py+66);
+    ctx.restore();
+  },
+
+  draw(W,H){
+    const pulse=1+Math.sin(this.timer*10)*0.06;
+    if(this.phase===0){
+      /* Karpuz ekranda bekliyor — büyük ve parlak */
+      ctx.save();
+      ctx.translate(this.x,this.y);
+      ctx.scale(pulse,pulse);
+      ctx.shadowColor='#44ff88';ctx.shadowBlur=50;
+      ctx.font='110px serif';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('🍉',0,0);
+      ctx.shadowColor='transparent';ctx.shadowBlur=0;
+      ctx.fillText('🍉',0,0);
+      ctx.restore();
+      /* KAZANDIN yazısı */
+      ctx.save();
+      ctx.font='bold 20px Segoe UI';
+      ctx.fillStyle='#ffff00';
+      ctx.shadowColor='rgba(0,0,0,.6)';ctx.shadowBlur=8;
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      const bounce=Math.sin(this.timer*6)*4;
+      ctx.fillText('🎉 KARPUZ YAPTIR! 🎉',W/2,this.y-90+bounce);
+      ctx.restore();
+      /* Puan / Sıra paneli */
+      this._drawInfoPanel(W,H,Math.min(1,this.timer*2));
+    }else if(this.phase===1){
+      /* Büyüyen karpuz */
+      ctx.save();
+      ctx.translate(this.x,this.y);
+      ctx.scale(this.scale,this.scale);
+      ctx.shadowColor='#44ff88';ctx.shadowBlur=60;
+      ctx.font='110px serif';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('🍉',0,0);
+      ctx.shadowColor='transparent';ctx.shadowBlur=0;
+      ctx.fillText('🍉',0,0);
+      ctx.restore();
+    }else if(this.phase===2){
+      ctx.fillStyle='rgba(255,255,255,.95)';
+      ctx.fillRect(0,0,W,H);
+    }else{
+      /* Partiküller */
+      for(const p of this.particles){
+        ctx.save();
+        ctx.globalAlpha=p.alpha;
+        ctx.translate(p.x,p.y);
+        ctx.rotate(p.rot);
+        if(p.type==='slice'){
+          ctx.font=`${p.size}px serif`;
+          ctx.textAlign='center';ctx.textBaseline='middle';
+          ctx.shadowColor='rgba(0,0,0,.3)';ctx.shadowBlur=5;
+          ctx.fillText('🍉',0,0);
+          ctx.shadowColor='transparent';ctx.shadowBlur=0;
+          ctx.fillText('🍉',0,0);
+        }else{
+          ctx.fillStyle=p.color;
+          ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+        }
+        ctx.restore();
+      }
+      /* Konfetiler arasında puan paneli */
+      const pa=Math.max(0,1-this.timer/1.8);
+      if(pa>0) this._drawInfoPanel(W,H,pa);
+    }
+  }
+};
+
+/* ══════════════════════════════════════════
+   LEADERBOARD
+══════════════════════════════════════════ */
+const LBK='suika_lb_v3';
+function getLB(){try{return JSON.parse(localStorage.getItem(LBK)||'[]');}catch{return[];}}
+function saveLB(a){try{localStorage.setItem(LBK,JSON.stringify(a));}catch{}}
+function submitLB(name,score,lv){
+  const lb=getLB();
+  const i=lb.findIndex(e=>e.name===name);
+  if(i>=0){if(score>lb[i].score)lb[i]={name,score,lv};else lb[i].lv=Math.max(lb[i].lv,lv);}
+  else lb.push({name,score,lv});
+  lb.sort((a,b)=>b.score-a.score);
+  saveLB(lb.slice(0,50));
+  return lb.findIndex(e=>e.name===name)+1;
+}
+function renderLB(me){
+  const lb=getLB();
+  const el=document.getElementById('lb-tbl');
+  if(!lb.length){el.innerHTML='<div class="lb-row" style="justify-content:center;color:rgba(255,255,255,.35)">Henüz kayıt yok 😢</div>';return;}
+  el.innerHTML=lb.slice(0,15).map((e,i)=>{
+    const rc=i===0?'g':i===1?'s':i===2?'b':'';
+    const md=i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1;
+    return`<div class="lb-row${e.name===me?' me':''}">
+      <div class="lb-rank ${rc}">${md}</div>
+      <div class="lb-name">${e.name}</div>
+      <div class="lb-score">${e.score.toLocaleString()}</div>
+      <div class="lb-lv">Lv${e.lv}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ══════════════════════════════════════════
+   WHATSAPP SHARE
+══════════════════════════════════════════ */
+function shareWA(){
+  const name=S.user||'Bir arkadaşın';
+  const msg=encodeURIComponent(
+    `🍉 *Karpuz Oyunu* oynuyor musun?\n\n`+
+    `${name} seni şampiyona tablosuna davet ediyor! `+
+    `Meyveleri birleştir, karpuza ulaş! 99 level, heyecanlı rekabet!\n\n`+
+    `📲 Google Play'den indir:\nhttps://play.google.com/store\n\n`+
+    `(Yakında yayında — şimdiden kayıt ol! 🚀)`
+  );
+  window.open(`https://wa.me/?text=${msg}`,'_blank');
+}
+
+/* ══════════════════════════════════════════
+   GAME STATE
+══════════════════════════════════════════ */
+const S={
+  user:'',lv:1,lvSc:0,totSc:0,
+  timeElapsed:0,dropping:false,fruits:[],
+  curType:0,nxtType:0,dropX:0,
+  cfg:null,
+  timerId:null,rafId:null,
+  lastTs:null,dead:false,dangerT:0,
+  autoT:1.5,
+  winPending:false,winFruit:null,  /* auto-drop countdown */
+};
+
+class Fruit{
+  constructor(x,y,t){
+    this.x=x;this.y=y;this.t=t;
+    this.r=FR[t][1];this.vx=0;this.vy=80;
+    this.merged=false;this.age=0;
+    /* Zigzag */
+    this.zzAmp=(40+Math.random()*70)*(Math.random()>.5?1:-1);
+    this.zzFreq=2.5+Math.random()*3.5;
+  }
+}
+
+/* ══════════════════════════════════════════
+   CANVAS
+══════════════════════════════════════════ */
+const CV=document.getElementById('c');
+const ctx=CV.getContext('2d');
+
+/* ══════════════════════════════════════════
+   SCREENS
+══════════════════════════════════════════ */
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* ══════════════════════════════════════════
+   FLOW
+══════════════════════════════════════════ */
+/* ══════════════════════════════════════════
+   KULLANICI ADI SİSTEMİ
+══════════════════════════════════════════ */
+const UKEY = 'suika_user';
+const RKEY = 'suika_reg_names'; /* kayıtlı tüm isimler — hiç silinmez */
+
+function getRegistered(){
+  try{return JSON.parse(localStorage.getItem(RKEY)||'[]');}catch{return[];}
+}
+function addRegistered(name){
+  const list=getRegistered();
+  if(!list.find(n=>n.toLowerCase()===name.toLowerCase()))list.push(name);
+  try{localStorage.setItem(RKEY,JSON.stringify(list));}catch{}
+}
+function isNameTaken(name){
+  const reg=getRegistered();
+  const lb=getLB();
+  return !!(reg.find(n=>n.toLowerCase()===name.toLowerCase())||
+            lb.find(e=>e.name.toLowerCase()===name.toLowerCase()));
+}
+
+function initUserScreen(){
+  const saved=localStorage.getItem(UKEY);
+  if(saved){
+    document.getElementById('u-welcome').textContent=saved;
+    document.getElementById('u-return').style.display='block';
+    document.getElementById('u-new').style.display='none';
+  } else {
+    showNewUser(false);
+  }
+}
+
+function showReturn(){
+  document.getElementById('u-return').style.display='block';
+  document.getElementById('u-new').style.display='none';
+}
+
+function showNewUser(showBack){
+  if(showBack===undefined)showBack=true;
+  document.getElementById('u-return').style.display='none';
+  document.getElementById('u-new').style.display='block';
+  document.getElementById('u-new-lbl').textContent=showBack?'YENİ KULLANICI ADI':'KULLANICI ADI';
+  const bw=document.getElementById('u-back-wrap');
+  if(bw)bw.style.display=showBack?'block':'none';
+  document.getElementById('uname').value='';
+  document.getElementById('uname-err').textContent='';
+  document.getElementById('uname').focus();
+}
+
+function continueUser(){
+  const saved=localStorage.getItem(UKEY);
+  if(!saved){showNewUser(false);return;}
+  S.user=saved;S.lv=1;S.totSc=0;
+  beginLevel();
+}
+
+function registerUser(){
+  const n=document.getElementById('uname').value.trim();
+  const errEl=document.getElementById('uname-err');
+  errEl.textContent='';
+  if(!n){errEl.textContent='⚠️ Kullanıcı adı boş olamaz!';document.getElementById('uname').focus();return;}
+  if(n.length<2){errEl.textContent='⚠️ En az 2 karakter gir.';return;}
+  if(isNameTaken(n)){
+    errEl.textContent='🚫 Bu kullanıcı adı alınmış! Başka bir isim seç.';
+    document.getElementById('uname').select();
+    return;
+  }
+  addRegistered(n);
+  try{localStorage.setItem(UKEY,n);}catch{}
+  S.user=n;S.lv=1;S.totSc=0;
+  beginLevel();
+}
+
+function startNew(){registerUser();}
+function showUserError(msg){
+  const el=document.getElementById('uname-err');
+  if(el)el.textContent='⚠️ '+msg;
+}
+
+function beginLevel(){
+  ensureAC();
+  const cfg=lvlCfg(S.lv);
+  S.cfg=cfg;S.lvSc=0;S.timeElapsed=0;
+  S.dropping=false;S.fruits=[];S.dead=false;S.dangerT=0;S.lastTs=null;
+  S.autoT=1.5;S.winPending=false;S.winFruit=null;WA.active=false;
+  S._winBonus=0;S._winRank=0;S._winScore=null;S._extraUsed=false;
+  COMBO.reset(); SPARKS.length=0; PU.load(); PU.render();
+
+  /* Random background */
+  document.body.style.background=['linear-gradient(135deg,#0a0e1a,#1a2a1a)','linear-gradient(135deg,#1a0800,#2e1200)','linear-gradient(135deg,#001a2e,#003a5c)','linear-gradient(135deg,#0d1a2e,#1a2e4a)','linear-gradient(135deg,#3a0a00,#6c1800)','linear-gradient(135deg,#0e0020,#1a0040)','linear-gradient(135deg,#0a1a08,#152e10)','linear-gradient(135deg,#001018,#002030)'][(S.lv-1)%8];
+
+  S.curType=rndDrop();S.nxtType=rndDrop();
+  S.dropX=(cfg.wL+cfg.wR)/2;
+
+  CV.width=cfg.cw;CV.height=cfg.ch;
+
+  /* HUD */
+  document.getElementById('h-lv').textContent=S.lv;
+  document.getElementById('h-sc').textContent='0';
+  document.getElementById('h-tot').textContent=S.totSc.toLocaleString();
+  document.getElementById('h-tm').textContent='0';
+  document.getElementById('h-mult').textContent='×1.00';
+  document.getElementById('h-mult').style.color='#44ff88';
+  const badge=getBadge(S.lv);
+  document.getElementById('ubadge').textContent=badge?badge.icon+' '+badge.title:'👤 '+S.user;
+  updNxt();updProg();
+
+  show('s-game');
+  clearInterval(S.timerId);
+  S.timerId=setInterval(tick,1000);
+  cancelAnimationFrame(S.rafId);
+  S.rafId=requestAnimationFrame(loop);
+
+  /* Müzik */
+  if(musicOn){MUS.stop();setTimeout(()=>MUS.start(),200);}
+}
+
+function rndDrop(){
+  const max = S.cfg.maxDrop;
+  const lv  = S.lv;
+
+  /*
+   * 16 meyve zinciri için base ağırlıklar (index 0-14, 15=🍉 hiç düşmez)
+   * Küçükten büyüğe: 🍒🫐🍓🍋🍇🍊🥝🍎🍐🍑🥭🍍🥥🍈🫒
+   */
+  const baseW = [36, 30, 26, 22, 18, 15, 12, 10, 8, 6, 5, 4, 3, 2, 1];
+
+  const weights = [];
+  for(let i = 0; i <= max; i++){
+    /* Büyük meyvelere artan bonus, küçüklere kayan ceza */
+    const bonus   = i * lv * 0.5;
+    const penalty = Math.max(0, (max - i - 2)) * lv * 0.25;
+    const w = Math.max(0.5, (baseW[i] || 1) + bonus - penalty);
+    weights.push(w);
+  }
+
+  const total = weights.reduce((a,b)=>a+b, 0);
+  let r = Math.random() * total;
+  for(let i = 0; i < weights.length; i++){
+    r -= weights[i];
+    if(r <= 0) return i;
+  }
+  return max;
+}
+
+function updNxt(){
+  document.getElementById('nxt').textContent=FR[S.nxtType][0];
+}
+function updProg(){
+  document.getElementById('prog-f').style.width='0%';
+  document.getElementById('prog-txt').textContent='🍉 Karpuz yap → Level geç!';
+}
+
+function tick(){
+  if(S.dead)return;
+  S.timeElapsed++;
+  document.getElementById('h-tm').textContent=S.timeElapsed;
+  const mult=Math.max(0.1,100/(100+S.timeElapsed));
+  document.getElementById('h-mult').textContent='×'+mult.toFixed(2);
+  /* Çarpan rengini ayarla */
+  const el=document.getElementById('h-mult');
+  el.style.color=mult>0.75?'#44ff88':mult>0.4?'#f5a623':'#ff4466';
+}
+
+/* ══════════════════════════════════════════
+   INPUT
+══════════════════════════════════════════ */
+function clampX(cx){
+  const r=CV.getBoundingClientRect();
+  const pad=FR[S.curType][1]+3;
+  return Math.max(S.cfg.wL+pad,Math.min(S.cfg.wR-pad,cx-r.left));
+}
+CV.addEventListener('mousemove',e=>{if(!S.dead)S.dropX=clampX(e.clientX);});
+CV.addEventListener('click',    e=>{if(!S.dead&&!S.dropping)drop(clampX(e.clientX));});
+CV.addEventListener('touchstart',e=>{
+  e.preventDefault();
+  if(!S.dead){S.dropX=clampX(e.touches[0].clientX);drop(S.dropX);}
+},{passive:false});
+CV.addEventListener('touchmove',e=>{
+  e.preventDefault();
+  if(!S.dead)S.dropX=clampX(e.touches[0].clientX);
+},{passive:false});
+
+function drop(x){
+  if(S.dropping||S.dead)return;
+  S.dropping=true;
+  S.autoT=1.5; /* reset auto-drop timer */
+  const f=new Fruit(x,S.cfg.dangerY-FR[S.curType][1]-4,S.curType);
+  f.vy=180;
+  S.fruits.push(f);
+  snd(S.curType,false);
+  setTimeout(()=>{
+    if(S.dead)return;
+    S.dropping=false;
+    S.curType=S.nxtType;S.nxtType=rndDrop();updNxt();
+  },320);
+}
+
+/* ══════════════════════════════════════════
+   PHYSICS
+══════════════════════════════════════════ */
+function physics(dt){
+  const c=S.cfg;
+
+  /* Auto-drop countdown */
+  if(!S.dropping){
+    S.autoT-=dt;
+    const pct=Math.max(0,S.autoT/1.5)*100;
+    document.getElementById('adf').style.width=pct+'%';
+    if(S.autoT<=0){ drop(S.dropX); S.autoT=1.5; }
+  }else{
+    document.getElementById('adf').style.width='100%';
+  }
+
+  for(const f of S.fruits){
+    if(f.merged)continue;
+    f.vy+=c.gravity*dt;f.y+=f.vy*dt;f.age+=dt;
+    /* Zigzag: sinüs tabanlı yatay hareket */
+    if(f.age<2.2){
+      f.vx=Math.sin(f.age*f.zzFreq)*f.zzAmp;
+    }else{
+      f.vx*=0.92; /* yerleşince sönümle */
+    }
+    f.x+=f.vx*dt;
+    if(f.y+f.r>c.floor){f.y=c.floor-f.r;f.vy=-Math.abs(f.vy)*.33;f.vx*=.78;if(Math.abs(f.vy)<28)f.vy=0;}
+    if(f.x-f.r<c.wL){f.x=c.wL+f.r;f.vx=Math.abs(f.vx)*.36;}
+    if(f.x+f.r>c.wR){f.x=c.wR-f.r;f.vx=-Math.abs(f.vx)*.36;}
+  }
+
+  /* Freeze aktifse birleşim fizik durdur */
+  if(PU.freezeActive){ PU.update(dt); COMBO.update(dt); updateSparks(dt); return; }
+  PU.update(dt); COMBO.update(dt); updateSparks(dt);
+  const live=S.fruits.filter(f=>!f.merged);
+  outer:for(let i=0;i<live.length;i++){
+    for(let j=i+1;j<live.length;j++){
+      const a=live[i],b=live[j];
+      const dx=b.x-a.x,dy=b.y-a.y,d=Math.sqrt(dx*dx+dy*dy),md=a.r+b.r;
+      if(d>=md||d===0)continue;
+      if(a.t===b.t&&a.t<FR.length-1&&a.age>.11&&b.age>.11){
+        a.merged=b.merged=true;
+        const nf=new Fruit((a.x+b.x)/2,(a.y+b.y)/2,a.t+1);
+        nf.vx=(a.vx+b.vx)*.2;nf.vy=(a.vy+b.vy)*.2-100;nf.age=0;
+        S.fruits.push(nf);
+        /* Ters orantılı puan × power-up × combo */
+        const timeMult=Math.max(0.1,100/(100+S.timeElapsed));
+        const basePts=Math.round(FR[a.t+1][2]*timeMult);
+        const comboMult=COMBO.hit(nf.x,nf.y,basePts*PU.multiplier());
+        const pts=Math.round(basePts*PU.multiplier()*comboMult);
+        S.lvSc+=pts;S.totSc+=pts;
+        /* Sparkle */
+        addSparks(nf.x,nf.y,FR[a.t+1][5]);
+        /* Vibrasyon */
+        if(navigator.vibrate)navigator.vibrate(15);
+        /* Görev ilerlemesi */
+        missionProgress('m_merges',1);
+        missionProgress('m_score',pts);
+        snd(a.t+1,true);
+        document.getElementById('h-sc').textContent=S.lvSc.toLocaleString();
+        document.getElementById('h-tot').textContent=S.totSc.toLocaleString();
+        /* 🍉 Karpuz! — animasyon başlatılacak */
+        if(a.t+1===FR.length-1){
+          clearInterval(S.timerId);
+          S.dropping=true;
+          S.winPending=true;
+          S.winFruit=nf;
+          missionProgress('m_watermelons',1);
+          break outer; /* döngüden çık ama physics'i bitir */
+        }
+        continue outer;
+      }
+      const nx=dx/d,ny=dy/d,ov=(md-d)*.5;
+      a.x-=nx*ov*.5;a.y-=ny*ov*.5;b.x+=nx*ov*.5;b.y+=ny*ov*.5;
+      const rv=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;
+      if(rv<0){const im=rv*.42;a.vx+=im*nx;a.vy+=im*ny;b.vx-=im*nx;b.vy-=im*ny;}
+    }
+  }
+  S.fruits=S.fruits.filter(f=>!f.merged); /* her zaman temizle */
+
+  /* Danger check — kazanırken veya animasyon sırasında atla */
+  if(!S.winPending){
+    let danger=false;
+    for(const f of S.fruits){if(!f.merged&&f.y-f.r<S.cfg.dangerY&&f.age>1.3){danger=true;break;}}
+    if(danger){S.dangerT+=dt;if(S.dangerT>1.8)killGame('🚨 Alan taştı!');}
+    else S.dangerT=Math.max(0,S.dangerT-dt*2.5);
+  }
+}
+
+/* ══════════════════════════════════════════
+   RENDER  — meyveler belirgin daire + emoji
+══════════════════════════════════════════ */
+function drawFruit(x,y,type,alpha){
+  const f=FR[type];
+  const r=f[1];
+  ctx.save();
+  ctx.globalAlpha=alpha??1;
+
+  /* Hafif renkli hale — daire değil, blur ile */
+  ctx.shadowColor=f[5];
+  ctx.shadowBlur=r*0.9;
+  ctx.shadowOffsetX=0;
+  ctx.shadowOffsetY=0;
+
+  /* Büyük, canlı emoji */
+  ctx.font=`${r*2.3}px serif`;
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
+  ctx.fillText(f[0],x,y);
+
+  /* İkinci geçiş — shadow sıfırla, emoji net çiz */
+  ctx.shadowColor='transparent';
+  ctx.shadowBlur=0;
+  ctx.fillText(f[0],x,y);
+
+  ctx.restore();
+}
+
+function render(){
+  const c=S.cfg;
+  const W=c.cw,H=c.ch;
+
+  /* ── 🌲 Orman Arka Planı ── */
+  drawForest(W, H);
+
+  /* Sparkle partiküller */
+  drawSparks();
+  if(S.dangerT>.5){
+    ctx.fillStyle=`rgba(255,0,0,${Math.min(S.dangerT*.09,.2)})`;
+    ctx.fillRect(0,0,W,H);
+  }
+
+  /* ── Tehlike çizgisi — kırmızı kesik çizgi ── */
+  const dy=c.dangerY;
+  ctx.strokeStyle='rgba(255,80,100,.7)';
+  ctx.lineWidth=2;
+  ctx.setLineDash([8,6]);
+  ctx.beginPath();ctx.moveTo(0,dy);ctx.lineTo(W,dy);ctx.stroke();
+  ctx.setLineDash([]);
+
+  /* Duvarlar */
+  ctx.fillStyle='rgba(0,0,0,.5)';
+  ctx.fillRect(0,0,c.wL,H);
+  ctx.fillRect(c.wR,0,W-c.wR,H);
+  ctx.fillRect(0,c.floor,W,H-c.floor);
+
+  /* Kılavuz çizgi + önizleme */
+  if(!S.dropping&&!S.dead){
+    ctx.strokeStyle='rgba(255,255,255,.15)';ctx.lineWidth=1.5;ctx.setLineDash([5,5]);
+    ctx.beginPath();ctx.moveTo(S.dropX,dy);ctx.lineTo(S.dropX,H);ctx.stroke();
+    ctx.setLineDash([]);
+    drawFruit(S.dropX,dy-FR[S.curType][1]-5,S.curType,.5);
+  }
+
+  /* Meyveler */
+  for(const f of S.fruits){
+    if(!f.merged)drawFruit(f.x,f.y,f.t,1);
+  }
+}
+
+/* ══════════════════════════════════════════
+   LOOP
+══════════════════════════════════════════ */
+function loop(ts){
+  if(S.dead)return;
+  if(!S.lastTs)S.lastTs=ts;
+  const dt=Math.min((ts-S.lastTs)/1000,.042);
+  S.lastTs=ts;
+
+  /* ── 1. WA animasyonu aktifse sadece onu çalıştır ── */
+  if(WA.active){
+    render();
+    WA.update(dt);
+    WA.draw(S.cfg.cw, S.cfg.ch);
+    if(!WA.active){ winLevel(); return; }
+    S.rafId=requestAnimationFrame(loop);
+    return;
+  }
+
+  /* ── 2. Karpuz oluştu, animasyonu başlat ── */
+  if(S.winPending && S.winFruit){
+    physics(dt); /* bir kare daha yerleştir */
+    render();
+    const rank=submitLB(S.user,S.totSc,S.lv);
+    S._winRank=rank; S._winScore=S.totSc;
+    WA.start(S.winFruit.x, S.winFruit.y,
+      {rank, score:S.totSc, lv:S.lv, elapsed:S.timeElapsed});
+    S.winPending=false;
+    S.rafId=requestAnimationFrame(loop);
+    return;
+  }
+
+  /* ── 3. Normal oyun ── */
+  physics(dt);
+  render();
+  S.rafId=requestAnimationFrame(loop);
+}
+
+/* ══════════════════════════════════════════
+   COMBO SİSTEMİ
+══════════════════════════════════════════ */
+const COMBO = {
+  count:0, timer:0, maxTimer:2.2,
+  reset(){ this.count=0; this.timer=0; },
+  hit(x,y,pts){
+    this.count++;
+    this.timer=this.maxTimer;
+    if(this.count>=3) showComboPop(x,y,this.count,pts);
+    return this.count>=3 ? Math.min(this.count,8) : 1; /* çarpan, max 8× */
+  },
+  update(dt){ if(this.timer>0){this.timer-=dt;if(this.timer<=0)this.reset();} }
+};
+
+function showComboPop(x,y,cnt,pts){
+  const layer=document.getElementById('combo-layer');
+  if(!layer)return;
+  const el=document.createElement('div');
+  el.className='combo-pop';
+  const colors=['#ffff44','#ff8844','#ff4488','#44ffaa','#44aaff','#ff44ff'];
+  el.style.color=colors[Math.min(cnt-3,5)];
+  el.style.left=(x/S.cfg.cw*100)+'%';
+  el.style.top =(y/S.cfg.ch*100)+'%';
+  el.textContent=cnt+'× COMBO! +'+pts;
+  layer.appendChild(el);
+  setTimeout(()=>el.remove(),800);
+  if(navigator.vibrate) navigator.vibrate([30,10,30]);
+}
+
+/* ══════════════════════════════════════════
+   SPARKLE / PARTİKÜL (düşme efekti)
+══════════════════════════════════════════ */
+const SPARKS=[];
+function addSparks(x,y,col){
+  for(let i=0;i<8;i++){
+    const a=Math.random()*Math.PI*2;
+    const s=60+Math.random()*80;
+    SPARKS.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-60,life:0.55,col:col||'#ffffff'});
+  }
+}
+function updateSparks(dt){
+  for(let i=SPARKS.length-1;i>=0;i--){
+    const p=SPARKS[i];
+    p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=200*dt; p.life-=dt*2;
+    if(p.life<=0)SPARKS.splice(i,1);
+  }
+}
+function drawSparks(){
+  for(const p of SPARKS){
+    ctx.save();
+    ctx.globalAlpha=Math.max(0,p.life);
+    ctx.fillStyle=p.col;
+    ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fill();
+    ctx.restore();
+  }
+}
+
+/* ══════════════════════════════════════════
+   ROZET (BADGE) SİSTEMİ
+══════════════════════════════════════════ */
+const BADGES=[
+  {lv:5,  icon:'🌱', title:'Acemi',      color:'#44cc66'},
+  {lv:10, icon:'⭐', title:'Çaylak',     color:'#f5a623'},
+  {lv:20, icon:'🌟', title:'Usta',       color:'#f5a623'},
+  {lv:30, icon:'💫', title:'Uzman',      color:'#44aaff'},
+  {lv:50, icon:'🏅', title:'Şampiyon',   color:'#e94560'},
+  {lv:75, icon:'🥇', title:'Efsane',     color:'#ff4400'},
+  {lv:99, icon:'👑', title:'KARPUZ REİS',color:'#ff0000'},
+];
+function getBadge(lv){
+  let b=null;
+  for(const bd of BADGES){ if(lv>=bd.lv)b=bd; }
+  return b;
+}
+function checkBadgeUnlock(prevLv,newLv){
+  for(const bd of BADGES){
+    if(prevLv<bd.lv && newLv>=bd.lv){
+      showBadgeToast(bd);
+      if(navigator.vibrate)navigator.vibrate([50,30,50,30,100]);
+    }
+  }
+}
+function showBadgeToast(bd){
+  const el=document.createElement('div');
+  el.className='badge-toast';
+  el.innerHTML=`${bd.icon} Yeni Unvan: <b>${bd.title}</b>`;
+  el.style.background=`linear-gradient(90deg,${bd.color},#1a1a2e)`;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),3200);
+}
+
+/* ══════════════════════════════════════════
+   POWER-UP SİSTEMİ
+══════════════════════════════════════════ */
+const PU={
+  stock:{bomb:0,freeze:0,x2:0},
+  x2Active:false, x2Timer:0, freezeActive:false, freezeTimer:0,
+  activePower:null,
+
+  add(type,n=1){
+    this.stock[type]=(this.stock[type]||0)+n;
+    this.save(); this.render();
+  },
+  save(){try{localStorage.setItem('suika_pu',JSON.stringify(this.stock));}catch{}},
+  load(){try{const d=JSON.parse(localStorage.getItem('suika_pu')||'{}');this.stock={bomb:d.bomb||0,freeze:d.freeze||0,x2:d.x2||0};}catch{}},
+  render(){
+    ['bomb','freeze','x2'].forEach(t=>{
+      const cnt=this.stock[t]||0;
+      const el=document.getElementById('pu-'+t);
+      const cel=document.getElementById('pu-'+t+'-cnt');
+      if(el)el.disabled=cnt<=0&&!this.x2Active;
+      if(cel){cel.textContent=cnt;cel.style.background=cnt>0?'#e94560':'#555';}
+    });
+    /* x2 zamanlayıcı */
+    const x2el=document.getElementById('pu-x2');
+    if(x2el){
+      x2el.classList.toggle('active',this.x2Active);
+      if(this.x2Active) document.getElementById('pu-x2-cnt').textContent=Math.ceil(this.x2Timer)+'s';
+    }
+  },
+  update(dt){
+    if(this.x2Active){ this.x2Timer-=dt; if(this.x2Timer<=0){this.x2Active=false; this.x2Timer=0;} }
+    if(this.freezeActive){ this.freezeTimer-=dt; if(this.freezeTimer<=0){this.freezeActive=false; this.freezeTimer=0;} }
+    this.render();
+  },
+  multiplier(){ return this.x2Active?2:1; }
+};
+
+function usePower(type){
+  if(S.dead||!S.cfg)return;
+  if(type==='bomb'){
+    if(PU.stock.bomb<=0){showToast('💣 Bomban yok! Mağazadan al.');return;}
+    /* En üstteki 3 meyveyi patlat */
+    const sorted=[...S.fruits].sort((a,b)=>a.y-b.y).slice(0,3);
+    sorted.forEach(f=>{ f.merged=true; addSparks(f.x,f.y,'#ff4400'); });
+    S.fruits=S.fruits.filter(f=>!f.merged);
+    PU.stock.bomb--; PU.save(); PU.render();
+    if(navigator.vibrate)navigator.vibrate([80,20,80]);
+    showToast('💣 BOMBA!');
+  } else if(type==='freeze'){
+    if(PU.stock.freeze<=0){showToast('❄️ Dondurucu yok! Mağazadan al.');return;}
+    PU.freezeActive=true; PU.freezeTimer=5;
+    PU.stock.freeze--; PU.save(); PU.render();
+    showToast('❄️ Meyveler 5sn donduruldu!');
+  } else if(type==='x2'){
+    if(PU.stock.x2<=0){showToast('⚡ 2× Puan yok! Mağazadan al.');return;}
+    PU.x2Active=true; PU.x2Timer=10;
+    PU.stock.x2--; PU.save(); PU.render();
+    showToast('⚡ 2× PUAN 10sn aktif!');
+    if(navigator.vibrate)navigator.vibrate(50);
+  }
+}
+
+function showToast(msg){
+  const el=document.createElement('div');
+  el.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);color:#fff;padding:8px 18px;border-radius:20px;font-size:13px;font-weight:700;z-index:600;pointer-events:none;white-space:nowrap;';
+  el.textContent=msg;
+  document.body.appendChild(el);
+  setTimeout(()=>el.style.opacity='0',1500);
+  setTimeout(()=>el.remove(),2000);
+}
+
+/* ══════════════════════════════════════════
+   GÜNLÜK GÖREVLER
+══════════════════════════════════════════ */
+const MISSION_DEFS=[
+  {id:'m_watermelons', icon:'🍉', name:'3 Karpuz Yap',       target:3,  reward:{type:'bomb',n:1},   rewardTxt:'+1 💣'},
+  {id:'m_merges',      icon:'🔀', name:'50 Birleşim Yap',    target:50, reward:{type:'x2',n:1},     rewardTxt:'+1 ⚡'},
+  {id:'m_score',       icon:'🏆', name:'500 Puan Kazan',     target:500,reward:{type:'freeze',n:1}, rewardTxt:'+1 ❄️'},
+  {id:'m_levels',      icon:'⬆️', name:'3 Level Geç',        target:3,  reward:{type:'bomb',n:2},   rewardTxt:'+2 💣'},
+];
+
+function getMissionState(){
+  const today=new Date().toDateString();
+  try{
+    const d=JSON.parse(localStorage.getItem('suika_missions')||'{}');
+    if(d.day!==today) return {day:today, progress:{}, claimed:{}};
+    return d;
+  }catch{return {day:today,progress:{},claimed:{}};}
+}
+function saveMissions(ms){try{localStorage.setItem('suika_missions',JSON.stringify(ms));}catch{}}
+
+function missionProgress(id,val){
+  const ms=getMissionState();
+  if(!ms.progress[id]) ms.progress[id]=0;
+  ms.progress[id]+=val;
+  saveMissions(ms);
+  /* Tamamlandıysa bildirim göster */
+  const def=MISSION_DEFS.find(m=>m.id===id);
+  if(def && ms.progress[id]>=def.target && !ms.claimed[id]){
+    document.getElementById('mis-badge').style.display='inline';
+    showToast('📋 Görev tamamlandı: '+def.name+' → '+def.rewardTxt);
+  }
+}
+
+function claimMission(id){
+  const ms=getMissionState();
+  const def=MISSION_DEFS.find(m=>m.id===id);
+  if(!def||ms.claimed[id]||(ms.progress[id]||0)<def.target)return;
+  ms.claimed[id]=true;
+  saveMissions(ms);
+  PU.add(def.reward.type,def.reward.n);
+  showToast('🎉 Ödül alındı: '+def.rewardTxt);
+  renderMissions();
+}
+
+function renderMissions(){
+  const ms=getMissionState();
+  const list=document.getElementById('mis-list');
+  if(!list)return;
+  list.innerHTML='';
+  let allDone=true;
+  MISSION_DEFS.forEach(def=>{
+    const prog=Math.min(ms.progress[def.id]||0,def.target);
+    const done=prog>=def.target;
+    const claimed=ms.claimed[def.id];
+    if(!done)allDone=false;
+    const div=document.createElement('div');
+    div.className='mission-item';
+    div.innerHTML=`
+      <span class="mission-icon">${def.icon}</span>
+      <div class="mission-info">
+        <div class="mission-name">${def.name}</div>
+        <div class="mission-prog"><div class="mission-fill" style="width:${(prog/def.target)*100}%"></div></div>
+        <div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:2px">${prog}/${def.target}</div>
+      </div>
+      ${claimed?'<span class="mission-done">✅</span>':
+        done?`<button onclick="claimMission('${def.id}')" style="padding:5px 10px;border-radius:10px;border:none;background:#44cc66;color:#fff;font-size:11px;font-weight:800;cursor:pointer">${def.rewardTxt}</button>`:
+        `<span class="mission-reward">${def.rewardTxt}</span>`}
+    `;
+    list.appendChild(div);
+  });
+  if(allDone) document.getElementById('mis-badge').style.display='none';
+}
+
+function openMissions(){ renderMissions(); document.getElementById('mis-overlay').style.display='flex'; }
+function closeMissions(){ document.getElementById('mis-overlay').style.display='none'; }
+
+/* ══════════════════════════════════════════
+   EXTRA LIFE
+══════════════════════════════════════════ */
+let elCallback=null;
+function offerExtraLife(rsn,cb){
+  document.getElementById('el-rsn').textContent=rsn;
+  document.getElementById('el-overlay').style.display='flex';
+  elCallback=cb;
+}
+function useExtraLife(){
+  document.getElementById('el-overlay').style.display='none';
+  /* Sahte reklam göster, sonra hayatı ver */
+  showAd(()=>{
+    if(elCallback){elCallback();elCallback=null;}
+    showToast('❤️ Extra can kullanıldı!');
+  });
+}
+function elSkip(){
+  document.getElementById('el-overlay').style.display='none';
+  elCallback=null;
+  stop();
+  initUserScreen();
+  show('s-user');
+}
+
+/* ══════════════════════════════════════════
+   MAĞAZA
+══════════════════════════════════════════ */
+function openStore(){ document.getElementById('store-overlay').style.display='flex'; }
+function closeStore(){ document.getElementById('store-overlay').style.display='none'; }
+
+function buyAdFree(){
+  const btn=document.getElementById('adfree-btn');
+  /* Gerçek IAP entegrasyonunda Google Play Billing API çağrılır */
+  btn.textContent='✅ Satın Alındı! (Demo)';
+  btn.style.background='#44cc66';
+  btn.disabled=true;
+  try{localStorage.setItem('suika_adfree','1');}catch{}
+  showToast('🎉 Reklamsız mod aktif!');
+}
+
+function buyPower(type,n){
+  /* Gerçek IAP'ta ödeme akışı başlar */
+  if(type==='all'){
+    PU.add('bomb',n);PU.add('freeze',n);PU.add('x2',n);
+    showToast(`🎁 Mega Paket! +${n} her güçlendirme`);
+  } else {
+    PU.add(type,n);
+    const icons={bomb:'💣',freeze:'❄️',x2:'⚡'};
+    showToast(`${icons[type]} ×${n} eklendi! (Demo)`);
+  }
+  closeStore();
+}
+
+function isAdFree(){ try{return localStorage.getItem('suika_adfree')==='1';}catch{return false;} }
+/* ══════════════════════════════════════════
+   REKLAM SİSTEMİ (AdMob Placeholder)
+   Gercek entegrasyonda bu fonksiyonlar
+   AdMob SDK ile degistirilecek
+══════════════════════════════════════════ */
+const ADS = [
+  { icon:'🎯', title:'Stack & Conquer', cat:'Strateji · Ücretsiz', stars:'★★★★★', rating:'4.8 · 5M+', pkg:'com.stack.conquer' },
+  { icon:'🚗', title:'Road Rush 3D',    cat:'Yarış · Ücretsiz',    stars:'★★★★☆', rating:'4.3 · 3M+', pkg:'com.roadrush.game' },
+  { icon:'🧠', title:'Brain Boost',     cat:'Zeka · Ücretsiz',     stars:'★★★★★', rating:'4.9 · 8M+', pkg:'com.brainboost.io' },
+  { icon:'⚔️', title:'Castle Wars',    cat:'Aksiyon · Ücretsiz',  stars:'★★★★☆', rating:'4.1 · 1M+', pkg:'com.castlewars.td' },
+  { icon:'🍕', title:'Food Empire',     cat:'Simülasyon · Ücretsiz',stars:'★★★★☆','rating':'4.5 · 4M+',pkg:'com.foodempire.sim'},
+];
+let adTimer=null;
+
+function showAd(onDone){
+  const ov = document.getElementById('ad-overlay');
+  const ad = ADS[Math.floor(Math.random()*ADS.length)];
+
+  document.getElementById('ad-icon').textContent  = ad.icon;
+  document.getElementById('ad-title').textContent = ad.title;
+  document.getElementById('ad-cat').textContent   = ad.cat;
+  document.getElementById('ad-stars').textContent = ad.stars + '  ' + ad.rating;
+  document.getElementById('ad-pkg').textContent   = 'Google Play · ' + ad.pkg;
+
+  document.getElementById('ad-skip-btn').style.display='none';
+  document.getElementById('ad-countdown').textContent='5';
+  ov.style.display='flex';
+  ov._onDone=onDone;
+
+  let sec=5;
+  adTimer=setInterval(()=>{
+    sec--;
+    document.getElementById('ad-countdown').textContent=sec>0?sec:'';
+    if(sec<=0){
+      clearInterval(adTimer);
+      document.getElementById('ad-skip-btn').style.display='block';
+    }
+  },1000);
+}
+
+function closeAd(){
+  clearInterval(adTimer);
+  document.getElementById('ad-overlay').style.display='none';
+  const cb=document.getElementById('ad-overlay')._onDone;
+  if(cb)cb();
+}
+
+function adClick(){
+  /* Gerçek reklamda: izleme URL'i + Google Play yönlendirmesi */
+  alert('🎮 Uygulama mağazasına yönlendiriliyor...\n(Gerçek reklamda Google Play açılacak)');
+}
+function stop(){S.dead=true;cancelAnimationFrame(S.rafId);clearInterval(S.timerId);MUS.stop();}
+
+function winLevel(){
+  if(S.dead)return; stop();
+  S.totSc = S._winScore ?? S.totSc;
+  const rank = S._winRank || submitLB(S.user,S.totSc,S.lv);
+  const nextLvNum = S.lv + 1;
+
+  /* ── Level geçiş overlay'ini göster ── */
+  const ov = document.getElementById('lv-overlay');
+  document.getElementById('lv-done').textContent  = `LEVEL ${S.lv}`;
+  document.getElementById('lv-score').textContent = S.totSc.toLocaleString() + ' puan';
+  document.getElementById('lv-rank').textContent  = `🏆 #${rank}. Sıradasın`;
+  document.getElementById('lv-next').textContent  = `LEVEL ${nextLvNum} BAŞLIYOR…`;
+  document.getElementById('lv-bar').style.width   = '0%';
+  ov.style.display = 'flex';
+  requestAnimationFrame(()=>{ document.getElementById('lv-bar').style.width='100%'; });
+
+  const prevLv=S.lv;
+  S.lv = nextLvNum;
+  checkBadgeUnlock(prevLv, S.lv);
+  missionProgress('m_levels',1);
+
+  setTimeout(()=>{
+    ov.style.display='none';
+    /* Reklamsız satın alınmışsa reklam gösterme */
+    if(S.lv % 2 === 0 && !isAdFree()){
+      showAd(()=>beginLevel());
+    } else {
+      beginLevel();
+    }
+  }, 2600);
+}
+
+function killGame(rsn){
+  if(S.dead)return; stop();
+  const rank=submitLB(S.user,S.totSc,S.lv);
+  /* Extra life teklif et */
+  if(!S._extraUsed){
+    S._extraUsed=true;
+    offerExtraLife(rsn,()=>{
+      /* Hayatı kullan: oyunu kaldığı yerden devam ettir */
+      S.dead=false;
+      S.dangerT=0;
+      /* Üstteki 2 meyveyi kaldır */
+      S.fruits.sort((a,b)=>a.y-b.y).slice(0,2).forEach(f=>f.merged=true);
+      S.fruits=S.fruits.filter(f=>!f.merged);
+      S.lastTs=null;
+      S.rafId=requestAnimationFrame(loop);
+    });
+    return;
+  }
+  S._extraUsed=false;
+  document.getElementById('ov-rsn').textContent=rsn;
+  document.getElementById('ov-lv').textContent=S.lv;
+  document.getElementById('ov-sc').textContent=S.totSc.toLocaleString();
+  document.getElementById('ov-rank').textContent=`🎖 Şampiyona tablosunda #${rank}. sıradasın!`;
+  show('s-over');
+}
+
+/* ══════════════════════════════════════════
+   NAVİGASYON
+══════════════════════════════════════════ */
+function nextLv(){if(S.lv>=99){S.lv=1;S.totSc=0;}else S.lv++;beginLevel();}
+function retry(){beginLevel();}
+function home(){stop();initUserScreen();show('s-user');}
+function backGame(){if(S.cfg)show('s-game');else show('s-user');}
+function openLB(){renderLB(S.user);show('s-lb');}
+
+/* ══════════════════════════════════════════
+   INIT
+══════════════════════════════════════════ */
+document.getElementById('uname').addEventListener('keydown',e=>{if(e.key==='Enter')registerUser();});
+initUserScreen();
+document.body.style.background='linear-gradient(135deg,#0a0e1a,#1a2a1a)';
+</script>
+</body>
+</html>
