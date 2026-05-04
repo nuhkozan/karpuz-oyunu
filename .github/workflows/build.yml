@@ -22,15 +22,19 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.0'
+          flutter-version: '3.24.0'
           channel: 'stable'
+
+      - name: Write local.properties
+        run: |
+          echo "flutter.sdk=$(flutter --version --machine | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('flutterRoot',''))")" > android/local.properties
+          echo "sdk.dir=$ANDROID_SDK_ROOT" >> android/local.properties
 
       - name: Flutter pub get
         run: flutter pub get
 
       - name: Decode Keystore
-        run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/keystore.jks
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/keystore.jks
 
       - name: Create key.properties
         run: |
