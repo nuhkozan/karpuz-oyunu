@@ -8,55 +8,49 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.24.0'
           channel: 'stable'
 
-      - name: Create Flutter project
+      - name: Setup project
         run: |
           flutter create --org com.nuhkozan --project-name karpuz tmp_project
           rm -rf android
           cp -r tmp_project/android .
           rm -rf tmp_project
-
-      - name: Update Kotlin and SDK versions
-        run: |
-          sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.9.22'/" android/build.gradle || true
           sed -i 's/targetSdk = flutter.targetSdkVersion/targetSdk = 34/' android/app/build.gradle
-          sed -i "s/org.jetbrains.kotlin.android\" version \"[^\"]*\"/org.jetbrains.kotlin.android\" version \"1.9.22\"/" android/settings.gradle
           sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 34/' android/app/build.gradle
-          sed -i 's/versionCode flutter.versionCode/versionCode 5/' android/app/build.gradle
+          sed -i 's/versionCode flutter.versionCode/versionCode 6/' android/app/build.gradle
+          sed -i 's/versionName flutter.versionName/versionName "1.0.6"/' android/app/build.gradle
 
       - name: Flutter pub get
         run: flutter pub get
 
-      - name: Decode Keystore
-        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/keystore.jks
-
-      - name: Build AAB with signing
+      - name: Setup keystore
         run: |
-          flutter build appbundle --release \
-            --dart-define=KEYSTORE_PATH=android/app/keystore.jks
-        env:
-          KEY_STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          KEY_STORE_FILE: android/app/keystore.jks
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/keystore.jks
+          cat > android/key.properties << EOF2
+          storePassword=${{ secrets.STORE_PASSWORD }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          storeFile=keystore.jks
+          EOF2
+          sed -i '/buildTypes {/i\    signingConfigs { release { keyAlias "${{ secrets.KEY_ALIAS }}"; keyPassword "${{ secrets.KEY_PASSWORD }}"; storeFile file("keystore.jks"); storePassword "${{ secrets.STORE_PASSWORD }}" } }' android/app/build.gradle
+          sed -i 's/signingConfig signingConfigs.debug/signingConfig signingConfigs.release/' android/app/build.gradle
 
-        uses: actions/upload-artifact@v4
+      - name: Build AAB
+        run: flutter build appbundle --release
+
+      - uses: actions/upload-artifact@v4
         with:
           name: karpuz-release.aab
           path: build/app/outputs/bundle/release/app-release.aab
