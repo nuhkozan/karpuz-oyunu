@@ -32,6 +32,16 @@ jobs:
           cp -r tmp_project/android .
           rm -rf tmp_project
 
+      - name: Update Kotlin version
+        run: |
+          sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.9.22'/" android/build.gradle || true
+          sed -i "s/id \"org.jetbrains.kotlin.android\" version .*/id \"org.jetbrains.kotlin.android\" version \"1.9.22\" apply false/" android/settings.gradle || true
+
+      - name: Set targetSdk 35
+        run: |
+          sed -i 's/targetSdk = flutter.targetSdkVersion/targetSdk = 35/' android/app/build.gradle
+          sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 35/' android/app/build.gradle
+
       - name: Flutter pub get
         run: flutter pub get
 
@@ -47,19 +57,18 @@ jobs:
           storeFile=keystore.jks
           EOF2
 
-      - name: Configure signing
+      - name: Configure signing in build.gradle
         run: |
-          sed -i 's/applicationId "com.nuhkozan.karpuz"/applicationId "com.nuhkozan.karpuz"/' android/app/build.gradle
-          cat >> android/app/build.gradle << EOF2
-          android.buildTypes.release.signingConfig = android.signingConfigs.create("release")
-          android.signingConfigs.release.keyAlias = "karpuz"
-          android.signingConfigs.release.keyPassword = "${{ secrets.KEY_PASSWORD }}"
-          android.signingConfigs.release.storeFile = file("keystore.jks")
-          android.signingConfigs.release.storePassword = "${{ secrets.STORE_PASSWORD }}"
-          EOF2
-
-      - name: Set targetSdk
-        run: sed -i 's/targetSdk = flutter.targetSdkVersion/targetSdk = 35/' android/app/build.gradle
+          sed -i '/buildTypes {/i\
+              signingConfigs {\
+                  release {\
+                      keyAlias "${{ secrets.KEY_ALIAS }}"\
+                      keyPassword "${{ secrets.KEY_PASSWORD }}"\
+                      storeFile file("keystore.jks")\
+                      storePassword "${{ secrets.STORE_PASSWORD }}"\
+                  }\
+              }' android/app/build.gradle
+          sed -i 's/signingConfig signingConfigs.debug/signingConfig signingConfigs.release/' android/app/build.gradle
 
       - name: Build AAB
         run: flutter build appbundle --release
