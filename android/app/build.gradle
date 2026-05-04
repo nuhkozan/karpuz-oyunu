@@ -57,3 +57,9 @@ android {
 flutter {
     source "../.."
 }
+// Flutter embedding
+configurations.all {
+    resolutionStrategy {
+        force "io.flutter:flutter_embedding_release:1.0.0-3316dd8728419ad3534e3f6112aa6291f587078a"
+    }
+}
