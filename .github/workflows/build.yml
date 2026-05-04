@@ -32,16 +32,12 @@ jobs:
           cp -r tmp_project/android .
           rm -rf tmp_project
 
-      - name: Update Kotlin version
+      - name: Update Kotlin and SDK versions
         run: |
           sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.9.22'/" android/build.gradle || true
-          sed -i "s/id \"org.jetbrains.kotlin.android\" version .*/id \"org.jetbrains.kotlin.android\" version \"1.9.22\" apply false/" android/settings.gradle || true
-
-      - name: Set targetSdk 35
-        run: |
           sed -i 's/targetSdk = flutter.targetSdkVersion/targetSdk = 34/' android/app/build.gradle
-          sed -i "s/versionCode flutter.versionCode/versionCode 4/" android/app/build.gradle
           sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 34/' android/app/build.gradle
+          sed -i 's/versionCode flutter.versionCode/versionCode 5/' android/app/build.gradle
 
       - name: Flutter pub get
         run: flutter pub get
@@ -49,30 +45,24 @@ jobs:
       - name: Decode Keystore
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/keystore.jks
 
-      - name: Create key.properties
+      - name: Build AAB with signing
         run: |
-          cat > android/key.properties << EOF2
-          storePassword=${{ secrets.STORE_PASSWORD }}
-          keyPassword=${{ secrets.KEY_PASSWORD }}
-          keyAlias=${{ secrets.KEY_ALIAS }}
-          storeFile=keystore.jks
-          EOF2
+          flutter build appbundle --release \
+            --dart-define=KEYSTORE_PATH=android/app/keystore.jks
+        env:
+          KEY_STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_STORE_FILE: android/app/keystore.jks
 
-      - name: Configure signing in build.gradle
+      - name: Sign AAB manually
         run: |
-          sed -i '/buildTypes {/i\
-              signingConfigs {\
-                  release {\
-                      keyAlias "${{ secrets.KEY_ALIAS }}"\
-                      keyPassword "${{ secrets.KEY_PASSWORD }}"\
-                      storeFile file("keystore.jks")\
-                      storePassword "${{ secrets.STORE_PASSWORD }}"\
-                  }\
-              }' android/app/build.gradle
-          sed -i 's/signingConfig signingConfigs.debug/signingConfig signingConfigs.release/' android/app/build.gradle
-
-      - name: Build AAB
-        run: flutter build appbundle --release
+          jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
+            -keystore android/app/keystore.jks \
+            -storepass "${{ secrets.STORE_PASSWORD }}" \
+            -keypass "${{ secrets.KEY_PASSWORD }}" \
+            build/app/outputs/bundle/release/app-release.aab \
+            "${{ secrets.KEY_ALIAS }}"
 
       - name: Upload AAB
         uses: actions/upload-artifact@v4
