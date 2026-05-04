@@ -27,7 +27,7 @@ jobs:
 
       - name: Write local.properties
         run: |
-          echo "flutter.sdk=$(flutter --version --machine | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('flutterRoot',''))")" > android/local.properties
+          echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
           echo "sdk.dir=$ANDROID_SDK_ROOT" >> android/local.properties
 
       - name: Flutter pub get
