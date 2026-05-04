@@ -31,6 +31,7 @@ jobs:
           sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 34/' android/app/build.gradle
           sed -i 's/versionCode flutter.versionCode/versionCode 6/' android/app/build.gradle
           sed -i 's/versionName flutter.versionName/versionName "1.0.6"/' android/app/build.gradle
+          sed -i "s/org.jetbrains.kotlin.android" version "[0-9.]*"/org.jetbrains.kotlin.android" version "1.9.22"/" android/settings.gradle
 
       - name: Flutter pub get
         run: flutter pub get
