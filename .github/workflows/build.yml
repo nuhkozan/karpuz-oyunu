@@ -39,8 +39,8 @@ jobs:
 
       - name: Set targetSdk 35
         run: |
-          sed -i 's/targetSdk = flutter.targetSdkVersion/targetSdk = 35/' android/app/build.gradle
-          sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 35/' android/app/build.gradle
+          sed -i 's/targetSdk = flutter.targetSdkVersion/targetSdk = 34/' android/app/build.gradle
+          sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 34/' android/app/build.gradle
 
       - name: Flutter pub get
         run: flutter pub get
