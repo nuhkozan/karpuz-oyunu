@@ -36,6 +36,7 @@ jobs:
         run: |
           sed -i "s/ext.kotlin_version = .*/ext.kotlin_version = '1.9.22'/" android/build.gradle || true
           sed -i 's/targetSdk = flutter.targetSdkVersion/targetSdk = 34/' android/app/build.gradle
+          sed -i "s/org.jetbrains.kotlin.android\" version \"[^\"]*\"/org.jetbrains.kotlin.android\" version \"1.9.22\"/" android/settings.gradle
           sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 34/' android/app/build.gradle
           sed -i 's/versionCode flutter.versionCode/versionCode 5/' android/app/build.gradle
 
