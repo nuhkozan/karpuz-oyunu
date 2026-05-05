@@ -37,7 +37,7 @@ jobs:
               ('versionName flutter.versionName', 'versionName "1.0.6"'),
             ],
             'android/settings.gradle': [
-              ('org.jetbrains.kotlin.android" version "1.8.', 'org.jetbrains.kotlin.android" version "1.9.'),
+              (r'org.jetbrains.kotlin.android" version "[^"]*"', 'org.jetbrains.kotlin.android" version "1.9.22"'),
             ]
           }
           for path, replacements in files.items():
