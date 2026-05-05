@@ -27,26 +27,59 @@ jobs:
           rm -rf android
           cp -r tmp_project/android .
           rm -rf tmp_project
-          sed -i 's/targetSdk = flutter.targetSdkVersion/targetSdk = 34/' android/app/build.gradle
-          sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 34/' android/app/build.gradle
-          sed -i 's/versionCode flutter.versionCode/versionCode 6/' android/app/build.gradle
-          sed -i 's/versionName flutter.versionName/versionName "1.0.6"/' android/app/build.gradle
-          sed -i "s/org.jetbrains.kotlin.android" version "[0-9.]*"/org.jetbrains.kotlin.android" version "1.9.22"/" android/settings.gradle
+          python3 - << 'PYEOF'
+          import re
+          files = {
+            'android/app/build.gradle': [
+              ('targetSdk = flutter.targetSdkVersion', 'targetSdk = 34'),
+              ('compileSdk = flutter.compileSdkVersion', 'compileSdk = 34'),
+              ('versionCode flutter.versionCode', 'versionCode 6'),
+              ('versionName flutter.versionName', 'versionName "1.0.6"'),
+            ],
+            'android/settings.gradle': [
+              ('org.jetbrains.kotlin.android" version "1.8.', 'org.jetbrains.kotlin.android" version "1.9.'),
+            ]
+          }
+          for path, replacements in files.items():
+            try:
+              with open(path) as f: content = f.read()
+              for old, new in replacements:
+                content = content.replace(old, new)
+              with open(path, 'w') as f: f.write(content)
+              print(f'Updated {path}')
+            except Exception as e:
+              print(f'Skip {path}: {e}')
+          PYEOF
 
       - name: Flutter pub get
         run: flutter pub get
 
       - name: Setup keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/keystore.jks
-          cat > android/key.properties << EOF2
-          storePassword=${{ secrets.STORE_PASSWORD }}
-          keyPassword=${{ secrets.KEY_PASSWORD }}
-          keyAlias=${{ secrets.KEY_ALIAS }}
-          storeFile=keystore.jks
-          EOF2
-          sed -i '/buildTypes {/i\    signingConfigs { release { keyAlias "${{ secrets.KEY_ALIAS }}"; keyPassword "${{ secrets.KEY_PASSWORD }}"; storeFile file("keystore.jks"); storePassword "${{ secrets.STORE_PASSWORD }}" } }' android/app/build.gradle
-          sed -i 's/signingConfig signingConfigs.debug/signingConfig signingConfigs.release/' android/app/build.gradle
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/keystore.jks
+          python3 - << 'PYEOF'
+          import os
+          content = open('android/app/build.gradle').read()
+          signing = f"""
+              signingConfigs {{
+                  release {{
+                      keyAlias "{os.environ['KEY_ALIAS']}"
+                      keyPassword "{os.environ['KEY_PASSWORD']}"
+                      storeFile file("keystore.jks")
+                      storePassword "{os.environ['STORE_PASSWORD']}"
+                  }}
+              }}
+          """
+          content = content.replace('buildTypes {', signing + '\n    buildTypes {')
+          content = content.replace('signingConfig signingConfigs.debug', 'signingConfig signingConfigs.release')
+          open('android/app/build.gradle', 'w').write(content)
+          print('Signing configured')
+          PYEOF
 
       - name: Build AAB
         run: flutter build appbundle --release
