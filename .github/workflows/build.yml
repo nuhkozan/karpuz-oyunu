@@ -39,7 +39,7 @@ jobs:
               signingConfigs {
                   release {
                       def props = new Properties()
-                      def f = rootProject.file('key.properties')
+                      def f = file('key.properties')
                       if (f.exists()) { f.withInputStream { props.load(it) } }
                       keyAlias props['keyAlias']
                       keyPassword props['keyPassword']
