@@ -10,12 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
-
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.24.0'
@@ -27,29 +25,11 @@ jobs:
           rm -rf android
           cp -r tmp_project/android .
           rm -rf tmp_project
-          python3 - << 'PYEOF'
-          import re
-          files = {
-            'android/app/build.gradle': [
-              ('targetSdk = flutter.targetSdkVersion', 'targetSdk = 34'),
-              ('compileSdk = flutter.compileSdkVersion', 'compileSdk = 34'),
-              ('versionCode flutter.versionCode', 'versionCode 6'),
-              ('versionName flutter.versionName', 'versionName "1.0.6"'),
-            ],
-            'android/settings.gradle': [
-              (r'org.jetbrains.kotlin.android" version "[^"]*"', 'org.jetbrains.kotlin.android" version "1.9.22"'),
-            ]
-          }
-          for path, replacements in files.items():
-            try:
-              with open(path) as f: content = f.read()
-              for old, new in replacements:
-                content = content.replace(old, new)
-              with open(path, 'w') as f: f.write(content)
-              print(f'Updated {path}')
-            except Exception as e:
-              print(f'Skip {path}: {e}')
-          PYEOF
+          cat android/settings.gradle
+          perl -i -pe 's/org\.jetbrains\.kotlin\.android" version "[^"]+"/org.jetbrains.kotlin.android" version "2.0.21"/' android/settings.gradle
+          perl -i -pe 's/targetSdk = flutter\.targetSdkVersion/targetSdk = 34/' android/app/build.gradle
+          perl -i -pe 's/compileSdk = flutter\.compileSdkVersion/compileSdk = 34/' android/app/build.gradle
+          perl -i -pe 's/versionCode flutter\.versionCode/versionCode 7/' android/app/build.gradle
 
       - name: Flutter pub get
         run: flutter pub get
@@ -62,24 +42,8 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
           echo "$KEYSTORE_BASE64" | base64 --decode > android/app/keystore.jks
-          python3 - << 'PYEOF'
-          import os
-          content = open('android/app/build.gradle').read()
-          signing = f"""
-              signingConfigs {{
-                  release {{
-                      keyAlias "{os.environ['KEY_ALIAS']}"
-                      keyPassword "{os.environ['KEY_PASSWORD']}"
-                      storeFile file("keystore.jks")
-                      storePassword "{os.environ['STORE_PASSWORD']}"
-                  }}
-              }}
-          """
-          content = content.replace('buildTypes {', signing + '\n    buildTypes {')
-          content = content.replace('signingConfig signingConfigs.debug', 'signingConfig signingConfigs.release')
-          open('android/app/build.gradle', 'w').write(content)
-          print('Signing configured')
-          PYEOF
+          perl -i -0pe "s/buildTypes \{/signingConfigs { release { keyAlias '$KEY_ALIAS'; keyPassword '$KEY_PASSWORD'; storeFile file('keystore.jks'); storePassword '$STORE_PASSWORD' } }\n    buildTypes {/" android/app/build.gradle
+          perl -i -pe "s/signingConfig signingConfigs\.debug/signingConfig signingConfigs.release/" android/app/build.gradle
 
       - name: Build AAB
         run: flutter build appbundle --release
