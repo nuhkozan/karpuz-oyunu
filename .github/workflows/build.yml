@@ -29,7 +29,7 @@ jobs:
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/keystore.jks
           printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=keystore.jks\n' \
             '${{ secrets.STORE_PASSWORD }}' '${{ secrets.KEY_PASSWORD }}' '${{ secrets.KEY_ALIAS }}' \
-            > android/key.properties
+            > android/app/key.properties
           cat android/key.properties
       - name: Patch build.gradle for signing
         run: |
