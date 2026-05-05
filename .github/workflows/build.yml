@@ -32,8 +32,8 @@ jobs:
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/keystore.jks
           printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=keystore.jks\n' \
             '${{ secrets.STORE_PASSWORD }}' '${{ secrets.KEY_PASSWORD }}' '${{ secrets.KEY_ALIAS }}' \
-            > android/app/key.properties
-          cat android/app/key.properties
+            > android/key.properties
+          cat android/key.properties
       - name: Patch build.gradle for signing
         run: |
           python3 << 'EOF'
@@ -42,11 +42,11 @@ jobs:
               signingConfigs {
                   release {
                       def props = new Properties()
-                      def f = rootProject.file('android/app/key.properties')
+                      def f = rootProject.file('key.properties')
                       if (f.exists()) { f.withInputStream { props.load(it) } }
                       keyAlias props['keyAlias']
                       keyPassword props['keyPassword']
-                      storeFile rootProject.file('android/app/' + props['storeFile'])
+                      storeFile file(props['storeFile'])
                       storePassword props['storePassword']
                   }
               }
