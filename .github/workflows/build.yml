@@ -1,10 +1,8 @@
 name: Build AAB
-
 on:
   push:
     branches: [ main ]
   workflow_dispatch:
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -18,36 +16,47 @@ jobs:
         with:
           flutter-version: '3.24.0'
           channel: 'stable'
-
-      - name: Setup project
+      - name: Setup
         run: |
           flutter create --org com.nuhkozan --project-name karpuz tmp_project
-          rm -rf android
-          cp -r tmp_project/android .
-          rm -rf tmp_project
-          cat android/settings.gradle
+          rm -rf android && cp -r tmp_project/android . && rm -rf tmp_project
           perl -i -pe 's/org\.jetbrains\.kotlin\.android" version "[^"]+"/org.jetbrains.kotlin.android" version "2.0.21"/' android/settings.gradle
           perl -i -pe 's/targetSdk = flutter\.targetSdkVersion/targetSdk = 34/' android/app/build.gradle
           perl -i -pe 's/compileSdk = flutter\.compileSdkVersion/compileSdk = 34/' android/app/build.gradle
-          perl -i -pe 's/versionCode flutter\.versionCode/versionCode 7/' android/app/build.gradle
-
+          perl -i -pe 's/versionCode flutter\.versionCode/versionCode 8/' android/app/build.gradle
+      - name: Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/keystore.jks
+          printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=keystore.jks\n' \
+            '${{ secrets.STORE_PASSWORD }}' '${{ secrets.KEY_PASSWORD }}' '${{ secrets.KEY_ALIAS }}' \
+            > android/key.properties
+          cat android/key.properties
+      - name: Patch build.gradle for signing
+        run: |
+          python3 << 'EOF'
+          txt = open('android/app/build.gradle').read()
+          signing = """
+              signingConfigs {
+                  release {
+                      def props = new Properties()
+                      def f = rootProject.file('key.properties')
+                      if (f.exists()) { f.withInputStream { props.load(it) } }
+                      keyAlias props['keyAlias']
+                      keyPassword props['keyPassword']
+                      storeFile file(props['storeFile'])
+                      storePassword props['storePassword']
+                  }
+              }
+          """
+          txt = txt.replace('    buildTypes {', signing + '\n    buildTypes {')
+          txt = txt.replace('signingConfig signingConfigs.debug', 'signingConfig signingConfigs.release')
+          open('android/app/build.gradle','w').write(txt)
+          print('Done')
+          EOF
       - name: Flutter pub get
         run: flutter pub get
-
-      - name: Setup keystore
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-        run: |
-          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/keystore.jks
-          perl -i -0pe "s/buildTypes \{/signingConfigs { release { keyAlias '$KEY_ALIAS'; keyPassword '$KEY_PASSWORD'; storeFile file('keystore.jks'); storePassword '$STORE_PASSWORD' } }\n    buildTypes {/" android/app/build.gradle
-          perl -i -pe "s/signingConfig signingConfigs\.debug/signingConfig signingConfigs.release/" android/app/build.gradle
-
-      - name: Build AAB
+      - name: Build
         run: flutter build appbundle --release
-
       - uses: actions/upload-artifact@v4
         with:
           name: karpuz-release.aab
