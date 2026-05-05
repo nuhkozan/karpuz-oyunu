@@ -21,6 +21,9 @@ jobs:
           flutter create --org com.nuhkozan --project-name karpuz tmp_project
           rm -rf android && cp -r tmp_project/android . && rm -rf tmp_project
           perl -i -pe 's/org\.jetbrains\.kotlin\.android" version "[^"]+"/org.jetbrains.kotlin.android" version "2.0.21"/' android/settings.gradle
+          ls android/app/
+          ls android/app/*.gradle* || true
+          ls android/app/*.kts || true
           perl -i -pe 's/targetSdk = flutter\.targetSdkVersion/targetSdk = 34/' android/app/build.gradle
           perl -i -pe 's/compileSdk = flutter\.compileSdkVersion/compileSdk = 34/' android/app/build.gradle
           perl -i -pe 's/versionCode flutter\.versionCode/versionCode 8/' android/app/build.gradle
