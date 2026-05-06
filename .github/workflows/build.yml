@@ -24,9 +24,8 @@ jobs:
           ls android/app/
           ls android/app/*.gradle* || true
           ls android/app/*.kts || true
-          perl -i -pe 's/targetSdk = flutter\.targetSdkVersion/targetSdk = 34/' android/app/build.gradle
-          perl -i -pe 's/compileSdk = flutter\.compileSdkVersion/compileSdk = 34/' android/app/build.gradle
-          perl -i -pe 's/versionCode flutter\.versionCode/versionCode 8/' android/app/build.gradle
+          perl -i -pe 's/targetSdk = flutter\.targetSdkVersion/targetSdk = 35/' android/app/build.gradle
+          perl -i -pe 's/compileSdk = flutter\.compileSdkVersion/compileSdk = 35/' android/app/build.gradle
       - name: Keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/keystore.jks
