@@ -12,6 +12,9 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '17'
+      - name: Install Android SDK 35
+        run: |
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-35" "build-tools;35.0.0"
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.24.0'
@@ -21,9 +24,6 @@ jobs:
           flutter create --org com.nuhkozan --project-name karpuz tmp_project
           rm -rf android && cp -r tmp_project/android . && rm -rf tmp_project
           perl -i -pe 's/org\.jetbrains\.kotlin\.android" version "[^"]+"/org.jetbrains.kotlin.android" version "2.0.21"/' android/settings.gradle
-          ls android/app/
-          ls android/app/*.gradle* || true
-          ls android/app/*.kts || true
           perl -i -pe 's/targetSdk = flutter\.targetSdkVersion/targetSdk = 35/' android/app/build.gradle
           perl -i -pe 's/compileSdk = flutter\.compileSdkVersion/compileSdk = 35/' android/app/build.gradle
       - name: Keystore
