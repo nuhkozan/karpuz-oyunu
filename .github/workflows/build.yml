@@ -20,9 +20,9 @@ jobs:
         run: |
           flutter create --org com.nuhkozan --project-name karpuz tmp_project
           rm -rf android && cp -r tmp_project/android . && rm -rf tmp_project
-          perl -i -pe 's/org\.jetbrains\.kotlin\.android" version "[^"]+"/org.jetbrains.kotlin.android" version "2.0.21"/' android/settings.gradle
-          perl -i -pe 's/targetSdk = flutter\.targetSdkVersion/targetSdk = 35/' android/app/build.gradle
-          perl -i -pe 's/compileSdk = flutter\.compileSdkVersion/compileSdk = 35/' android/app/build.gradle
+          perl -i -pe 's/org\.jetbrains\.kotlin\.android" version "[^"]+"/org.jetbrains.kotlin.android" version "2.0.21"/' android/settings.gradle.kts
+          perl -i -pe 's/targetSdk = flutter\.targetSdkVersion/targetSdk = 35/' android/app/build.gradle.kts
+          perl -i -pe 's/compileSdk = flutter\.compileSdkVersion/compileSdk = 35/' android/app/build.gradle.kts
       - name: Keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/keystore.jks
@@ -30,26 +30,28 @@ jobs:
             '${{ secrets.STORE_PASSWORD }}' '${{ secrets.KEY_PASSWORD }}' '${{ secrets.KEY_ALIAS }}' \
             > android/key.properties
           cat android/key.properties
-      - name: Patch build.gradle for signing
+      - name: Patch build.gradle.kts for signing
         run: |
           python3 << 'EOF'
-          txt = open('android/app/build.gradle').read()
+          import os
+          path = 'android/app/build.gradle.kts'
+          txt = open(path).read()
           signing = """
               signingConfigs {
-                  release {
-                      def props = new Properties()
-                      def f = rootProject.file('key.properties')
-                      if (f.exists()) { f.withInputStream { props.load(it) } }
-                      keyAlias props['keyAlias']
-                      keyPassword props['keyPassword']
-                      storeFile file(props['storeFile'])
-                      storePassword props['storePassword']
+                  create("release") {
+                      val props = java.util.Properties()
+                      val f = rootProject.file("key.properties")
+                      if (f.exists()) { f.inputStream().use { props.load(it) } }
+                      keyAlias = props["keyAlias"] as String
+                      keyPassword = props["keyPassword"] as String
+                      storeFile = file(props["storeFile"] as String)
+                      storePassword = props["storePassword"] as String
                   }
               }
           """
           txt = txt.replace('    buildTypes {', signing + '\n    buildTypes {')
-          txt = txt.replace('signingConfig signingConfigs.debug', 'signingConfig signingConfigs.release')
-          open('android/app/build.gradle','w').write(txt)
+          txt = txt.replace('signingConfig = signingConfigs.getByName("debug")', 'signingConfig = signingConfigs.getByName("release")')
+          open(path, 'w').write(txt)
           print('Done')
           EOF
       - name: Flutter pub get
