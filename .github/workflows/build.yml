@@ -22,9 +22,50 @@ jobs:
           rm -rf android && cp -r tmp_project/android . && rm -rf tmp_project
           perl -i -pe 's/targetSdk = flutter\.targetSdkVersion/targetSdk = 35/' android/app/build.gradle.kts
           perl -i -pe 's/compileSdk = flutter\.compileSdkVersion/compileSdk = 35/' android/app/build.gradle.kts
+      - name: Set App Icon
+        run: |
+          for size in 48 72 96 144 192; do
+            case $size in
+              48)  dir="mipmap-mdpi";;
+              72)  dir="mipmap-hdpi";;
+              96)  dir="mipmap-xhdpi";;
+              144) dir="mipmap-xxhdpi";;
+              192) dir="mipmap-xxxhdpi";;
+            esac
+            mkdir -p android/app/src/main/res/$dir
+            convert -resize ${size}x${size} icon_512-1.png android/app/src/main/res/$dir/ic_launcher.png
+            cp android/app/src/main/res/$dir/ic_launcher.png android/app/src/main/res/$dir/ic_launcher_round.png
+          done
       - name: Keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/keystore.jks
+          printf 'storePassword=%s\nkeyPassword=%s\nkeyAlias=%s\nstoreFile=keystore.jks\n' \
+            '${{ secrets.STORE_PASSWORD }}' '${{ secrets.KEY_PASSWORD }}' '${{ secrets.KEY_ALIAS }}' \
+            > android/key.properties
+          cat android/key.properties
+      - name: Patch build.gradle.kts for signing
+        run: |
+          python3 << 'EOF'
+          path = 'android/app/build.gradle.kts'
+          txt = open(path).read()
+          signing = """
+              signingConfigs {
+                  create("release") {
+                      val props = java.util.Properties()
+                      val f = rootProject.file("key.properties")
+                      if (f.exists()) { f.inputStream().use { props.load(it) } }
+                      keyAlias = props["keyAlias"] as String
+                      keyPassword = props["keyPassword"] as String
+                      storeFile = file(props["storeFile"] as String)
+                      storePassword = props["storePassword"] as String
+                  }
+              }
+          """
+          txt = txt.replace('    buildTypes {', signing + '\n    buildTypes {')
+          txt = txt.replace('signingConfig = signingConfigs.getByName("debug")', 'signingConfig = signingConfigs.getByName("release")')
+          open(path, 'w').write(txt)
+          print('Done')
+          EOF
       - name: Flutter pub get
         run: flutter pub get
       - name: Build
