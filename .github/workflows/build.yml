@@ -24,18 +24,20 @@ jobs:
           perl -i -pe 's/compileSdk = flutter\.compileSdkVersion/compileSdk = 35/' android/app/build.gradle.kts
       - name: Set App Icon
         run: |
-          for size in 48 72 96 144 192; do
-            case $size in
-              48)  dir="mipmap-mdpi";;
-              72)  dir="mipmap-hdpi";;
-              96)  dir="mipmap-xhdpi";;
-              144) dir="mipmap-xxhdpi";;
-              192) dir="mipmap-xxxhdpi";;
-            esac
-            mkdir -p android/app/src/main/res/$dir
-            convert -resize ${size}x${size} icon_512-1.png android/app/src/main/res/$dir/ic_launcher.png
-            cp android/app/src/main/res/$dir/ic_launcher.png android/app/src/main/res/$dir/ic_launcher_round.png
-          done
+          pip install Pillow -q
+          python3 << 'EOF'
+          from PIL import Image
+          import os
+          sizes = {'mipmap-mdpi':48,'mipmap-hdpi':72,'mipmap-xhdpi':96,'mipmap-xxhdpi':144,'mipmap-xxxhdpi':192}
+          img = Image.open('icon_512-1.png').convert('RGBA')
+          for d,s in sizes.items():
+            path = f'android/app/src/main/res/{d}'
+            os.makedirs(path, exist_ok=True)
+            r = img.resize((s,s), Image.LANCZOS)
+            r.save(f'{path}/ic_launcher.png')
+            r.save(f'{path}/ic_launcher_round.png')
+          print('Icons done')
+          EOF
       - name: Keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/keystore.jks
