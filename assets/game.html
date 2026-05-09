@@ -34,20 +34,7 @@ body {
 #wa-bar span { font-size:20px; }
 
 /* ── MUSIC TOGGLE ── */
-#mus-btn {
-  position:fixed; top:12px; right:54px; z-index:200;
-  background:rgba(0,0,0,.45); border:1.5px solid rgba(255,255,255,.2);
-  border-radius:50%; width:38px; height:38px;
-  font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center;
-  transition:background .2s;
-}
-#sfx-btn {
-  position:fixed; top:12px; right:12px; z-index:200;
-  background:rgba(0,0,0,.45); border:1.5px solid rgba(255,255,255,.2);
-  border-radius:50%; width:38px; height:38px;
-  font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center;
-  transition:background .2s;
-}
+/* Ses butonları artık barın altında - eski fixed stiller kaldırıldı */
 #mus-btn:hover, #sfx-btn:hover { background:rgba(0,0,0,.65); }
 
 /* ── USERNAME ── */
@@ -358,14 +345,22 @@ window._fbReady=true;
 </style>
 
 <!-- WhatsApp bar — her zaman üstte -->
-<div id="wa-bar" onclick="shareWA()">
-  <span>📲</span> Arkadaşını Davet Et (WhatsApp)
+<div id="wa-bar" style="width:100%;max-width:440px;display:flex;align-items:stretch;position:sticky;top:0;z-index:100;box-shadow:0 3px 16px rgba(0,0,0,.35);height:46px;">
+  <div onclick="shareWA()" style="flex:1;background:linear-gradient(90deg,#25D366,#128C7E);display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:13px;font-weight:800;color:#fff;letter-spacing:.3px;">
+    <span>📲</span> Arkadaşını Davet Et
+  </div>
+  <div style="width:1px;background:rgba(255,255,255,.25)"></div>
+  <div onclick="openChallenge()" style="flex:1;background:#1a237e;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:13px;font-weight:800;color:#fff;letter-spacing:.3px;">
+    ⚔️ Meydan Oku
+  </div>
+</div>
+<!-- Ses butonları - barın hemen altında -->
+<div style="width:100%;max-width:440px;display:flex;justify-content:flex-end;gap:6px;padding:4px 8px;background:rgba(0,0,0,.2);position:sticky;top:46px;z-index:99;">
+  <button id="mus-btn" onclick="toggleMusic()" title="Müzik" style="background:rgba(0,0,0,.45);border:1.5px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 10px;font-size:14px;cursor:pointer;color:#fff;display:flex;align-items:center;gap:4px;">🎵 <span style="font-size:10px">MÜZİK</span></button>
+  <button id="sfx-btn" onclick="toggleSfx()" title="Ses" style="background:rgba(0,0,0,.45);border:1.5px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 10px;font-size:14px;cursor:pointer;color:#fff;display:flex;align-items:center;gap:4px;">🔊 <span style="font-size:10px">SES</span></button>
 </div>
 
 <!-- Müzik toggle -->
-<button id="mus-btn" onclick="toggleMusic()" title="Müzik Aç/Kapat" style="right:54px">🎵</button>
-<button id="sfx-btn" onclick="toggleSfx()" title="Ses Efektleri Aç/Kapat">🔊</button>
-
 <!-- ① USERNAME -->
 <div id="s-user" class="screen active">
   <div class="brand">🍉</div>
@@ -427,47 +422,72 @@ window._fbReady=true;
       </thead>
       <tbody>
         <tr style="border-bottom:1px solid rgba(255,255,255,.07)">
-          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">1 – 2</td>
+          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">1</td>
           <td style="padding:8px 8px;text-align:center;font-size:16px">🍇 Üzüm</td>
           <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐</td>
         </tr>
         <tr style="border-bottom:1px solid rgba(255,255,255,.07)">
-          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">3 – 4</td>
+          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">2 – 3</td>
           <td style="padding:8px 8px;text-align:center;font-size:16px">🍊 Mandalina</td>
           <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐</td>
         </tr>
         <tr style="border-bottom:1px solid rgba(255,255,255,.07)">
-          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">5 – 7</td>
+          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">4 – 5</td>
           <td style="padding:8px 8px;text-align:center;font-size:16px">🍎 Elma</td>
           <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐</td>
         </tr>
         <tr style="border-bottom:1px solid rgba(255,255,255,.07)">
-          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">7 – 10</td>
+          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">5 – 7</td>
           <td style="padding:8px 8px;text-align:center;font-size:16px">🍐 Armut</td>
           <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐⭐</td>
         </tr>
         <tr style="border-bottom:1px solid rgba(255,255,255,.07)">
-          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">10 – 15</td>
+          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">7 – 10</td>
           <td style="padding:8px 8px;text-align:center;font-size:16px">🍑 Şeftali</td>
           <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐⭐</td>
         </tr>
         <tr style="border-bottom:1px solid rgba(255,255,255,.07)">
-          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">15 – 25</td>
+          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">10 – 13</td>
           <td style="padding:8px 8px;text-align:center;font-size:16px">🥭 Mango</td>
           <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐⭐⭐</td>
         </tr>
         <tr style="border-bottom:1px solid rgba(255,255,255,.07)">
-          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">25 – 40</td>
+          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">13 – 16</td>
           <td style="padding:8px 8px;text-align:center;font-size:16px">🍍 Ananas</td>
           <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐⭐⭐</td>
         </tr>
         <tr style="border-bottom:1px solid rgba(255,255,255,.07)">
-          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">40 – 60</td>
+          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">16 – 20</td>
+          <td style="padding:8px 8px;text-align:center;font-size:16px">🥥 Hindistan Cevizi</td>
+          <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐⭐⭐</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,.07)">
+          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">20 – 30</td>
           <td style="padding:8px 8px;text-align:center;font-size:16px">🍈 Kavun</td>
           <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐⭐⭐⭐</td>
         </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,.07)">
+          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">30 – 40</td>
+          <td style="padding:8px 8px;text-align:center;font-size:16px">🫒 Zeytin</td>
+          <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐⭐⭐⭐</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,.07)">
+          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">40 – 50</td>
+          <td style="padding:8px 8px;text-align:center;font-size:16px">🥑 Avokado</td>
+          <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐⭐⭐⭐</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,.07)">
+          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">50 – 60</td>
+          <td style="padding:8px 8px;text-align:center;font-size:16px">🍅 Domates</td>
+          <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐⭐⭐⭐</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,.07)">
+          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">60 – 70</td>
+          <td style="padding:8px 8px;text-align:center;font-size:16px">🎃 Balkabağı</td>
+          <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐⭐⭐⭐</td>
+        </tr>
         <tr>
-          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">60 – 99</td>
+          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">70 – 99</td>
           <td style="padding:8px 8px;text-align:center;font-size:16px">🍉 Karpuz</td>
           <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐⭐⭐⭐</td>
         </tr>
@@ -551,6 +571,21 @@ window._fbReady=true;
         <div style="display:flex;align-items:center;gap:4px;font-size:13px">
           <span>🫒</span><span style="color:rgba(255,255,255,.3)">+</span><span>🫒</span>
           <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
+          <span>🥑</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Avokado</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
+          <span>🥑</span><span style="color:rgba(255,255,255,.3)">+</span><span>🥑</span>
+          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
+          <span>🍅</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Domates</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
+          <span>🍅</span><span style="color:rgba(255,255,255,.3)">+</span><span>🍅</span>
+          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
+          <span>🎃</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Balkabağı</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
+          <span>🎃</span><span style="color:rgba(255,255,255,.3)">+</span><span>🎃</span>
+          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
           <span style="font-size:16px">🍉</span><span style="font-size:10px;color:#f5a623;font-weight:800;margin-left:2px">KARPUZ! 🏆</span>
         </div>
       </div>
@@ -612,6 +647,29 @@ window._fbReady=true;
   </div>
   <div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:14px" id="daily-streak"></div>
   <button class="btn-main" onclick="claimDailyReward()">🎉 Al!</button>
+</div>
+
+<!-- ══ MEYDAN OKUMA OVERLAY ══ -->
+<div id="challenge-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.92);z-index:500;flex-direction:column;align-items:center;justify-content:center;font-family:'Segoe UI',Arial;color:#fff;text-align:center;padding:20px">
+  <div style="font-size:48px;margin-bottom:8px">⚔️</div>
+  <div style="font-size:20px;font-weight:900;color:#f5a623;margin-bottom:16px">ARKADAŞINA MEYDAN OKU!</div>
+  <div style="background:#1a1a2e;border-radius:18px;padding:20px;width:90%;max-width:300px;margin-bottom:14px">
+    <div style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:10px">Rakibinin kullanıcı adını gir</div>
+    <input id="challenge-nick" type="text" placeholder="Kullanıcı adı..." style="width:100%;padding:12px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-size:16px;font-weight:700;text-align:center;outline:none;margin-bottom:12px">
+    <button onclick="sendChallenge()" style="width:100%;padding:12px;border-radius:12px;border:none;background:linear-gradient(90deg,#e94560,#f5a623);color:#fff;font-size:14px;font-weight:800;cursor:pointer;">⚔️ Meydan Oku!</button>
+  </div>
+  <button onclick="closeChallenge()" class="btn-out">Vazgeç</button>
+</div>
+
+<!-- ══ MEYDAN OKUMA GELDİ OVERLAY ══ -->
+<div id="challenge-incoming" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.92);z-index:500;flex-direction:column;align-items:center;justify-content:center;font-family:'Segoe UI',Arial;color:#fff;text-align:center;padding:20px">
+  <div style="font-size:48px;margin-bottom:8px">⚔️</div>
+  <div style="font-size:18px;font-weight:900;color:#f5a623;margin-bottom:6px">MEYDAN OKUMA!</div>
+  <div id="challenge-from-txt" style="font-size:14px;color:rgba(255,255,255,.7);margin-bottom:20px"></div>
+  <div style="display:flex;gap:12px">
+    <button onclick="rejectChallenge()" class="btn-out" style="padding:12px 24px">❌ Reddet</button>
+    <button onclick="acceptChallenge()" style="padding:12px 24px;border-radius:20px;border:none;background:linear-gradient(90deg,#22aa66,#1a7a4a);color:#fff;font-size:14px;font-weight:800;cursor:pointer;">✅ Kabul Et</button>
+  </div>
 </div>
 
 <!-- ② GAME -->
@@ -764,41 +822,51 @@ if(!CanvasRenderingContext2D.prototype.roundRect){
 const FR = [
   /* idx  emoji  radius  puan   freq    oscType   col1        col2      */
   [  '🍒', 13,    2,   440,'sine',     '#ff6688','#cc2244'],  // 0  Kiraz
-  [  '🫐', 16,    3,   466,'triangle', '#6655ff','#3322cc'],  // 1  Yaban mersini (YENİ)
+  [  '🫐', 16,    3,   466,'triangle', '#6655ff','#3322cc'],  // 1  Yaban mersini
   [  '🍓', 20,    5,   494,'sine',     '#ff4466','#cc1133'],  // 2  Çilek
-  [  '🍋', 24,    9,   523,'triangle', '#ffee22','#ccaa00'],  // 3  Limon (YENİ)
+  [  '🍋', 24,    9,   523,'triangle', '#ffee22','#ccaa00'],  // 3  Limon
   [  '🍇', 28,   14,   554,'sine',     '#bb66ff','#7722aa'],  // 4  Üzüm
   [  '🍊', 33,   22,   587,'triangle', '#ff9933','#cc6600'],  // 5  Mandalina
-  [  '🥝', 37,   34,   622,'square',   '#77cc33','#448800'],  // 6  Kivi (YENİ)
+  [  '🥝', 37,   34,   622,'square',   '#77cc33','#448800'],  // 6  Kivi
   [  '🍎', 41,   50,   659,'triangle', '#ff4422','#aa1100'],  // 7  Elma
   [  '🍐', 45,   72,   698,'sine',     '#99dd22','#558800'],  // 8  Armut
   [  '🍑', 49,  100,   740,'triangle', '#ffbb55','#cc7700'],  // 9  Şeftali
   [  '🥭', 53,  140,   784,'sine',     '#ff9944','#cc6600'],  // 10 Mango
   [  '🍍', 58,  190,   830,'sawtooth', '#ffdd00','#aa9900'],  // 11 Ananas
-  [  '🥥', 63,  260,   880,'sine',     '#d4a96a','#8b5e3c'],  // 12 Hindistan cevizi (YENİ)
-  [  '🍈', 67,  360,   930,'triangle', '#aaddaa','#558855'],  // 13 Kavun (YENİ)
-  [  '🫒', 70,  500,   975,'sine',     '#556633','#334422'],  // 14 Zeytin → bonus (YENİ)
-  [  '🍉', 76, 1200,  1050,'triangle', '#33cc55','#117722'],  // 15 KARPUZ (hedef)
+  [  '🥥', 63,  260,   880,'sine',     '#d4a96a','#8b5e3c'],  // 12 Hindistan cevizi
+  [  '🍈', 67,  360,   930,'triangle', '#aaddaa','#558855'],  // 13 Kavun
+  [  '🫒', 70,  500,   975,'sine',     '#556633','#334422'],  // 14 Zeytin
+  [  '🥑', 73,  700,  1020,'triangle', '#5a8a3c','#2d6e1a'],  // 15 Avokado (YENİ)
+  [  '🍅', 76,  950,  1060,'sine',     '#dd4422','#aa1100'],  // 16 Domates (YENİ)
+  [  '🎃', 80, 1100,  1100,'triangle', '#ff8800','#cc5500'],  // 17 Balkabağı (YENİ)
+  [  '🍉', 85, 1400,  1150,'triangle', '#33cc55','#117722'],  // 18 KARPUZ (hedef)
 ];
 
 /* ══════════════════════════════════════════
-   LEVEL HEDEF MEYVESİ
-   lv 1-3: Limon(3), 4-6: Üzüm(4), 7-10: Mandalina(5),
-   11-15: Elma(7), 16-20: Armut(8), 21-25: Şeftali(9),
-   26-35: Mango(10), 36-50: Ananas(11), 51-70: Kavun(13),
-   71-99: Karpuz(15)
+   LEVEL HEDEF MEYVESİ (19 meyve zinciri)
+   1: Üzüm, 2-3: Mandalina, 4-5: Elma,
+   5-7: Armut, 7-10: Şeftali, 10-13: Mango,
+   13-16: Ananas, 16-20: Hindistan Cevizi,
+   20-30: Kavun, 30-40: Zeytin,
+   40-50: Avokado, 50-60: Domates,
+   60-70: Balkabağı, 70+: Karpuz
 ══════════════════════════════════════════ */
 function getLevelTarget(lv){
   const e=((lv-1)%99)+1;
-  if(e<=2)  return 4;   // Üzüm
-  if(e<=4)  return 5;   // Mandalina
-  if(e<=7)  return 7;   // Elma
-  if(e<=10) return 8;   // Armut
-  if(e<=15) return 9;   // Şeftali
-  if(e<=25) return 10;  // Mango
-  if(e<=40) return 11;  // Ananas
-  if(e<=60) return 13;  // Kavun
-  return 15;            // Karpuz
+  if(e<=1)  return 4;   // Üzüm
+  if(e<=3)  return 5;   // Mandalina
+  if(e<=5)  return 7;   // Elma
+  if(e<=7)  return 8;   // Armut
+  if(e<=10) return 9;   // Şeftali
+  if(e<=13) return 10;  // Mango
+  if(e<=16) return 11;  // Ananas
+  if(e<=20) return 12;  // Hindistan Cevizi
+  if(e<=30) return 13;  // Kavun
+  if(e<=40) return 14;  // Zeytin
+  if(e<=50) return 15;  // Avokado
+  if(e<=60) return 16;  // Domates
+  if(e<=70) return 17;  // Balkabağı
+  return 18;            // Karpuz
 }
 
 /* ══════════════════════════════════════════
@@ -2134,11 +2202,44 @@ function getBadge(lv){
 function checkBadgeUnlock(prevLv,newLv){
   for(const bd of BADGES){
     if(prevLv<bd.lv && newLv>=bd.lv){
-      showBadgeToast(bd);
-      if(navigator.vibrate)navigator.vibrate([50,30,50,30,100]);
+      setTimeout(()=>showBadgeCelebration(bd, newLv), 800);
+      if(navigator.vibrate)navigator.vibrate([100,50,100,50,200]);
     }
   }
 }
+
+function showBadgeCelebration(bd, lv){
+  /* Sonraki ünvanı bul */
+  const idx=BADGES.findIndex(b=>b.lv===bd.lv);
+  const next=BADGES[idx+1]||null;
+  const nextMsg=next
+    ? `Sonraki hedef: ${next.icon} <b>${next.title}</b> (Level ${next.lv})`
+    : '🎊 En yüksek ünvana ulaştın!';
+
+  /* Övgü mesajları */
+  const praises=[
+    'Harika oynuyorsun! Gerçek bir meyve ustasısın!',
+    'İnanılmaz ilerleme! Şampiyonlar seni izliyor!',
+    'Muhteşem bir performans! Durdurulamaz sın!',
+    'Efsanevi bir oyuncu olma yolundasın!',
+  ];
+  const praise=praises[Math.floor(Math.random()*praises.length)];
+
+  const ov=document.createElement('div');
+  ov.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.92);z-index:700;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:Segoe UI,Arial;color:#fff;text-align:center;padding:20px;';
+  ov.innerHTML=`
+    <div style="font-size:80px;animation:fruitPop .6s ease;margin-bottom:8px">${bd.icon}</div>
+    <div style="font-size:13px;letter-spacing:3px;color:rgba(255,255,255,.5);margin-bottom:4px">YENİ ÜNVAN KAZANILDI!</div>
+    <div style="font-size:32px;font-weight:900;color:${bd.color};margin-bottom:6px">${bd.title}</div>
+    <div style="width:200px;height:2px;background:linear-gradient(90deg,${bd.color},transparent);margin:10px auto;border-radius:2px"></div>
+    <div style="font-size:13px;color:rgba(255,255,255,.7);max-width:280px;line-height:1.7;margin-bottom:16px">${praise}</div>
+    <div style="background:rgba(255,255,255,.06);border-radius:14px;padding:12px 20px;margin-bottom:20px;font-size:12px;color:rgba(255,255,255,.6)">🎯 ${nextMsg}</div>
+    <button onclick="this.parentElement.remove()" style="padding:12px 36px;border-radius:22px;border:none;background:linear-gradient(90deg,#e94560,#f5a623);color:#fff;font-size:15px;font-weight:800;cursor:pointer;">Devam Et 🚀</button>
+  `;
+  document.body.appendChild(ov);
+  setTimeout(()=>{if(ov.parentElement)ov.remove();},8000);
+}
+
 function showBadgeToast(bd){
   const el=document.createElement('div');
   el.className='badge-toast';
@@ -2606,6 +2707,8 @@ async function winLevel(){
   requestAnimationFrame(()=>{ document.getElementById('lv-bar').style.width='100%'; });
 
   if(isNewRecord) showToast('🏆 YENİ REKOR! '+S.totSc.toLocaleString()+' puan!');
+  /* Meydan okuma durumu göster */
+  setTimeout(()=>showChallengeStatus(),500);
 
   const prevLv=S.lv;
   S.lv = nextLvNum;
@@ -2808,8 +2911,125 @@ function playAmbient(forestIdx){
 }
 
 /* ══════════════════════════════════════════
-   INIT
+   ⚔️ MEYDAN OKUMA SİSTEMİ
 ══════════════════════════════════════════ */
+let _activeChallenge=null; // {challenger, opponent, startedAt}
+let _challengeCheckInterval=null;
+
+function openChallenge(){
+  document.getElementById('challenge-overlay').style.display='flex';
+}
+function closeChallenge(){
+  document.getElementById('challenge-overlay').style.display='none';
+}
+
+async function sendChallenge(){
+  const nick=document.getElementById('challenge-nick').value.trim();
+  if(!nick){showToast('Kullanıcı adı gir!');return;}
+  if(nick===S.user){showToast('Kendinle yarışamazsın!');return;}
+
+  try{
+    const key=nick.replace(/[.#$[\]/]/g,'_');
+    const url=`${FB_URL}/challenges/${key}.json`;
+    await flutterFetch(url,'PUT',JSON.stringify({
+      from:S.user, to:nick, status:'pending', t:Date.now()
+    }));
+    closeChallenge();
+    showToast(`⚔️ ${nick} kullanıcısına meydan okuma gönderildi!`);
+    /* Cevap bekle */
+    _listenChallengeResponse(nick);
+  }catch(e){
+    showToast('Gönderilemedi, tekrar dene');
+  }
+}
+
+function _listenChallengeResponse(opponent){
+  let tries=0;
+  const iv=setInterval(async()=>{
+    tries++;
+    if(tries>60){clearInterval(iv);return;}
+    try{
+      const key=opponent.replace(/[.#$[\]/]/g,'_');
+      const url=`${FB_URL}/challenges/${key}.json`;
+      const resp=await flutterFetch(url,'GET');
+      const data=await resp.json();
+      if(!data||data.from!==S.user)return;
+      if(data.status==='accepted'){
+        clearInterval(iv);
+        _activeChallenge={challenger:S.user,opponent,startedAt:Date.now()};
+        showToast(`✅ ${opponent} meydan okumayı kabul etti!`);
+      } else if(data.status==='rejected'){
+        clearInterval(iv);
+        showToast(`😂 ${opponent} senden korktu! 🐔`);
+      }
+    }catch{}
+  },5000);
+}
+
+async function _checkIncomingChallenge(){
+  if(!S.user)return;
+  try{
+    const key=S.user.replace(/[.#$[\]/]/g,'_');
+    const url=`${FB_URL}/challenges/${key}.json`;
+    const resp=await flutterFetch(url,'GET');
+    const data=await resp.json();
+    if(!data||data.status!=='pending')return;
+    if(Date.now()-data.t>300000)return; /* 5 dakikadan eski ise görmezden gel */
+    const ov=document.getElementById('challenge-incoming');
+    document.getElementById('challenge-from-txt').innerHTML=
+      `<b style="color:#f5a623;font-size:18px">${data.from}</b><br>sana meydan okuyor!<br><span style="font-size:12px;color:rgba(255,255,255,.5)">Kabul eder misin?</span>`;
+    ov.style.display='flex';
+    ov._from=data.from;
+  }catch{}
+}
+
+async function acceptChallenge(){
+  const ov=document.getElementById('challenge-incoming');
+  const from=ov._from;
+  ov.style.display='none';
+  try{
+    const key=S.user.replace(/[.#$[\]/]/g,'_');
+    const url=`${FB_URL}/challenges/${key}.json`;
+    await flutterFetch(url,'PUT',JSON.stringify({from,to:S.user,status:'accepted',t:Date.now()}));
+    _activeChallenge={challenger:from,opponent:S.user,startedAt:Date.now()};
+    showToast(`⚔️ ${from} ile yarış başladı!`);
+  }catch{}
+}
+
+async function rejectChallenge(){
+  const ov=document.getElementById('challenge-incoming');
+  const from=ov._from;
+  ov.style.display='none';
+  try{
+    const key=S.user.replace(/[.#$[\]/]/g,'_');
+    const url=`${FB_URL}/challenges/${key}.json`;
+    await flutterFetch(url,'PUT',JSON.stringify({from,to:S.user,status:'rejected',t:Date.now()}));
+  }catch{}
+}
+
+async function showChallengeStatus(){
+  if(!_activeChallenge)return;
+  const rival=_activeChallenge.challenger===S.user?_activeChallenge.opponent:_activeChallenge.challenger;
+  try{
+    const key=rival.replace(/[.#$[\]/]/g,'_');
+    const url=`${FB_URL}/leaderboard/${key}.json`;
+    const resp=await flutterFetch(url,'GET');
+    const data=await resp.json();
+    if(!data)return;
+    const rivalScore=data.score||0;
+    const myScore=S.totSc;
+    const diff=Math.abs(myScore-rivalScore);
+    if(myScore>rivalScore){
+      showToast(`⚔️ ${rival}'ın ${diff.toLocaleString()} puan önündesin! 🔥`);
+    } else if(rivalScore>myScore){
+      showToast(`⚔️ ${rival} ${diff.toLocaleString()} puan önünde! Yetişebilirsin! 💪`);
+    } else {
+      showToast(`⚔️ ${rival} ile berabersiniz! 🤝`);
+    }
+  }catch{}
+}
+
+
 document.getElementById('uname').addEventListener('keydown',e=>{if(e.key==='Enter')registerUser();});
 /* Kayıtlı ses tercihleri */
 try{
@@ -2818,6 +3038,9 @@ try{
 }catch{}
 initUserScreen();
 document.body.style.background='linear-gradient(135deg,#0a0e1a,#1a2a1a)';
+
+/* Meydan okuma kontrolü - her 30 saniyede bir */
+setInterval(()=>{if(S.user)_checkIncomingChallenge();},30000);
 
 /* Uygulama kapanınca/arka plana geçince kaydet */
 document.addEventListener('visibilitychange',()=>{
