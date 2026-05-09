@@ -1,7 +1,7 @@
 name: karpuz
 description: Karpuz - Meyve Birleştirme Oyunu
 publish_to: 'none'
-version: 1.0.103+103
+version: 1.0.104+104
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -10,6 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   webview_flutter: ^4.4.0
+  http: ^1.2.0
 
 dev_dependencies:
   flutter_test:
@@ -19,3 +20,4 @@ flutter:
   uses-material-design: true
   assets:
     - assets/game.html
+    - assets/icon_512-1.png
