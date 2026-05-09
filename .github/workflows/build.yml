@@ -22,6 +22,7 @@ jobs:
           rm -rf android && cp -r tmp_project/android . && rm -rf tmp_project
           perl -i -pe 's/targetSdk = flutter\.targetSdkVersion/targetSdk = 35/' android/app/build.gradle.kts
           perl -i -pe 's/compileSdk = flutter\.compileSdkVersion/compileSdk = 35/' android/app/build.gradle.kts
+          perl -i -pe 's/ndkVersion = "[^"]+"/ndkVersion = "27.0.12077973"/' android/app/build.gradle.kts
       - name: Set App Icon
         run: |
           pip install Pillow -q
