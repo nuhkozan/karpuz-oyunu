@@ -658,6 +658,7 @@ window._fbReady=true;
     <input id="challenge-nick" type="text" placeholder="Kullanıcı adı..." style="width:100%;padding:12px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-size:16px;font-weight:700;text-align:center;outline:none;margin-bottom:12px">
     <button onclick="sendChallenge()" style="width:100%;padding:12px;border-radius:12px;border:none;background:linear-gradient(90deg,#e94560,#f5a623);color:#fff;font-size:14px;font-weight:800;cursor:pointer;">⚔️ Meydan Oku!</button>
   </div>
+  <button onclick="_checkIncomingChallenge()" class="btn-out" style="margin-bottom:8px;font-size:12px">🔄 Meydan Okuma Var Mı?</button>
   <button onclick="closeChallenge()" class="btn-out">Vazgeç</button>
 </div>
 
@@ -1302,16 +1303,16 @@ let musicOn=true;
 let sfxOn=true;
 function toggleMusic(){
   musicOn=!musicOn;
-  document.getElementById('mus-btn').textContent=musicOn?'🎵':'🎵';
   document.getElementById('mus-btn').style.opacity=musicOn?'1':'0.4';
-  if(musicOn){ MUS.muted=false; if(S.cfg&&!S.dead)MUS.start(); }
-  else{ MUS.muted=true; MUS.stop(); }
+  if(musicOn){ MUS.muted=false; if(S.cfg&&!S.dead){MUS.start();playAmbient((S.lv-1)%12);} }
+  else{ MUS.muted=true; MUS.stop(); clearInterval(ambientInterval); }
   try{localStorage.setItem('karpuz_music',musicOn?'1':'0');}catch{}
 }
 function toggleSfx(){
   sfxOn=!sfxOn;
-  document.getElementById('sfx-btn').textContent='🔊';
   document.getElementById('sfx-btn').style.opacity=sfxOn?'1':'0.4';
+  if(!sfxOn) clearInterval(ambientInterval);
+  else if(musicOn&&S.cfg) playAmbient((S.lv-1)%12);
   try{localStorage.setItem('karpuz_sfx',sfxOn?'1':'0');}catch{}
 }
 
@@ -2781,14 +2782,18 @@ function retry(){clearSavedGame();S.lvSc=0;beginLevel();}/* Aynı leveli yeniden
 function home(){saveGameState();stop();initUserScreen();show('s-user');}
 function backGame(){if(S.cfg)show('s-game');else show('s-user');}
 function pauseAndHome(){
-  if(S.cfg && !S.dead && !_paused){
-    _paused=true;
-    document.getElementById('pause-icon').textContent='▶';
-    cancelAnimationFrame(S.rafId);
-    clearInterval(S.timerId);
-    MUS.stop();
+  clearInterval(ambientInterval);
+  if(S.cfg && !S.dead){
+    if(!_paused){
+      _paused=true;
+      cancelAnimationFrame(S.rafId);
+      clearInterval(S.timerId);
+      MUS.stop();
+    }
     saveGameState();
   }
+  const pi=document.getElementById('pause-icon');
+  if(pi)pi.textContent='▶';
   initUserScreen();
   show('s-user');
 }
@@ -2880,9 +2885,10 @@ function claimDailyReward(){
 let ambientInterval=null;
 function playAmbient(forestIdx){
   clearInterval(ambientInterval);
-  if(!musicOn||!AC)return;
+  if(!musicOn||!sfxOn||!AC)return;
   const patterns=[
-    ()=>{ /* Çam ormanı - kuş */
+    ()=>{
+      if(!musicOn||!sfxOn)return;
       try{
         const o=AC.createOscillator();const g=AC.createGain();
         o.connect(g);g.connect(MUS.masterG||AC.destination);
@@ -2894,7 +2900,8 @@ function playAmbient(forestIdx){
         o.start(AC.currentTime);o.stop(AC.currentTime+0.3);
       }catch{}
     },
-    ()=>{ /* Sonbahar - rüzgar */
+    ()=>{
+      if(!musicOn||!sfxOn)return;
       try{
         const buf=AC.createBuffer(1,AC.sampleRate*.3|0,AC.sampleRate);
         const d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*0.02;
@@ -2928,6 +2935,9 @@ async function sendChallenge(){
   if(!nick){showToast('Kullanıcı adı gir!');return;}
   if(nick===S.user){showToast('Kendinle yarışamazsın!');return;}
 
+  const btn=document.querySelector('#challenge-overlay button[onclick="sendChallenge()"]');
+  if(btn){btn.textContent='⏳ Gönderiliyor...';btn.disabled=true;}
+
   try{
     const key=nick.replace(/[.#$[\]/]/g,'_');
     const url=`${FB_URL}/challenges/${key}.json`;
@@ -2935,11 +2945,21 @@ async function sendChallenge(){
       from:S.user, to:nick, status:'pending', t:Date.now()
     }));
     closeChallenge();
-    showToast(`⚔️ ${nick} kullanıcısına meydan okuma gönderildi!`);
-    /* Cevap bekle */
+    /* Büyük onay mesajı */
+    const ov=document.createElement('div');
+    ov.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.88);z-index:700;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;padding:20px;font-family:Segoe UI,Arial;';
+    ov.innerHTML=`
+      <div style="font-size:60px;margin-bottom:12px">⚔️</div>
+      <div style="font-size:20px;font-weight:900;color:#f5a623;margin-bottom:8px">Meydan Okuma Gönderildi!</div>
+      <div style="font-size:14px;color:rgba(255,255,255,.7);margin-bottom:20px"><b style="color:#fff">${nick}</b> cevap verene kadar bekle.<br>Uygulama her 10 saniyede kontrol eder.</div>
+      <button onclick="this.parentElement.remove()" style="padding:12px 32px;border-radius:20px;border:none;background:linear-gradient(90deg,#e94560,#f5a623);color:#fff;font-size:14px;font-weight:800;cursor:pointer;">Tamam</button>
+    `;
+    document.body.appendChild(ov);
+    setTimeout(()=>{if(ov.parentElement)ov.remove();},10000);
     _listenChallengeResponse(nick);
   }catch(e){
-    showToast('Gönderilemedi, tekrar dene');
+    if(btn){btn.textContent='⚔️ Meydan Oku!';btn.disabled=false;}
+    showToast('❌ Gönderilemedi, tekrar dene');
   }
 }
 
@@ -3039,8 +3059,8 @@ try{
 initUserScreen();
 document.body.style.background='linear-gradient(135deg,#0a0e1a,#1a2a1a)';
 
-/* Meydan okuma kontrolü - her 30 saniyede bir */
-setInterval(()=>{if(S.user)_checkIncomingChallenge();},30000);
+/* Meydan okuma kontrolü - her 3 saniyede bir */
+setInterval(()=>{if(S.user)_checkIncomingChallenge();},3000);
 
 /* Uygulama kapanınca/arka plana geçince kaydet */
 document.addEventListener('visibilitychange',()=>{
