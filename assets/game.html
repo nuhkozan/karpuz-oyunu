@@ -1715,21 +1715,47 @@ function continueUser(){
   beginLevel();
 }
 
-function registerUser(){
+async function registerUser(){
   const n=document.getElementById('uname').value.trim();
   const errEl=document.getElementById('uname-err');
   errEl.textContent='';
   if(!n){errEl.textContent='⚠️ Kullanıcı adı boş olamaz!';document.getElementById('uname').focus();return;}
   if(n.length<2){errEl.textContent='⚠️ En az 2 karakter gir.';return;}
+  if(n.length>16){errEl.textContent='⚠️ En fazla 16 karakter olabilir.';return;}
+
+  /* Lokal kontrol */
   if(isNameTaken(n)){
     errEl.textContent='🚫 Bu kullanıcı adı alınmış! Başka bir isim seç.';
     document.getElementById('uname').select();
     return;
   }
+
+  /* Firebase kontrolü */
+  const btn=document.querySelector('button[onclick="registerUser()"]');
+  if(btn){btn.textContent='⏳ Kontrol ediliyor...';btn.disabled=true;}
+  errEl.textContent='🔍 Kullanıcı adı kontrol ediliyor...';
+
+  try{
+    const key=n.replace(/[.#$[\]/]/g,'_');
+    const url=`${FB_URL}/leaderboard/${key}.json`;
+    const resp=await flutterFetch(url,'GET');
+    const data=await resp.json();
+    if(data && data.name){
+      errEl.textContent='🚫 Bu kullanıcı adı alınmış! Başka bir isim seç.';
+      if(btn){btn.textContent='KAYDET & OYNA 🚀';btn.disabled=false;}
+      return;
+    }
+  }catch(e){
+    errEl.textContent='⚠️ Sunucuya bağlanılamadı. İnternet bağlantını kontrol et.';
+    if(btn){btn.textContent='KAYDET & OYNA 🚀';btn.disabled=false;}
+    return;
+  }
+
+  if(btn){btn.textContent='KAYDET & OYNA 🚀';btn.disabled=false;}
+  errEl.textContent='';
   addRegistered(n);
   try{localStorage.setItem(UKEY,n);}catch{}
   S.user=n;S.lv=1;S.totSc=0;
-  /* Yeni kullanıcıya tutorial göster */
   const tutDone=localStorage.getItem('karpuz_tutdone');
   if(!tutDone){ showTutorial(); }
   else { checkDailyReward(); beginLevel(); }
