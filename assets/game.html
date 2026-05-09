@@ -802,6 +802,11 @@ window._fbReady=true;
   <button class="btn-out" style="align-self:flex-start;margin-bottom:10px" onclick="home()">🏠 Ana Sayfa</button>
   <div class="lb-title">🏆 ŞAMPİYONLAR LİGİ</div>
   <div class="lb-wrap" id="lb-tbl"></div>
+  <!-- Rakip takip bölümü -->
+  <div id="rival-section" style="display:none;width:100%;max-width:320px;margin-top:14px">
+    <div style="font-size:13px;font-weight:800;color:#f5a623;margin-bottom:8px">⚔️ RAKİBİM</div>
+    <div id="rival-tbl" class="lb-wrap"></div>
+  </div>
 </div>
 
 <script>
@@ -1528,12 +1533,24 @@ async function submitLB(name,score,lv){
   saveLB(lb.slice(0,50));
   const localRank=lb.findIndex(e=>e.name===name)+1;
 
-  /* Firebase — her zaman son skoru gönder */
+  /* Firebase — gönder */
   try{
     const key=name.replace(/[.#$[\]/]/g,'_');
-    const url=`${FB_URL}/leaderboard/${key}.json`;
-    await flutterFetch(url,'PUT',JSON.stringify({name,score,lv,t:Date.now()}));
+    await flutterFetch(`${FB_URL}/leaderboard/${key}.json`,'PUT',
+      JSON.stringify({name,score,lv,t:Date.now()}));
   }catch(e){console.log('Firebase submit err:',e);}
+
+  /* Gerçek sırayı Firebase'den hesapla */
+  try{
+    const resp=await flutterFetch(`${FB_URL}/leaderboard.json`,'GET');
+    const data=await resp.json();
+    if(data&&typeof data==='object'){
+      const all=Object.values(data).filter(e=>e&&e.score!=null);
+      all.sort((a,b)=>b.score-a.score);
+      const rank=all.findIndex(e=>e.name===name)+1;
+      return rank>0?rank:localRank;
+    }
+  }catch{}
 
   return localRank;
 }
@@ -1576,6 +1593,32 @@ async function renderLB(me){
       <div class="lb-lv">Lv${e.lv||1}</div>
     </div>`;
   }).join('');
+
+  /* Rakip bölümü */
+  if(_activeChallenge){
+    const rival=_activeChallenge.challenger===me?_activeChallenge.opponent:_activeChallenge.challenger;
+    const myData=entries.find(e=>e.name===me);
+    const rivalData=entries.find(e=>e.name===rival);
+    const rs=document.getElementById('rival-section');
+    const rt=document.getElementById('rival-tbl');
+    if(rs&&rt&&rivalData){
+      rs.style.display='block';
+      const myScore=myData?myData.score:0;
+      const rvScore=rivalData.score||0;
+      const diff=Math.abs(myScore-rvScore);
+      const ahead=myScore>rvScore;
+      rt.innerHTML=`
+        <div class="lb-row" style="background:rgba(233,69,96,.12)">
+          <div class="lb-rank">⚔️</div>
+          <div class="lb-name">${rival}</div>
+          <div class="lb-score">${rvScore.toLocaleString()}</div>
+          <div class="lb-lv">Lv${rivalData.lv||1}</div>
+        </div>
+        <div style="padding:8px 12px;font-size:11px;color:${ahead?'#44ff88':'#ff6655'}">
+          ${ahead?`🔥 ${diff.toLocaleString()} puan önündesin!`:`💪 ${diff.toLocaleString()} puan geride, yetişebilirsin!`}
+        </div>`;
+    }
+  }
 }
 
 /* ══════════════════════════════════════════
@@ -2991,25 +3034,44 @@ async function sendChallenge(){
 
 function _listenChallengeResponse(opponent){
   let tries=0;
+  const myKey=S.user.replace(/[.#$[\]/]/g,'_');
   const iv=setInterval(async()=>{
     tries++;
-    if(tries>60){clearInterval(iv);return;}
+    if(tries>120){clearInterval(iv);showToast(`⏰ ${opponent} cevap vermedi.`);return;}
     try{
-      const key=opponent.replace(/[.#$[\]/]/g,'_');
-      const url=`${FB_URL}/challenges/${key}.json`;
+      const url=`${FB_URL}/challenges/${myKey}_response.json`;
       const resp=await flutterFetch(url,'GET');
       const data=await resp.json();
       if(!data||data.from!==S.user)return;
       if(data.status==='accepted'){
         clearInterval(iv);
         _activeChallenge={challenger:S.user,opponent,startedAt:Date.now()};
-        showToast(`✅ ${opponent} meydan okumayı kabul etti!`);
+        /* Büyük kutlama */
+        const ov=document.createElement('div');
+        ov.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.88);z-index:700;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;padding:20px;font-family:Segoe UI,Arial;';
+        ov.innerHTML=`
+          <div style="font-size:60px;margin-bottom:12px">⚔️🔥</div>
+          <div style="font-size:22px;font-weight:900;color:#f5a623;margin-bottom:8px">${opponent} Kabul Etti!</div>
+          <div style="font-size:14px;color:rgba(255,255,255,.7);margin-bottom:20px">Yarış başladı! Her level sonunda rakibinin durumunu göreceksin.</div>
+          <button onclick="this.parentElement.remove()" style="padding:12px 32px;border-radius:20px;border:none;background:linear-gradient(90deg,#e94560,#f5a623);color:#fff;font-size:14px;font-weight:800;cursor:pointer;">Oyuna Başla! 🚀</button>
+        `;
+        document.body.appendChild(ov);
+        setTimeout(()=>{if(ov.parentElement)ov.remove();},8000);
       } else if(data.status==='rejected'){
         clearInterval(iv);
-        showToast(`😂 ${opponent} senden korktu! 🐔`);
+        const ov=document.createElement('div');
+        ov.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.88);z-index:700;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;padding:20px;font-family:Segoe UI,Arial;';
+        ov.innerHTML=`
+          <div style="font-size:60px;margin-bottom:12px">🐔😂</div>
+          <div style="font-size:22px;font-weight:900;color:#f5a623;margin-bottom:8px">${opponent} Senden Korktu!</div>
+          <div style="font-size:14px;color:rgba(255,255,255,.7);margin-bottom:20px">Meydan okumayı reddetti. Başka bir rakip bul!</div>
+          <button onclick="this.parentElement.remove()" style="padding:12px 32px;border-radius:20px;border:none;background:linear-gradient(90deg,#666,#444);color:#fff;font-size:14px;font-weight:800;cursor:pointer;">Tamam</button>
+        `;
+        document.body.appendChild(ov);
+        setTimeout(()=>{if(ov.parentElement)ov.remove();},8000);
       }
     }catch{}
-  },5000);
+  },3000);
 }
 
 async function _checkIncomingChallenge(){
@@ -3034,12 +3096,17 @@ async function acceptChallenge(){
   const from=ov._from;
   ov.style.display='none';
   try{
-    const key=S.user.replace(/[.#$[\]/]/g,'_');
-    const url=`${FB_URL}/challenges/${key}.json`;
-    await flutterFetch(url,'PUT',JSON.stringify({from,to:S.user,status:'accepted',t:Date.now()}));
+    const myKey=S.user.replace(/[.#$[\]/]/g,'_');
+    /* Kendi kaydımı güncelle - kabul ettim */
+    await flutterFetch(`${FB_URL}/challenges/${myKey}.json`,'PUT',
+      JSON.stringify({from,to:S.user,status:'accepted',t:Date.now()}));
+    /* Rakibin kaydına da yaz - beni bulsun */
+    const fromKey=from.replace(/[.#$[\]/]/g,'_');
+    await flutterFetch(`${FB_URL}/challenges/${fromKey}_response.json`,'PUT',
+      JSON.stringify({from,to:S.user,status:'accepted',t:Date.now()}));
     _activeChallenge={challenger:from,opponent:S.user,startedAt:Date.now()};
-    showToast(`⚔️ ${from} ile yarış başladı!`);
-  }catch{}
+    showToast(`✅ ${from} ile yarış başladı! 🔥`);
+  }catch(e){showToast('❌ Hata oluştu');}
 }
 
 async function rejectChallenge(){
@@ -3047,10 +3114,14 @@ async function rejectChallenge(){
   const from=ov._from;
   ov.style.display='none';
   try{
-    const key=S.user.replace(/[.#$[\]/]/g,'_');
-    const url=`${FB_URL}/challenges/${key}.json`;
-    await flutterFetch(url,'PUT',JSON.stringify({from,to:S.user,status:'rejected',t:Date.now()}));
-  }catch{}
+    const myKey=S.user.replace(/[.#$[\]/]/g,'_');
+    await flutterFetch(`${FB_URL}/challenges/${myKey}.json`,'PUT',
+      JSON.stringify({from,to:S.user,status:'rejected',t:Date.now()}));
+    const fromKey=from.replace(/[.#$[\]/]/g,'_');
+    await flutterFetch(`${FB_URL}/challenges/${fromKey}_response.json`,'PUT',
+      JSON.stringify({from,to:S.user,status:'rejected',t:Date.now()}));
+    showToast('Reddedildi.');
+  }catch(e){}
 }
 
 async function showChallengeStatus(){
@@ -3087,6 +3158,9 @@ document.body.style.background='linear-gradient(135deg,#0a0e1a,#1a2a1a)';
 
 /* Meydan okuma kontrolü - her 3 saniyede bir */
 setInterval(()=>{if(S.user)_checkIncomingChallenge();},3000);
+
+/* Otomatik kayıt - her 20 saniyede bir */
+setInterval(()=>{if(S.cfg&&!S.dead&&!_paused)saveGameState();},20000);
 
 /* Uygulama kapanınca/arka plana geçince kaydet */
 document.addEventListener('visibilitychange',()=>{
