@@ -42,32 +42,36 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       ..setBackgroundColor(Colors.black)
       ..addJavaScriptChannel('FlutterFetch',
           onMessageReceived: (JavaScriptMessage msg) async {
+        Map<String, dynamic> data;
         try {
-          final data = jsonDecode(msg.message) as Map<String, dynamic>;
-          final id = data['id'] as String;
-          final url = data['url'] as String;
-          final method = (data['method'] as String?) ?? 'GET';
-          final body = data['body'] as String?;
-          http.Response response;
-          if (method == 'PUT' && body != null) {
-            response = await http
-                .put(Uri.parse(url),
-                    headers: {'Content-Type': 'application/json'}, body: body)
-                .timeout(const Duration(seconds: 10));
-          } else {
-            response = await http
-                .get(Uri.parse(url))
-                .timeout(const Duration(seconds: 10));
-          }
-          final bodyJson = jsonEncode(response.body);
-          await _controller.runJavaScript(
-              'window._ftCb("$id",${response.statusCode},$bodyJson)');
+          data = jsonDecode(msg.message) as Map<String, dynamic>;
         } catch (e) {
-          try {
-            final data = jsonDecode(msg.message) as Map<String, dynamic>;
-            final id = data['id'] as String;
-            await _controller.runJavaScript('window._ftCb("$id",0,null)');
-          } catch (_) {}
+          return;
+        }
+        final id = data['id'] as String? ?? '';
+        final url = data['url'] as String? ?? '';
+        final method = (data['method'] as String?) ?? 'GET';
+        final body = data['body'] as String?;
+        try {
+          http.Response response;
+          final headers = {'Content-Type': 'application/json'};
+          if (method == 'PUT' && body != null) {
+            response = await http.put(
+              Uri.parse(url), headers: headers, body: body,
+            ).timeout(const Duration(seconds: 15));
+          } else {
+            response = await http.get(
+              Uri.parse(url), headers: headers,
+            ).timeout(const Duration(seconds: 15));
+          }
+          final safeBody = jsonEncode(response.body);
+          _controller.runJavaScript(
+            'try{window._ftCb("$id",${response.statusCode},$safeBody)}catch(e){}'
+          );
+        } catch (e) {
+          _controller.runJavaScript(
+            'try{window._ftCb("$id",0,null)}catch(e){}'
+          );
         }
       })
       ..addJavaScriptChannel('FlutterShare',
@@ -78,6 +82,14 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
           await launchUrl(uri);
         }
       })
+      ..setNavigationDelegate(NavigationDelegate(
+        onPageFinished: (url) {
+          // Firebase bağlantısını test et
+          _controller.runJavaScript(
+            'console.log("FlutterFetch available:", typeof FlutterFetch)'
+          );
+        },
+      ))
       ..loadFlutterAsset('assets/game.html');
   }
 
@@ -86,7 +98,8 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
       _controller.runJavaScript(
-          'if(typeof saveGameState==="function")saveGameState();');
+        'if(typeof saveGameState==="function")saveGameState();'
+      );
     }
   }
 
