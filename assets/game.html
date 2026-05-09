@@ -35,13 +35,20 @@ body {
 
 /* ── MUSIC TOGGLE ── */
 #mus-btn {
+  position:fixed; top:12px; right:54px; z-index:200;
+  background:rgba(0,0,0,.45); border:1.5px solid rgba(255,255,255,.2);
+  border-radius:50%; width:38px; height:38px;
+  font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  transition:background .2s;
+}
+#sfx-btn {
   position:fixed; top:12px; right:12px; z-index:200;
   background:rgba(0,0,0,.45); border:1.5px solid rgba(255,255,255,.2);
   border-radius:50%; width:38px; height:38px;
   font-size:18px; cursor:pointer; display:flex; align-items:center; justify-content:center;
   transition:background .2s;
 }
-#mus-btn:hover { background:rgba(0,0,0,.65); }
+#mus-btn:hover, #sfx-btn:hover { background:rgba(0,0,0,.65); }
 
 /* ── USERNAME ── */
 .brand     { font-size:58px; margin-bottom:6px; }
@@ -391,7 +398,8 @@ window._fbReady=true;
 </div>
 
 <!-- Müzik toggle -->
-<button id="mus-btn" onclick="toggleMusic()" title="Müzik Aç/Kapat">🔊</button>
+<button id="mus-btn" onclick="toggleMusic()" title="Müzik Aç/Kapat" style="right:54px">🎵</button>
+<button id="sfx-btn" onclick="toggleSfx()" title="Ses Efektleri Aç/Kapat">🔊</button>
 
 <!-- ① USERNAME -->
 <div id="s-user" class="screen active">
@@ -768,7 +776,7 @@ window._fbReady=true;
 <!-- ⑤ LEADERBOARD -->
 <div id="s-lb" class="screen">
   <button class="btn-out" style="align-self:flex-start;margin-bottom:10px" onclick="home()">🏠 Ana Sayfa</button>
-  <div class="lb-title">🏆 ŞAMPİYONA TABLOSU</div>
+  <div class="lb-title">🏆 ŞAMPİYONLAR LİGİ</div>
   <div class="lb-wrap" id="lb-tbl"></div>
 </div>
 
@@ -1109,7 +1117,7 @@ function ensureAC(){
 
 /* Meyve sesi */
 function snd(type,merge){
-  if(!AC)return;
+  if(!AC||!sfxOn)return;
   try{
     const f=FR[Math.min(type,FR.length-1)];
     const freq=f[3]*(merge?1.55:1);
@@ -1258,11 +1266,20 @@ const MUS={
 };
 
 let musicOn=true;
+let sfxOn=true;
 function toggleMusic(){
   musicOn=!musicOn;
-  document.getElementById('mus-btn').textContent=musicOn?'🔊':'🔇';
+  document.getElementById('mus-btn').textContent=musicOn?'🎵':'🎵';
+  document.getElementById('mus-btn').style.opacity=musicOn?'1':'0.4';
   if(musicOn){ MUS.muted=false; if(S.cfg&&!S.dead)MUS.start(); }
   else{ MUS.muted=true; MUS.stop(); }
+  try{localStorage.setItem('karpuz_music',musicOn?'1':'0');}catch{}
+}
+function toggleSfx(){
+  sfxOn=!sfxOn;
+  document.getElementById('sfx-btn').textContent='🔊';
+  document.getElementById('sfx-btn').style.opacity=sfxOn?'1':'0.4';
+  try{localStorage.setItem('karpuz_sfx',sfxOn?'1':'0');}catch{}
 }
 
 /* ══════════════════════════════════════════
@@ -1429,27 +1446,59 @@ const LBK='suika_lb_v3';
 function getLB(){try{return JSON.parse(localStorage.getItem(LBK)||'[]');}catch{return[];}}
 function saveLB(a){try{localStorage.setItem(LBK,JSON.stringify(a));}catch{}}
 /* ══════════════════════════════════════════
-   🏆 ONLINE LIDERBOARD — Firebase REST API
+   🏆 ŞAMPIYONLAR LİGİ — Firebase REST API + Flutter Channel
 ══════════════════════════════════════════ */
+
+/* Flutter'dan gelen fetch callback'leri için map */
+window._ftCallbacks = {};
+window._ftCb = function(id, status, body){
+  if(window._ftCallbacks[id]){
+    window._ftCallbacks[id](status, body);
+    delete window._ftCallbacks[id];
+  }
+};
+
+/* Flutter channel üzerinden fetch yap, yoksa direkt fetch dene */
+function flutterFetch(url, method='GET', body=null){
+  return new Promise((resolve, reject)=>{
+    if(window.FlutterFetch){
+      const id = 'ft_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+      window._ftCallbacks[id]=(status, responseBody)=>{
+        if(status===0){reject(new Error('fetch failed'));return;}
+        try{resolve({status, json:()=>Promise.resolve(JSON.parse(responseBody||'null'))});}
+        catch(e){resolve({status, json:()=>Promise.resolve(null)});}
+      };
+      FlutterFetch.postMessage(JSON.stringify({id, url, method, body}));
+      setTimeout(()=>{
+        if(window._ftCallbacks[id]){
+          delete window._ftCallbacks[id];
+          reject(new Error('timeout'));
+        }
+      }, 12000);
+    } else {
+      /* Tarayıcıda direkt fetch */
+      const opts = {method, headers:{'Content-Type':'application/json'}};
+      if(body) opts.body=body;
+      fetch(url, opts).then(r=>r.json()).then(data=>resolve({status:200,json:()=>Promise.resolve(data)})).catch(reject);
+    }
+  });
+}
+
 async function submitLB(name,score,lv){
   /* Lokal fallback */
   const lb=getLB();
   const i=lb.findIndex(e=>e.name===name);
-  if(i>=0){if(score>lb[i].score)lb[i]={name,score,lv};else lb[i].lv=Math.max(lb[i].lv,lv);}
+  if(i>=0){lb[i]={name,score,lv};}
   else lb.push({name,score,lv});
   lb.sort((a,b)=>b.score-a.score);
   saveLB(lb.slice(0,50));
   const localRank=lb.findIndex(e=>e.name===name)+1;
 
-  /* Firebase REST API */
+  /* Firebase — her zaman son skoru gönder */
   try{
     const key=name.replace(/[.#$[\]/]/g,'_');
     const url=`${FB_URL}/leaderboard/${key}.json`;
-    const existing=await fetch(url).then(r=>r.json());
-    if(!existing||score>(existing.score||0)){
-      await fetch(url,{method:'PUT',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({name,score,lv,t:Date.now()})});
-    }
+    await flutterFetch(url,'PUT',JSON.stringify({name,score,lv,t:Date.now()}));
   }catch(e){console.log('Firebase submit err:',e);}
 
   return localRank;
@@ -1462,10 +1511,10 @@ async function renderLB(me){
 
   let entries=[];
 
-  /* Firebase REST API — tüm listeyi çek, client'ta sırala */
   try{
     const url=`${FB_URL}/leaderboard.json`;
-    const data=await fetch(url).then(r=>r.json());
+    const resp = await flutterFetch(url,'GET');
+    const data = await resp.json();
     if(data&&typeof data==='object'){
       entries=Object.values(data).filter(e=>e&&e.name&&e.score);
       entries.sort((a,b)=>b.score-a.score);
@@ -1482,7 +1531,7 @@ async function renderLB(me){
   }
 
   const medals=['🥇','🥈','🥉'];
-  el.innerHTML=entries.slice(0,50).map((e,i)=>{
+  el.innerHTML=entries.map((e,i)=>{
     const rc=i===0?'g':i===1?'s':i===2?'b':'';
     const md=medals[i]||i+1+'.';
     const isMe=e.name===me;
@@ -1502,13 +1551,17 @@ function shareWA(){
   const name=S.user||'Bir arkadaşın';
   const text=
     `🍉 *Karpuz Oyunu* oynuyor musun?\n\n`+
-    `${name} seni şampiyona tablosuna davet ediyor! `+
+    `${name} seni Şampiyonlar Ligi'ne davet ediyor! `+
     `Meyveleri birleştir, karpuza ulaş! 99 level!\n\n`+
     `📲 Google Play'den indir:\nhttps://play.google.com/store/apps/details?id=com.nuhkozan.karpuz`;
+  /* Flutter channel varsa kullan */
+  if(window.FlutterShare){
+    FlutterShare.postMessage(text);
+    return;
+  }
+  /* Web share API */
   if(navigator.share){
-    navigator.share({title:'Karpuz Oyunu',text}).catch(()=>{
-      _copyShare(text);
-    });
+    navigator.share({title:'Karpuz Oyunu',text}).catch(()=>_copyShare(text));
   } else {
     _copyShare(text);
   }
@@ -2646,7 +2699,7 @@ async function killGame(rsn){
   document.getElementById('ov-rsn').textContent=rsn;
   document.getElementById('ov-lv').textContent=S.lv;
   document.getElementById('ov-sc').textContent=S.totSc.toLocaleString();
-  document.getElementById('ov-rank').textContent=`🎖 Şampiyona tablosunda #${rank}. sıradasın!`;
+  document.getElementById('ov-rank').textContent=`🎖 Şampiyonlar Liginda #${rank}. sıradasın!`;
   const closeEl=document.getElementById('ov-close');
   if(closeEl)closeEl.textContent=closeMsg;
   show('s-over');
@@ -2793,6 +2846,11 @@ function playAmbient(forestIdx){
    INIT
 ══════════════════════════════════════════ */
 document.getElementById('uname').addEventListener('keydown',e=>{if(e.key==='Enter')registerUser();});
+/* Kayıtlı ses tercihleri */
+try{
+  if(localStorage.getItem('karpuz_music')==='0'){musicOn=false;document.getElementById('mus-btn').style.opacity='0.4';}
+  if(localStorage.getItem('karpuz_sfx')==='0'){sfxOn=false;document.getElementById('sfx-btn').style.opacity='0.4';}
+}catch{}
 initUserScreen();
 document.body.style.background='linear-gradient(135deg,#0a0e1a,#1a2a1a)';
 
