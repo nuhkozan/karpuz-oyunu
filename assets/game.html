@@ -213,32 +213,10 @@ canvas { display:block; cursor:crosshair; touch-action:none; border-radius:14px;
 .lb-score  { font-weight:800; color:#f5a623; }
 .lb-lv     { font-size:10px; color:rgba(255,255,255,.35); margin-left:3px; }
 </style>
-<!-- Firebase -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
-import { getDatabase, ref, set, get, query, orderByChild, limitToLast }
-  from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyAbvc1oZgF1MDQiQw82LP8irspT7Ls5qm0",
-  authDomain: "karpuz-oyunu.firebaseapp.com",
-  databaseURL: "https://karpuz-oyunu-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "karpuz-oyunu",
-  storageBucket: "karpuz-oyunu.firebasestorage.app",
-  messagingSenderId: "595923323214",
-  appId: "1:595923323214:web:1da7cf176819ee4d88f61f"
-};
-
-const app = initializeApp(firebaseConfig);
-const db  = getDatabase(app);
-window._fbDb  = db;
-window._fbRef = ref;
-window._fbGet = get;
-window._fbQuery = query;
-window._fbOrderByChild = orderByChild;
-window._fbLimitToLast  = limitToLast;
-window._fbSet = set;
-window._fbReady = true;
+<!-- Firebase REST API - SDK yerine fetch kullanıyoruz, Flutter WebView uyumlu -->
+<script>
+const FB_URL='https://karpuz-oyunu-default-rtdb.europe-west1.firebasedatabase.app';
+window._fbReady=true;
 </script>
 </head>
 <body>
@@ -1451,7 +1429,7 @@ const LBK='suika_lb_v3';
 function getLB(){try{return JSON.parse(localStorage.getItem(LBK)||'[]');}catch{return[];}}
 function saveLB(a){try{localStorage.setItem(LBK,JSON.stringify(a));}catch{}}
 /* ══════════════════════════════════════════
-   🏆 ONLINE LIDERBOARD — Firebase
+   🏆 ONLINE LIDERBOARD — Firebase REST API
 ══════════════════════════════════════════ */
 async function submitLB(name,score,lv){
   /* Lokal fallback */
@@ -1463,18 +1441,17 @@ async function submitLB(name,score,lv){
   saveLB(lb.slice(0,50));
   const localRank=lb.findIndex(e=>e.name===name)+1;
 
-  /* Firebase'e gönder */
-  if(window._fbReady){
-    try{
-      const userKey=name.replace(/[.#$[\]/]/g,'_');
-      const r=window._fbRef(window._fbDb,`leaderboard/${userKey}`);
-      const snap=await window._fbGet(r);
-      const existing=snap.exists()?snap.val():null;
-      if(!existing||score>existing.score){
-        await window._fbSet(r,{name,score,lv,t:Date.now()});
-      }
-    }catch(e){console.log('Firebase err:',e);}
-  }
+  /* Firebase REST API */
+  try{
+    const key=name.replace(/[.#$[\]/]/g,'_');
+    const url=`${FB_URL}/leaderboard/${key}.json`;
+    const existing=await fetch(url).then(r=>r.json());
+    if(!existing||score>(existing.score||0)){
+      await fetch(url,{method:'PUT',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({name,score,lv,t:Date.now()})});
+    }
+  }catch(e){console.log('Firebase submit err:',e);}
+
   return localRank;
 }
 
@@ -1485,21 +1462,17 @@ async function renderLB(me){
 
   let entries=[];
 
-  /* Firebase'den çek */
-  if(window._fbReady){
-    try{
-      const r=window._fbRef(window._fbDb,'leaderboard');
-      const q=window._fbQuery(r,window._fbOrderByChild('score'),window._fbLimitToLast(50));
-      const snap=await window._fbGet(q);
-      if(snap.exists()){
-        snap.forEach(c=>{entries.push(c.val());});
-        entries.sort((a,b)=>b.score-a.score);
-      }
-    }catch(e){console.log('Firebase renderLB err:',e);}
-  }
-
-  /* Offline fallback */
-  if(!entries.length){
+  /* Firebase REST API — tüm listeyi çek, client'ta sırala */
+  try{
+    const url=`${FB_URL}/leaderboard.json`;
+    const data=await fetch(url).then(r=>r.json());
+    if(data&&typeof data==='object'){
+      entries=Object.values(data).filter(e=>e&&e.name&&e.score);
+      entries.sort((a,b)=>b.score-a.score);
+      entries=entries.slice(0,50);
+    }
+  }catch(e){
+    console.log('Firebase render err:',e);
     entries=getLB().map(e=>({name:e.name,score:e.score,lv:e.lv}));
   }
 
@@ -1533,13 +1506,26 @@ function shareWA(){
     `Meyveleri birleştir, karpuza ulaş! 99 level!\n\n`+
     `📲 Google Play'den indir:\nhttps://play.google.com/store/apps/details?id=com.nuhkozan.karpuz`;
   if(navigator.share){
-    navigator.share({title:'Karpuz Oyunu',text}).catch(()=>{});
+    navigator.share({title:'Karpuz Oyunu',text}).catch(()=>{
+      _copyShare(text);
+    });
   } else {
-    const url=`https://wa.me/?text=${encodeURIComponent(text)}`;
-    const a=document.createElement('a');
-    a.href=url; a.target='_blank'; a.rel='noopener noreferrer';
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    _copyShare(text);
   }
+}
+function _copyShare(text){
+  try{
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(()=>showToast('📋 Kopyalandı! WhatsApp\'a yapıştır.')).catch(()=>_fallbackCopy(text));
+    } else { _fallbackCopy(text); }
+  }catch(e){_fallbackCopy(text);}
+}
+function _fallbackCopy(text){
+  const ta=document.createElement('textarea');
+  ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try{document.execCommand('copy');showToast('📋 Kopyalandı! WhatsApp\'a yapıştır.');}catch{}
+  document.body.removeChild(ta);
 }
 
 /* ══════════════════════════════════════════
@@ -2670,7 +2656,7 @@ async function killGame(rsn){
    NAVİGASYON
 ══════════════════════════════════════════ */
 function nextLv(){if(S.lv>=99){S.lv=1;S.totSc=0;}else S.lv++;clearSavedGame();beginLevel();}
-function retry(){clearSavedGame();beginLevel();}
+function retry(){clearSavedGame();S.lvSc=0;beginLevel();}/* Aynı leveli yeniden başlat */
 function home(){saveGameState();stop();initUserScreen();show('s-user');}
 function backGame(){if(S.cfg)show('s-game');else show('s-user');}
 function pauseAndHome(){
@@ -2809,6 +2795,15 @@ function playAmbient(forestIdx){
 document.getElementById('uname').addEventListener('keydown',e=>{if(e.key==='Enter')registerUser();});
 initUserScreen();
 document.body.style.background='linear-gradient(135deg,#0a0e1a,#1a2a1a)';
+
+/* Uygulama kapanınca/arka plana geçince kaydet */
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='hidden' && S.cfg && !S.dead){
+    if(!_paused){_paused=true;cancelAnimationFrame(S.rafId);clearInterval(S.timerId);}
+    saveGameState();
+  }
+});
+window.addEventListener('pagehide',()=>{if(S.cfg&&!S.dead)saveGameState();});
 </script>
 </body>
 </html>
