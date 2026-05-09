@@ -20,4 +20,3 @@ flutter:
   uses-material-design: true
   assets:
     - assets/game.html
-    - assets/icon_512-1.png
