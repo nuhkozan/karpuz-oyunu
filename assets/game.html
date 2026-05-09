@@ -213,6 +213,33 @@ canvas { display:block; cursor:crosshair; touch-action:none; border-radius:14px;
 .lb-score  { font-weight:800; color:#f5a623; }
 .lb-lv     { font-size:10px; color:rgba(255,255,255,.35); margin-left:3px; }
 </style>
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+import { getDatabase, ref, set, get, query, orderByChild, limitToLast }
+  from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAbvc1oZgF1MDQiQw82LP8irspT7Ls5qm0",
+  authDomain: "karpuz-oyunu.firebaseapp.com",
+  databaseURL: "https://karpuz-oyunu-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "karpuz-oyunu",
+  storageBucket: "karpuz-oyunu.firebasestorage.app",
+  messagingSenderId: "595923323214",
+  appId: "1:595923323214:web:1da7cf176819ee4d88f61f"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+window._fbDb  = db;
+window._fbRef = ref;
+window._fbGet = get;
+window._fbQuery = query;
+window._fbOrderByChild = orderByChild;
+window._fbLimitToLast  = limitToLast;
+window._fbSet = set;
+window._fbReady = true;
+</script>
 </head>
 <body>
 
@@ -362,19 +389,22 @@ canvas { display:block; cursor:crosshair; touch-action:none; border-radius:14px;
   flex-direction:column; align-items:center; justify-content:center;
   font-family:'Segoe UI',Arial,sans-serif; color:#fff; text-align:center;
   animation:lvIn .3s ease;">
-  <div style="font-size:64px;margin-bottom:8px">🍉</div>
-  <div style="font-size:15px;letter-spacing:3px;color:rgba(255,255,255,.5);margin-bottom:4px">TAMAMLANDI</div>
+  <div id="lv-fruit" style="font-size:72px;margin-bottom:4px;animation:fruitPop .5s ease">🍉</div>
+  <div style="font-size:13px;letter-spacing:3px;color:rgba(255,255,255,.5);margin-bottom:2px">TAMAMLANDI</div>
   <div style="font-size:34px;font-weight:900;letter-spacing:2px" id="lv-done">LEVEL 1</div>
-  <div style="width:180px;height:2px;background:linear-gradient(90deg,#e94560,#f5a623);margin:14px auto;border-radius:2px"></div>
-  <div style="font-size:28px;font-weight:900;color:#f5a623" id="lv-score">0 puan</div>
-  <div style="font-size:16px;font-weight:700;color:#44ff88;margin-top:6px" id="lv-rank">🏆 #1. Sırada</div>
-  <div style="margin-top:20px;font-size:13px;color:rgba(255,255,255,.4);letter-spacing:1px" id="lv-next">LEVEL 2 BAŞLIYOR…</div>
-  <div style="margin-top:16px;width:160px;height:3px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden">
+  <div id="lv-newrecord" style="display:none;background:linear-gradient(90deg,#f5a623,#e94560);border-radius:20px;padding:4px 16px;font-size:12px;font-weight:800;margin:6px 0">🏆 YENİ REKOR!</div>
+  <div style="width:180px;height:2px;background:linear-gradient(90deg,#e94560,#f5a623);margin:10px auto;border-radius:2px"></div>
+  <div style="font-size:26px;font-weight:900;color:#f5a623" id="lv-score">0 puan</div>
+  <div style="font-size:14px;font-weight:700;color:#44ff88;margin-top:4px" id="lv-rank">🏆 #1. Sırada</div>
+  <div style="margin-top:6px;font-size:11px;color:rgba(255,255,255,.4)" id="lv-stats"></div>
+  <div style="margin-top:16px;font-size:13px;color:rgba(255,255,255,.4);letter-spacing:1px" id="lv-next">LEVEL 2 BAŞLIYOR…</div>
+  <div style="margin-top:12px;width:160px;height:3px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden">
     <div id="lv-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#e94560,#f5a623);transition:width 2.5s linear;border-radius:2px"></div>
   </div>
 </div>
 <style>
 @keyframes lvIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+@keyframes fruitPop{0%{transform:scale(0) rotate(-20deg)}60%{transform:scale(1.3) rotate(5deg)}100%{transform:scale(1) rotate(0)}}
 </style>
 
 <!-- WhatsApp bar — her zaman üstte -->
@@ -420,9 +450,217 @@ canvas { display:block; cursor:crosshair; touch-action:none; border-radius:14px;
     </div>
   </div>
 
-  <div style="margin-top:18px">
-    <button class="btn-out" onclick="openLB()">🏆 Şampiyona Tablosu</button>
+  <div style="margin-top:18px;display:flex;gap:8px;justify-content:center">
+    <button class="btn-out" onclick="openLB()">🏆 Şampiyona</button>
+    <button class="btn-out" onclick="openInfo()">📖 Rehber</button>
   </div>
+</div>
+
+<!-- ══ BİLGİ OVERLAY ══ -->
+<div class="mission-overlay" id="info-overlay">
+  <div class="mission-card" style="max-height:80vh;overflow-y:auto">
+    <div class="mission-title">📖 OYUN REHBERİ</div>
+    <div style="font-size:12px;color:rgba(255,255,255,.7);margin-bottom:14px;line-height:1.7">
+      Aynı meyveleri birleştirerek level hedef meyvesine ulaş!<br>
+      Alan taşarsa oyun biter. Güçlendirmeleri akıllıca kullan.
+    </div>
+
+    <div style="font-size:13px;font-weight:800;color:#f5a623;margin-bottom:8px">🎯 LEVEL HEDEFLERİ</div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:14px">
+      <thead>
+        <tr style="background:rgba(255,255,255,.06);color:rgba(255,255,255,.45);font-size:10px;letter-spacing:1px">
+          <th style="padding:6px 8px;text-align:left">LEVELLAR</th>
+          <th style="padding:6px 8px;text-align:center">HEDEF</th>
+          <th style="padding:6px 8px;text-align:right">ZORLUK</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid rgba(255,255,255,.07)">
+          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">1 – 2</td>
+          <td style="padding:8px 8px;text-align:center;font-size:16px">🍇 Üzüm</td>
+          <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,.07)">
+          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">3 – 4</td>
+          <td style="padding:8px 8px;text-align:center;font-size:16px">🍊 Mandalina</td>
+          <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,.07)">
+          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">5 – 7</td>
+          <td style="padding:8px 8px;text-align:center;font-size:16px">🍎 Elma</td>
+          <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,.07)">
+          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">7 – 10</td>
+          <td style="padding:8px 8px;text-align:center;font-size:16px">🍐 Armut</td>
+          <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐⭐</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,.07)">
+          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">10 – 15</td>
+          <td style="padding:8px 8px;text-align:center;font-size:16px">🍑 Şeftali</td>
+          <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐⭐</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,.07)">
+          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">15 – 25</td>
+          <td style="padding:8px 8px;text-align:center;font-size:16px">🥭 Mango</td>
+          <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐⭐⭐</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,.07)">
+          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">25 – 40</td>
+          <td style="padding:8px 8px;text-align:center;font-size:16px">🍍 Ananas</td>
+          <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐⭐⭐</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,.07)">
+          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">40 – 60</td>
+          <td style="padding:8px 8px;text-align:center;font-size:16px">🍈 Kavun</td>
+          <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐⭐⭐⭐</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">60 – 99</td>
+          <td style="padding:8px 8px;text-align:center;font-size:16px">🍉 Karpuz</td>
+          <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐⭐⭐⭐</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="font-size:13px;font-weight:800;color:#f5a623;margin-bottom:8px;margin-top:4px">🔗 MEYVE ZİNCİRİ</div>
+    <div style="background:rgba(0,0,0,.3);border-radius:12px;padding:10px 8px;margin-bottom:14px">
+      <div style="font-size:10px;color:rgba(255,255,255,.4);margin-bottom:8px;text-align:center">İki aynı meyve birleşince bir üstü oluşur</div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
+          <span>🍒</span><span style="color:rgba(255,255,255,.3)">+</span><span>🍒</span>
+          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
+          <span>🫐</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Yaban Mersini</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
+          <span>🫐</span><span style="color:rgba(255,255,255,.3)">+</span><span>🫐</span>
+          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
+          <span>🍓</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Çilek</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
+          <span>🍓</span><span style="color:rgba(255,255,255,.3)">+</span><span>🍓</span>
+          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
+          <span>🍋</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Limon</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
+          <span>🍋</span><span style="color:rgba(255,255,255,.3)">+</span><span>🍋</span>
+          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
+          <span>🍇</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Üzüm</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
+          <span>🍇</span><span style="color:rgba(255,255,255,.3)">+</span><span>🍇</span>
+          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
+          <span>🍊</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Mandalina</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
+          <span>🍊</span><span style="color:rgba(255,255,255,.3)">+</span><span>🍊</span>
+          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
+          <span>🥝</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Kivi</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
+          <span>🥝</span><span style="color:rgba(255,255,255,.3)">+</span><span>🥝</span>
+          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
+          <span>🍎</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Elma</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
+          <span>🍎</span><span style="color:rgba(255,255,255,.3)">+</span><span>🍎</span>
+          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
+          <span>🍐</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Armut</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
+          <span>🍐</span><span style="color:rgba(255,255,255,.3)">+</span><span>🍐</span>
+          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
+          <span>🍑</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Şeftali</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
+          <span>🍑</span><span style="color:rgba(255,255,255,.3)">+</span><span>🍑</span>
+          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
+          <span>🥭</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Mango</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
+          <span>🥭</span><span style="color:rgba(255,255,255,.3)">+</span><span>🥭</span>
+          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
+          <span>🍍</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Ananas</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
+          <span>🍍</span><span style="color:rgba(255,255,255,.3)">+</span><span>🍍</span>
+          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
+          <span>🥥</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Hindistan Cevizi</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
+          <span>🥥</span><span style="color:rgba(255,255,255,.3)">+</span><span>🥥</span>
+          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
+          <span>🍈</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Kavun</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
+          <span>🍈</span><span style="color:rgba(255,255,255,.3)">+</span><span>🍈</span>
+          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
+          <span>🫒</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Zeytin</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
+          <span>🫒</span><span style="color:rgba(255,255,255,.3)">+</span><span>🫒</span>
+          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
+          <span style="font-size:16px">🍉</span><span style="font-size:10px;color:#f5a623;font-weight:800;margin-left:2px">KARPUZ! 🏆</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="font-size:13px;font-weight:800;color:#f5a623;margin-bottom:8px">💡 İPUÇLARI</div>
+    <div style="font-size:12px;color:rgba(255,255,255,.65);line-height:1.9;margin-bottom:4px">
+      💣 <b>Bomba</b> — Seçilen meyveyi patlatır<br>
+      ❄️ <b>Dondur</b> — 3 saniye fizik durur<br>
+      ⚡ <b>2× Puan</b> — Puanlar 2 katına çıkar<br>
+      ⏸ <b>Duraklat</b> — Oyun kaydedilir<br>
+      🏠 <b>Ana Sayfa</b> — Kaldığın yerden devam edebilirsin
+    </div>
+  </div>
+  <button class="btn-main" style="margin-top:14px" onclick="closeInfo()">Kapat</button>
+</div>
+
+<!-- ══ TUTORIAL OVERLAY ══ -->
+<div id="tutorial-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.92);z-index:600;flex-direction:column;align-items:center;justify-content:center;font-family:'Segoe UI',Arial;color:#fff;text-align:center;padding:20px">
+  <div style="font-size:48px;margin-bottom:8px">🍉</div>
+  <div style="font-size:22px;font-weight:900;margin-bottom:4px">Karpuz Oyununa Hoş Geldin!</div>
+  <div style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:24px">Nasıl oynanır?</div>
+  <div id="tut-steps" style="width:90%;max-width:300px">
+    <div class="tut-step active" id="tut-0" style="background:rgba(255,255,255,.06);border-radius:18px;padding:20px;margin-bottom:12px">
+      <div style="font-size:40px">👆</div>
+      <div style="font-size:16px;font-weight:800;margin:8px 0 4px">Ekrana Dokun</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.6)">İstediğin yere dokunarak meyveyi bırak</div>
+    </div>
+    <div class="tut-step" id="tut-1" style="background:rgba(255,255,255,.06);border-radius:18px;padding:20px;margin-bottom:12px;display:none">
+      <div style="font-size:40px">🍒+🍒</div>
+      <div style="font-size:16px;font-weight:800;margin:8px 0 4px">Aynıları Birleştir</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.6)">İki aynı meyve yan yana gelince büyük meyve oluşur</div>
+    </div>
+    <div class="tut-step" id="tut-2" style="background:rgba(255,255,255,.06);border-radius:18px;padding:20px;margin-bottom:12px;display:none">
+      <div style="font-size:40px" id="tut-target">🍇</div>
+      <div style="font-size:16px;font-weight:800;margin:8px 0 4px">Hedefe Ulaş!</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.6)">Her levelin bir hedef meyvesi var. O meyveyi yap ve level geç!</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:12px;margin-top:8px">
+    <button id="tut-prev" onclick="tutPrev()" class="btn-out" style="display:none">← Geri</button>
+    <button id="tut-next" onclick="tutNext()" class="btn-main" style="padding:12px 32px">Devam →</button>
+  </div>
+  <div style="display:flex;gap:6px;margin-top:14px">
+    <div id="tut-dot-0" style="width:8px;height:8px;border-radius:50%;background:#f5a623"></div>
+    <div id="tut-dot-1" style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.3)"></div>
+    <div id="tut-dot-2" style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.3)"></div>
+  </div>
+</div>
+
+<!-- ══ GÜNLÜK ÖDÜL OVERLAY ══ -->
+<div id="daily-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.88);z-index:550;flex-direction:column;align-items:center;justify-content:center;font-family:'Segoe UI',Arial;color:#fff;text-align:center">
+  <div style="font-size:52px;margin-bottom:8px">🎁</div>
+  <div style="font-size:20px;font-weight:900;color:#f5a623;margin-bottom:4px">Günlük Ödül!</div>
+  <div style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:20px">Her gün giriş yapana özel</div>
+  <div style="background:#1a1a2e;border-radius:18px;padding:20px;width:240px;margin-bottom:18px">
+    <div id="daily-rewards" style="display:flex;justify-content:center;gap:16px;font-size:13px">
+    </div>
+  </div>
+  <div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:14px" id="daily-streak"></div>
+  <button class="btn-main" onclick="claimDailyReward()">🎉 Al!</button>
 </div>
 
 <!-- ② GAME -->
@@ -436,11 +674,15 @@ canvas { display:block; cursor:crosshair; touch-action:none; border-radius:14px;
     <div class="hud-box"><div class="hud-lbl">TOPLAM</div><div class="hud-val" id="h-tot">0</div></div>
     <div class="hud-box" id="tbox"><div class="hud-lbl">SÜRE</div><div class="hud-val" id="h-tm">0</div></div>
     <div class="hud-box" style="background:rgba(34,170,68,.18)"><div class="hud-lbl">ÇARPAN</div><div class="hud-val" id="h-mult">×1.00</div></div>
-    <div class="hud-box" style="background:rgba(255,80,80,.15);border:1.5px solid rgba(255,80,80,.3)"><div class="hud-lbl">HEDEF</div><div class="hud-val" style="font-size:20px">🍉</div></div>
+    <div class="hud-box" style="background:rgba(255,80,80,.15);border:1.5px solid rgba(255,80,80,.3)"><div class="hud-lbl">HEDEF</div><div class="hud-val" style="font-size:20px" id="h-hedef-hud">🍉</div></div>
   </div>
   <div class="next-row">
-    <span style="flex:1;font-size:11px">Sıradaki: <span id="nxt" class="next-fruit-big">🍒</span></span>
-    <span style="font-size:11px;opacity:.55">🍈+🍈 → <span style="color:#ff6655;font-weight:800">🍉</span> Hedef!</span>
+    <span style="font-size:11px">Sıradaki:</span>
+    <span id="nxt" class="next-fruit-big">🍒</span>
+    <span id="nxt2" style="font-size:18px;opacity:.6">🍒</span>
+    <span id="nxt3" style="font-size:14px;opacity:.35">🍒</span>
+    <span style="flex:1"></span>
+    <span style="font-size:11px;opacity:.55">Hedef: <span id="h-hedef" style="color:#ff6655;font-weight:800;font-size:18px">🍉</span></span>
     <span id="ubadge" style="font-size:11px;opacity:.5;margin-left:8px"></span>
   </div>
   <!-- Canvas -->
@@ -449,7 +691,8 @@ canvas { display:block; cursor:crosshair; touch-action:none; border-radius:14px;
     <div id="combo-layer" style="position:absolute;top:0;left:0;pointer-events:none;width:100%;height:100%"></div>
   </div>
   <div class="autodrop-wrap"><div class="autodrop-fill" id="adf" style="width:100%"></div></div>
-  <!-- Power-up + Mağaza + Görev + Durdur bar -->
+  <!-- Toast alanı -->
+  <div id="game-toast-area" style="width:100%;min-height:22px;text-align:center;margin:2px 0;font-size:12px;font-weight:700;color:#f5a623;opacity:0;transition:opacity .3s;"></div>
   <div style="display:flex;gap:5px;align-items:center;margin-bottom:4px;width:100%">
     <button class="pu-btn" id="pu-bomb"   onclick="usePower('bomb')"   title="Bomba">
       <span class="pu-icon">💣</span><span style="font-size:8px">BOMBA</span>
@@ -469,6 +712,9 @@ canvas { display:block; cursor:crosshair; touch-action:none; border-radius:14px;
     </div>
     <button class="pu-btn" id="pause-btn" onclick="togglePause()" title="Durdur/Devam" style="max-width:52px;background:rgba(0,0,0,.55);border-color:rgba(255,255,255,.25)">
       <span class="pu-icon" id="pause-icon">⏸</span>
+    </button>
+    <button class="pu-btn" onclick="pauseAndHome()" title="Ana Sayfa" style="max-width:52px;background:rgba(0,0,0,.55);border-color:rgba(255,255,255,.25)">
+      <span class="pu-icon">🏠</span>
     </button>
   </div>
   <!-- Banner Reklamlar -->
@@ -524,9 +770,10 @@ canvas { display:block; cursor:crosshair; touch-action:none; border-radius:14px;
 <!-- ④ GAME OVER -->
 <div id="s-over" class="screen">
   <div class="r-card">
-    <div class="r-emoji">💥</div>
+    <div class="r-emoji" id="ov-emoji">💥</div>
     <div class="r-title">OYUN BİTTİ</div>
     <div class="r-sub" id="ov-rsn">Alan taştı!</div>
+    <div id="ov-close" style="font-size:13px;color:#f5a623;margin-bottom:10px;font-weight:700"></div>
     <div class="stat-row">
       <div class="stat-box"><div class="stat-v" id="ov-lv">1</div><div class="stat-l">LEVEL</div></div>
       <div class="stat-box"><div class="stat-v" id="ov-sc">0</div><div class="stat-l">TOPLAM PUAN</div></div>
@@ -584,6 +831,26 @@ const FR = [
 ];
 
 /* ══════════════════════════════════════════
+   LEVEL HEDEF MEYVESİ
+   lv 1-3: Limon(3), 4-6: Üzüm(4), 7-10: Mandalina(5),
+   11-15: Elma(7), 16-20: Armut(8), 21-25: Şeftali(9),
+   26-35: Mango(10), 36-50: Ananas(11), 51-70: Kavun(13),
+   71-99: Karpuz(15)
+══════════════════════════════════════════ */
+function getLevelTarget(lv){
+  const e=((lv-1)%99)+1;
+  if(e<=2)  return 4;   // Üzüm
+  if(e<=4)  return 5;   // Mandalina
+  if(e<=7)  return 7;   // Elma
+  if(e<=10) return 8;   // Armut
+  if(e<=15) return 9;   // Şeftali
+  if(e<=25) return 10;  // Mango
+  if(e<=40) return 11;  // Ananas
+  if(e<=60) return 13;  // Kavun
+  return 15;            // Karpuz
+}
+
+/* ══════════════════════════════════════════
    LEVEL CONFIG
 ══════════════════════════════════════════ */
 function lvlCfg(lv){
@@ -594,13 +861,23 @@ function lvlCfg(lv){
   const cw = Math.min(vw-8, Math.min(440, 320+br*16));
   const ch = Math.max(420, Math.round(vh * 0.52));
   const wt = 8;
+  const target = getLevelTarget(lv);
+  /* İlk levellerde bol süre, ilerledikçe kısalır */
+  const timeLimit = eff<=5  ? 999 :
+                    eff<=15 ? Math.max(60, 120-eff*2) :
+                    Math.max(18, 82-eff*0.75)|0;
+  /* Hedef puan: hedef meyveye göre ölçekli */
+  const targetScore = eff<=5 ? 100 : 150 + eff*150;
+  /* Tehlike çizgisi: level 1'de ortadan başlar, her 5 levelde ~7px yukarı çıkar */
+  const dangerY = Math.max(82, Math.round(ch/2) - Math.floor((eff-1)/5) * 7);
   return {
-    targetScore:200+eff*200,
-    timeLimit:Math.max(18,82-eff*0.75)|0,
-    gravity:1200+eff*36,
+    targetScore,
+    timeLimit,
+    gravity:1200+eff*30,
     cw,ch, wL:wt,wR:cw-wt,floor:ch-wt,
-    dangerY:82,
+    dangerY,
     maxDrop:Math.min(14, 7 + Math.floor((eff-1)/2)),
+    target,
   };
 }
 
@@ -608,132 +885,230 @@ function lvlCfg(lv){
    🌲 ORMAN ARKA PLAN SİSTEMİ
 ══════════════════════════════════════════ */
 const FORESTS = [
-  /* 0 — Çam Ormanı (Gece) */
-  {sky:['#0a0e1a','#1a2a1a'], ground:'#0d1a08', treeCol:'#0a1505', treeCol2:'#122010', fog:'rgba(20,30,15,0.35)', moon:true, stars:true},
-  /* 1 — Sonbahar Ormanı */
-  {sky:['#1a0800','#2e1200'], ground:'#1a0a00', treeCol:'#3d1500', treeCol2:'#5c2200', fog:'rgba(40,15,0,0.3)', moon:false, stars:false, autumn:true},
-  /* 2 — Tropikal */
-  {sky:['#001a2e','#003a5c'], ground:'#002210', treeCol:'#00350f', treeCol2:'#00451a', fog:'rgba(0,30,15,0.3)', moon:false, stars:true, tropical:true},
-  /* 3 — Kar Ormanı */
-  {sky:['#0d1a2e','#1a2e4a'], ground:'#d8e8f0', treeCol:'#0d2210', treeCol2:'#183a1e', fog:'rgba(200,220,240,0.25)', moon:true, stars:true, snow:true},
-  /* 4 — Gün Batımı Ormanı */
-  {sky:['#3a0a00','#8c2200'], ground:'#1a0800', treeCol:'#0f0500', treeCol2:'#200a00', fog:'rgba(80,20,0,0.28)', moon:false, stars:false, sunset:true},
-  /* 5 — Mistik Mor Orman */
-  {sky:['#0e0020','#200040'], ground:'#150025', treeCol:'#1a003a', treeCol2:'#25005c', fog:'rgba(80,0,120,0.25)', moon:true, stars:true, mystic:true},
-  /* 6 — Bambu Ormanı */
-  {sky:['#0a1a08','#152e10'], ground:'#0a1a05', treeCol:'#0d2008', treeCol2:'#183510', fog:'rgba(10,30,5,0.3)', moon:false, stars:false, bamboo:true},
-  /* 7 — Buz Mağarası */
-  {sky:['#001018','#002030'], ground:'#003045', treeCol:'#001a28', treeCol2:'#002535', fog:'rgba(0,30,50,0.35)', moon:false, stars:true, ice:true},
+  /* 0 — Krem/Bej (Level 1) */
+  {sky:['#f5f0e8','#ede8dc'], ground:'#d4c9b0', theme:'cream'},
+  /* 1 — Açık Krem/Sarı (Level 2) */
+  {sky:['#faf3e0','#f5eac8'], ground:'#e0d4a8', theme:'cream2'},
+  /* 2 — Deniz/Plaj (Level 3) */
+  {sky:['#b8e4f9','#7ec8e3'], ground:'#f0d890', theme:'beach'},
+  /* 3 — Bahar/Çiçek (Level 4) */
+  {sky:['#fce4ec','#f8bbd9'], ground:'#c8e6c9', theme:'flower'},
+  /* 4 — Gün Batımı (Level 5) */
+  {sky:['#ffcc80','#ff8a65'], ground:'#bf8040', theme:'sunset'},
+  /* 5 — Uzay/Yıldız (Level 6) */
+  {sky:['#1a1a3e','#0d0d2e'], ground:'#0a0a1e', theme:'space'},
+  /* 6 — Orman Sabahı (Level 7) */
+  {sky:['#c8e6c9','#a5d6a7'], ground:'#558b2f', theme:'morning'},
+  /* 7 — Okyanus (Level 8) */
+  {sky:['#0288d1','#0277bd'], ground:'#01579b', theme:'ocean'},
+  /* 8 — Sonbahar (Level 9) */
+  {sky:['#ffe0b2','#ffcc80'], ground:'#795548', theme:'autumn'},
+  /* 9 — Gece Gökyüzü (Level 10) */
+  {sky:['#1a237e','#283593'], ground:'#1a1a4e', theme:'night'},
+  /* 10 — Kelebek Bahçesi (Level 11) */
+  {sky:['#e8f5e9','#dcedc8'], ground:'#8bc34a', theme:'garden'},
+  /* 11 — Buz/Kar (Level 12) */
+  {sky:['#e3f2fd','#bbdefb'], ground:'#e0e0e0', theme:'snow'},
 ];
 
 function drawForest(W, H){
   const fi = (S.lv - 1) % FORESTS.length;
   const f  = FORESTS[fi];
+  const rng = mulberry32(fi * 7919);
 
   /* Gökyüzü degradesi */
-  const sky = ctx.createLinearGradient(0,0,0,H);
+  const sky = ctx.createLinearGradient(0, 0, 0, H);
   sky.addColorStop(0, f.sky[0]);
   sky.addColorStop(1, f.sky[1]);
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, W, H);
 
-  /* Yıldızlar */
-  if(f.stars){
-    ctx.fillStyle='rgba(255,255,255,0.7)';
-    const rng = mulberry32(fi*7919);
-    for(let i=0;i<28;i++){
-      const sx=rng()*W, sy=rng()*(H*0.55);
-      const sr=rng()*1.2+0.3;
-      ctx.beginPath();ctx.arc(sx,sy,sr,0,Math.PI*2);ctx.fill();
+  /* Tema özel çizimler */
+  if(f.theme==='cream'||f.theme==='cream2'){
+    /* Krem - yumuşak daireler */
+    for(let i=0;i<5;i++){
+      const cx=rng()*W, cy=H*0.1+rng()*H*0.5, cr=40+rng()*60;
+      ctx.save();ctx.globalAlpha=0.06+rng()*0.05;
+      ctx.fillStyle='#c8a87a';
+      ctx.beginPath();ctx.arc(cx,cy,cr,0,Math.PI*2);ctx.fill();
+      ctx.restore();
+    }
+    /* Küçük çiçekler */
+    for(let i=0;i<8;i++){
+      const fx=rng()*W, fy=H*0.5+rng()*H*0.4;
+      drawFlower(fx,fy,6+rng()*8,'rgba(200,160,100,0.25)');
     }
   }
-
-  /* Ay */
-  if(f.moon){
-    ctx.fillStyle='rgba(255,248,200,0.85)';
-    ctx.beginPath();ctx.arc(W*0.78, H*0.14, 14, 0, Math.PI*2);ctx.fill();
-    ctx.fillStyle=f.sky[0];
-    ctx.beginPath();ctx.arc(W*0.78+7, H*0.14-4, 12, 0, Math.PI*2);ctx.fill();
-  }
-
-  /* Sunset gradient */
-  if(f.sunset){
-    const sg=ctx.createRadialGradient(W/2,H*0.3,0,W/2,H*0.3,W*0.8);
-    sg.addColorStop(0,'rgba(255,120,0,0.45)');
-    sg.addColorStop(1,'rgba(0,0,0,0)');
+  else if(f.theme==='beach'){
+    /* Güneş */
+    const sg=ctx.createRadialGradient(W*0.75,H*0.12,0,W*0.75,H*0.12,55);
+    sg.addColorStop(0,'rgba(255,230,80,0.5)');sg.addColorStop(1,'rgba(255,220,50,0)');
     ctx.fillStyle=sg;ctx.fillRect(0,0,W,H);
-  }
-
-  /* Mystic glow */
-  if(f.mystic){
-    ctx.fillStyle='rgba(120,0,200,0.12)';ctx.fillRect(0,0,W,H);
-    const mg=ctx.createRadialGradient(W*0.3,H*0.2,0,W*0.3,H*0.2,W*0.5);
-    mg.addColorStop(0,'rgba(160,0,255,0.25)');
-    mg.addColorStop(1,'rgba(0,0,0,0)');
-    ctx.fillStyle=mg;ctx.fillRect(0,0,W,H);
-  }
-
-  /* Arka plan ağaçlar (büyük, koyu) */
-  const rng2=mulberry32(fi*1337+1);
-  const treeCount=10;
-  for(let i=0;i<treeCount;i++){
-    const tx=( i/(treeCount-1) )*(W+40)-20;
-    const th=H*(0.45+rng2()*0.25);
-    const tw=28+rng2()*20;
-    if(f.bamboo){
-      drawBamboo(tx, H*0.95, th, tw*0.35, f.treeCol);
-    } else if(f.tropical){
-      drawPalm(tx, H*0.95, th, f.treeCol);
-    } else if(f.ice){
-      drawIceTree(tx, H*0.95, th, tw, f.treeCol);
-    } else {
-      drawPine(tx, H*0.95, th, tw, f.treeCol);
+    /* Dalgalar */
+    for(let i=0;i<3;i++){
+      const wy=H*0.55+i*18;
+      ctx.save();ctx.globalAlpha=0.15-i*0.03;ctx.strokeStyle='#fff';ctx.lineWidth=2;
+      ctx.beginPath();
+      for(let x=0;x<=W;x+=8) ctx.lineTo(x,wy+Math.sin(x/20+i)*4);
+      ctx.stroke();ctx.restore();
+    }
+    /* Kumul nokta */
+    for(let i=0;i<12;i++){
+      const sx=rng()*W, sy=H*0.78+rng()*H*0.18;
+      ctx.save();ctx.globalAlpha=0.12;ctx.fillStyle='#e0c060';
+      ctx.beginPath();ctx.arc(sx,sy,3+rng()*5,0,Math.PI*2);ctx.fill();ctx.restore();
     }
   }
-
-  /* Ön plan ağaçlar (biraz daha açık) */
-  const rng3=mulberry32(fi*2741+3);
-  const fgCount=6;
-  for(let i=0;i<fgCount;i++){
-    const tx=( i/(fgCount-1) )*(W+60)-30;
-    const th=H*(0.35+rng3()*0.2);
-    const tw=22+rng3()*16;
-    if(f.bamboo){
-      drawBamboo(tx, H*0.98, th*0.8, tw*0.3, f.treeCol2);
-    } else if(f.tropical){
-      drawPalm(tx, H*0.98, th*0.8, f.treeCol2);
-    } else if(f.ice){
-      drawIceTree(tx, H*0.98, th*0.7, tw, f.treeCol2);
-    } else {
-      drawPine(tx, H*0.98, th*0.7, tw, f.treeCol2);
+  else if(f.theme==='flower'){
+    /* Pembe çiçek tarlası */
+    for(let i=0;i<15;i++){
+      const fx=rng()*W, fy=H*0.4+rng()*H*0.5;
+      const fc=['rgba(240,150,180,0.3)','rgba(255,180,210,0.25)','rgba(200,120,160,0.2)'];
+      drawFlower(fx,fy,8+rng()*12,fc[i%3]);
+    }
+    /* Kelebekler */
+    for(let i=0;i<4;i++){
+      const bx=rng()*W*0.9+W*0.05, by=H*0.15+rng()*H*0.4;
+      drawButterfly(bx,by,'rgba(255,140,180,0.25)');
     }
   }
-
-  /* Kar tozu (kar ormanı) */
-  if(f.snow){
-    const sr2=mulberry32(fi*999+S.lv);
-    ctx.fillStyle='rgba(220,240,255,0.6)';
-    for(let i=0;i<20;i++){
-      const sx=sr2()*W, sy=H*0.4+sr2()*(H*0.55);
-      ctx.beginPath();ctx.arc(sx,sy,sr2()*2+0.5,0,Math.PI*2);ctx.fill();
+  else if(f.theme==='sunset'){
+    /* Turuncu güneş */
+    const sg2=ctx.createRadialGradient(W/2,H*0.05,0,W/2,H*0.05,W*0.6);
+    sg2.addColorStop(0,'rgba(255,160,40,0.35)');sg2.addColorStop(1,'rgba(255,80,0,0)');
+    ctx.fillStyle=sg2;ctx.fillRect(0,0,W,H);
+    /* Ufuk çizgisi */
+    ctx.save();ctx.globalAlpha=0.15;ctx.fillStyle='#c04000';
+    ctx.fillRect(0,H*0.6,W,H*0.05);ctx.restore();
+    /* Kuşlar */
+    for(let i=0;i<5;i++){
+      const bx=rng()*W*0.8+W*0.1, by=H*0.1+rng()*H*0.3;
+      drawBird(bx,by,'rgba(80,30,0,0.3)');
+    }
+  }
+  else if(f.theme==='space'){
+    /* Yıldızlar */
+    for(let i=0;i<50;i++){
+      const sx=rng()*W, sy=rng()*H*0.75;
+      const sr=rng()*1.5+0.3;
+      ctx.save();ctx.globalAlpha=0.4+rng()*0.4;ctx.fillStyle='#fff';
+      ctx.beginPath();ctx.arc(sx,sy,sr,0,Math.PI*2);ctx.fill();ctx.restore();
+    }
+    /* Gezegen */
+    const pg=ctx.createRadialGradient(W*0.2,H*0.15,0,W*0.2,H*0.15,28);
+    pg.addColorStop(0,'rgba(180,120,220,0.35)');pg.addColorStop(1,'rgba(100,60,160,0)');
+    ctx.fillStyle=pg;ctx.fillRect(0,0,W,H);
+    /* Ay */
+    ctx.save();ctx.globalAlpha=0.4;ctx.fillStyle='#e8e0c0';
+    ctx.beginPath();ctx.arc(W*0.8,H*0.12,16,0,Math.PI*2);ctx.fill();ctx.restore();
+  }
+  else if(f.theme==='morning'){
+    /* Güneş ışıkları */
+    for(let i=0;i<6;i++){
+      const a=(i/6)*Math.PI-Math.PI/2;
+      ctx.save();ctx.globalAlpha=0.06;ctx.strokeStyle='#ffdd88';ctx.lineWidth=18;
+      ctx.beginPath();ctx.moveTo(W*0.5,0);ctx.lineTo(W*0.5+Math.cos(a)*W,Math.sin(a)*H);ctx.stroke();ctx.restore();
+    }
+    /* Kuşlar */
+    for(let i=0;i<6;i++){
+      const bx=rng()*W*0.8+W*0.1, by=H*0.05+rng()*H*0.25;
+      drawBird(bx,by,'rgba(60,120,40,0.25)');
+    }
+  }
+  else if(f.theme==='ocean'){
+    /* Dalgalar */
+    for(let wi=0;wi<5;wi++){
+      const wy=H*(0.3+wi*0.12);
+      ctx.save();ctx.globalAlpha=0.08+wi*0.02;ctx.strokeStyle='#80d8ff';ctx.lineWidth=3;
+      ctx.beginPath();
+      for(let x=0;x<=W;x+=6) ctx.lineTo(x,wy+Math.sin(x/15+wi*0.7)*6);
+      ctx.stroke();ctx.restore();
+    }
+    /* Balık */
+    for(let i=0;i<3;i++){
+      const fx=rng()*W, fy=H*0.5+rng()*H*0.3;
+      ctx.save();ctx.globalAlpha=0.15;ctx.fillStyle='#80deea';
+      ctx.beginPath();ctx.ellipse(fx,fy,10,5,0,0,Math.PI*2);ctx.fill();ctx.restore();
+    }
+  }
+  else if(f.theme==='autumn'){
+    /* Yapraklar */
+    for(let i=0;i<12;i++){
+      const lx=rng()*W, ly=H*0.1+rng()*H*0.7;
+      const cols=['rgba(220,100,30,0.2)','rgba(200,60,20,0.15)','rgba(240,160,40,0.2)'];
+      ctx.save();ctx.globalAlpha=1;ctx.fillStyle=cols[i%3];
+      ctx.beginPath();ctx.ellipse(lx,ly,8+rng()*6,5+rng()*4,(rng()-0.5)*Math.PI,0,Math.PI*2);ctx.fill();ctx.restore();
+    }
+  }
+  else if(f.theme==='night'){
+    /* Yıldızlar */
+    for(let i=0;i<40;i++){
+      const sx=rng()*W, sy=rng()*H*0.65;
+      ctx.save();ctx.globalAlpha=0.3+rng()*0.5;ctx.fillStyle='#fff';
+      ctx.beginPath();ctx.arc(sx,sy,rng()*1.8+0.3,0,Math.PI*2);ctx.fill();ctx.restore();
+    }
+    /* Hilal */
+    ctx.save();ctx.globalAlpha=0.5;ctx.fillStyle='#ffe880';
+    ctx.beginPath();ctx.arc(W*0.75,H*0.1,14,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=f.sky[0];ctx.beginPath();ctx.arc(W*0.75+8,H*0.1-3,12,0,Math.PI*2);ctx.fill();ctx.restore();
+  }
+  else if(f.theme==='garden'){
+    /* Kelebekler */
+    for(let i=0;i<6;i++){
+      const bx=rng()*W*0.85+W*0.05, by=H*0.1+rng()*H*0.55;
+      const bc=['rgba(180,240,120,0.3)','rgba(120,200,80,0.25)','rgba(200,255,150,0.2)'];
+      drawButterfly(bx,by,bc[i%3]);
+    }
+    /* Çiçekler */
+    for(let i=0;i<10;i++){
+      const fx=rng()*W, fy=H*0.55+rng()*H*0.35;
+      drawFlower(fx,fy,7+rng()*10,'rgba(100,180,60,0.25)');
+    }
+  }
+  else if(f.theme==='snow'){
+    /* Kar taneleri */
+    for(let i=0;i<25;i++){
+      const sx=rng()*W, sy=rng()*H*0.8;
+      ctx.save();ctx.globalAlpha=0.25+rng()*0.3;ctx.fillStyle='#fff';
+      ctx.beginPath();ctx.arc(sx,sy,rng()*3+1,0,Math.PI*2);ctx.fill();ctx.restore();
     }
   }
 
   /* Zemin */
-  const groundH=H*0.07;
-  const grd=ctx.createLinearGradient(0,H-groundH,0,H);
-  grd.addColorStop(0,f.ground);
-  grd.addColorStop(1,'rgba(0,0,0,0.6)');
-  ctx.fillStyle=grd;ctx.fillRect(0,H-groundH,W,groundH);
+  const groundH = H * 0.06;
+  const grd = ctx.createLinearGradient(0, H-groundH, 0, H);
+  grd.addColorStop(0, f.ground);
+  grd.addColorStop(1, 'rgba(0,0,0,0.3)');
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, H-groundH, W, groundH);
 
-  /* Sis/bulanıklık */
-  const fog=ctx.createLinearGradient(0,H*0.55,0,H);
-  fog.addColorStop(0,'rgba(0,0,0,0)');
-  fog.addColorStop(1,f.fog);
-  ctx.fillStyle=fog;ctx.fillRect(0,0,W,H);
+  /* Hafif sis/vinyeti — meyveleri öne çıkarır */
+  const vignette = ctx.createRadialGradient(W/2, H/2, H*0.25, W/2, H/2, H*0.75);
+  vignette.addColorStop(0, 'rgba(0,0,0,0)');
+  vignette.addColorStop(1, 'rgba(0,0,0,0.22)');
+  ctx.fillStyle = vignette;
+  ctx.fillRect(0, 0, W, H);
+}
 
-  /* Koyu overlay — meyveleri ön plana çıkar */
-  ctx.fillStyle='rgba(0,0,0,0.38)';ctx.fillRect(0,0,W,H);
+/* Yardımcı çizim fonksiyonları */
+function drawFlower(x,y,r,col){
+  ctx.save();ctx.fillStyle=col;
+  for(let i=0;i<6;i++){
+    const a=(i/6)*Math.PI*2;
+    ctx.beginPath();ctx.ellipse(x+Math.cos(a)*r,y+Math.sin(a)*r,r*0.6,r*0.4,a,0,Math.PI*2);ctx.fill();
+  }
+  ctx.restore();
+}
+function drawButterfly(x,y,col){
+  ctx.save();ctx.fillStyle=col;
+  ctx.beginPath();ctx.ellipse(x-10,y,12,7,-0.4,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.ellipse(x+10,y,12,7,0.4,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
+function drawBird(x,y,col){
+  ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(x-8,y);ctx.quadraticCurveTo(x-4,y-5,x,y);ctx.quadraticCurveTo(x+4,y-5,x+8,y);
+  ctx.stroke();ctx.restore();
 }
 
 /* Küçük, deterministik random (seed'li) */
@@ -741,45 +1116,8 @@ function mulberry32(a){
   return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
 }
 
-function drawPine(x,y,h,w,col){
-  ctx.fillStyle=col;
-  const layers=4;
-  for(let i=0;i<layers;i++){
-    const ly=y-h*(i/layers);
-    const lw=w*(1-i/layers*0.5);
-    const lh=h/layers*1.4;
-    ctx.beginPath();ctx.moveTo(x,ly-lh);ctx.lineTo(x+lw/2,ly);ctx.lineTo(x-lw/2,ly);ctx.closePath();ctx.fill();
-  }
-  ctx.fillRect(x-w*0.08,y-h*0.15,w*0.16,h*0.18);
-}
-
-function drawPalm(x,y,h,col){
-  ctx.strokeStyle=col;ctx.lineWidth=4;
-  ctx.beginPath();ctx.moveTo(x,y);ctx.quadraticCurveTo(x+15,y-h*0.5,x,y-h);ctx.stroke();
-  ctx.lineWidth=2;
-  const leaves=5;
-  for(let i=0;i<leaves;i++){
-    const a=(i/leaves)*Math.PI*2;
-    const lx=x+Math.cos(a)*25, ly=(y-h)+Math.sin(a)*10-5;
-    ctx.beginPath();ctx.moveTo(x,y-h);ctx.quadraticCurveTo((x+lx)/2,(y-h+ly)/2-12,lx,ly);ctx.stroke();
-  }
-}
-
-function drawBamboo(x,y,h,w,col){
-  ctx.fillStyle=col;ctx.fillRect(x-w/2,y-h,w,h);
-  ctx.strokeStyle='rgba(0,0,0,0.3)';ctx.lineWidth=1;
-  const segs=6;
-  for(let i=1;i<segs;i++){ctx.beginPath();ctx.moveTo(x-w/2,y-h*(i/segs));ctx.lineTo(x+w/2,y-h*(i/segs));ctx.stroke();}
-  ctx.fillStyle=col;ctx.globalAlpha=0.7;
-  ctx.beginPath();ctx.ellipse(x,y-h,w*2,w*0.7,-.3,0,Math.PI*2);ctx.fill();
-  ctx.globalAlpha=1;
-}
-
-function drawIceTree(x,y,h,w,col){
-  ctx.fillStyle=col;
-  ctx.beginPath();ctx.moveTo(x,y-h);ctx.lineTo(x+w/2,y);ctx.lineTo(x-w/2,y);ctx.closePath();ctx.fill();
-  ctx.fillStyle='rgba(180,220,255,0.2)';
-  ctx.beginPath();ctx.moveTo(x,y-h*1.0);ctx.lineTo(x+w*0.3,y-h*0.3);ctx.lineTo(x-w*0.3,y-h*0.3);ctx.closePath();ctx.fill();
+/* ══════════════════════════════════════════
+   RENDER  — meyveler belirgin daire + emoji
 }
 
 /* ══════════════════════════════════════════
@@ -1038,18 +1376,20 @@ const WA={
   },
 
   draw(W,H){
+    const tgtEmoji = S.cfg ? FR[S.cfg.target][0] : '🍉';
+    const tgtName  = S.cfg ? FR[S.cfg.target][0] : '🍉';
     const pulse=1+Math.sin(this.timer*10)*0.06;
     if(this.phase===0){
-      /* Karpuz ekranda bekliyor — büyük ve parlak */
+      /* Hedef meyve ekranda bekliyor — büyük ve parlak */
       ctx.save();
       ctx.translate(this.x,this.y);
       ctx.scale(pulse,pulse);
       ctx.shadowColor='#44ff88';ctx.shadowBlur=50;
       ctx.font='110px serif';
       ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillText('🍉',0,0);
+      ctx.fillText(tgtEmoji,0,0);
       ctx.shadowColor='transparent';ctx.shadowBlur=0;
-      ctx.fillText('🍉',0,0);
+      ctx.fillText(tgtEmoji,0,0);
       ctx.restore();
       /* KAZANDIN yazısı */
       ctx.save();
@@ -1058,21 +1398,21 @@ const WA={
       ctx.shadowColor='rgba(0,0,0,.6)';ctx.shadowBlur=8;
       ctx.textAlign='center';ctx.textBaseline='middle';
       const bounce=Math.sin(this.timer*6)*4;
-      ctx.fillText('🎉 KARPUZ YAPTIR! 🎉',W/2,this.y-90+bounce);
+      ctx.fillText(`🎉 ${tgtName} YAPTIN! 🎉`,W/2,this.y-90+bounce);
       ctx.restore();
       /* Puan / Sıra paneli */
       this._drawInfoPanel(W,H,Math.min(1,this.timer*2));
     }else if(this.phase===1){
-      /* Büyüyen karpuz */
+      /* Büyüyen hedef meyve */
       ctx.save();
       ctx.translate(this.x,this.y);
       ctx.scale(this.scale,this.scale);
       ctx.shadowColor='#44ff88';ctx.shadowBlur=60;
       ctx.font='110px serif';
       ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillText('🍉',0,0);
+      ctx.fillText(tgtEmoji,0,0);
       ctx.shadowColor='transparent';ctx.shadowBlur=0;
-      ctx.fillText('🍉',0,0);
+      ctx.fillText(tgtEmoji,0,0);
       ctx.restore();
     }else if(this.phase===2){
       ctx.fillStyle='rgba(255,255,255,.95)';
@@ -1088,9 +1428,9 @@ const WA={
           ctx.font=`${p.size}px serif`;
           ctx.textAlign='center';ctx.textBaseline='middle';
           ctx.shadowColor='rgba(0,0,0,.3)';ctx.shadowBlur=5;
-          ctx.fillText('🍉',0,0);
+          ctx.fillText(tgtEmoji,0,0);
           ctx.shadowColor='transparent';ctx.shadowBlur=0;
-          ctx.fillText('🍉',0,0);
+          ctx.fillText(tgtEmoji,0,0);
         }else{
           ctx.fillStyle=p.color;
           ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
@@ -1110,27 +1450,74 @@ const WA={
 const LBK='suika_lb_v3';
 function getLB(){try{return JSON.parse(localStorage.getItem(LBK)||'[]');}catch{return[];}}
 function saveLB(a){try{localStorage.setItem(LBK,JSON.stringify(a));}catch{}}
-function submitLB(name,score,lv){
+/* ══════════════════════════════════════════
+   🏆 ONLINE LIDERBOARD — Firebase
+══════════════════════════════════════════ */
+async function submitLB(name,score,lv){
+  /* Lokal fallback */
   const lb=getLB();
   const i=lb.findIndex(e=>e.name===name);
   if(i>=0){if(score>lb[i].score)lb[i]={name,score,lv};else lb[i].lv=Math.max(lb[i].lv,lv);}
   else lb.push({name,score,lv});
   lb.sort((a,b)=>b.score-a.score);
   saveLB(lb.slice(0,50));
-  return lb.findIndex(e=>e.name===name)+1;
+  const localRank=lb.findIndex(e=>e.name===name)+1;
+
+  /* Firebase'e gönder */
+  if(window._fbReady){
+    try{
+      const userKey=name.replace(/[.#$[\]/]/g,'_');
+      const r=window._fbRef(window._fbDb,`leaderboard/${userKey}`);
+      const snap=await window._fbGet(r);
+      const existing=snap.exists()?snap.val():null;
+      if(!existing||score>existing.score){
+        await window._fbSet(r,{name,score,lv,t:Date.now()});
+      }
+    }catch(e){console.log('Firebase err:',e);}
+  }
+  return localRank;
 }
-function renderLB(me){
-  const lb=getLB();
+
+async function renderLB(me){
   const el=document.getElementById('lb-tbl');
-  if(!lb.length){el.innerHTML='<div class="lb-row" style="justify-content:center;color:rgba(255,255,255,.35)">Henüz kayıt yok 😢</div>';return;}
-  el.innerHTML=lb.slice(0,15).map((e,i)=>{
+  if(!el)return;
+  el.innerHTML='<div class="lb-row" style="justify-content:center;color:rgba(255,255,255,.4)">⏳ Yükleniyor…</div>';
+
+  let entries=[];
+
+  /* Firebase'den çek */
+  if(window._fbReady){
+    try{
+      const r=window._fbRef(window._fbDb,'leaderboard');
+      const q=window._fbQuery(r,window._fbOrderByChild('score'),window._fbLimitToLast(50));
+      const snap=await window._fbGet(q);
+      if(snap.exists()){
+        snap.forEach(c=>{entries.push(c.val());});
+        entries.sort((a,b)=>b.score-a.score);
+      }
+    }catch(e){console.log('Firebase renderLB err:',e);}
+  }
+
+  /* Offline fallback */
+  if(!entries.length){
+    entries=getLB().map(e=>({name:e.name,score:e.score,lv:e.lv}));
+  }
+
+  if(!entries.length){
+    el.innerHTML='<div class="lb-row" style="justify-content:center;color:rgba(255,255,255,.35)">Henüz kayıt yok 😢</div>';
+    return;
+  }
+
+  const medals=['🥇','🥈','🥉'];
+  el.innerHTML=entries.slice(0,50).map((e,i)=>{
     const rc=i===0?'g':i===1?'s':i===2?'b':'';
-    const md=i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1;
-    return`<div class="lb-row${e.name===me?' me':''}">
+    const md=medals[i]||i+1+'.';
+    const isMe=e.name===me;
+    return`<div class="lb-row${isMe?' me':''}" ${isMe?'style="background:rgba(245,166,35,.18)"':''}>
       <div class="lb-rank ${rc}">${md}</div>
-      <div class="lb-name">${e.name}</div>
-      <div class="lb-score">${e.score.toLocaleString()}</div>
-      <div class="lb-lv">Lv${e.lv}</div>
+      <div class="lb-name">${e.name}${isMe?' 👈':''}</div>
+      <div class="lb-score">${(e.score||0).toLocaleString()}</div>
+      <div class="lb-lv">Lv${e.lv||1}</div>
     </div>`;
   }).join('');
 }
@@ -1161,12 +1548,12 @@ function shareWA(){
 const S={
   user:'',lv:1,lvSc:0,totSc:0,
   timeElapsed:0,dropping:false,fruits:[],
-  curType:0,nxtType:0,dropX:0,
+  curType:0,nxtType:0,nxt2Type:0,nxt3Type:0,dropX:0,
   cfg:null,
   timerId:null,rafId:null,
   lastTs:null,dead:false,dangerT:0,
   autoT:1.5,
-  winPending:false,winFruit:null,  /* auto-drop countdown */
+  winPending:false,winFruit:null,
 };
 
 class Fruit{
@@ -1251,6 +1638,7 @@ function continueUser(){
   const saved=localStorage.getItem(UKEY);
   if(!saved){showNewUser(false);return;}
   S.user=saved;S.lv=1;S.totSc=0;
+  checkDailyReward();
   beginLevel();
 }
 
@@ -1268,7 +1656,10 @@ function registerUser(){
   addRegistered(n);
   try{localStorage.setItem(UKEY,n);}catch{}
   S.user=n;S.lv=1;S.totSc=0;
-  beginLevel();
+  /* Yeni kullanıcıya tutorial göster */
+  const tutDone=localStorage.getItem('karpuz_tutdone');
+  if(!tutDone){ showTutorial(); }
+  else { checkDailyReward(); beginLevel(); }
 }
 
 function startNew(){registerUser();}
@@ -1289,10 +1680,36 @@ function beginLevel(){
   S._winBonus=0;S._winRank=0;S._winScore=null;S._extraUsed=false;
   COMBO.reset(); SPARKS.length=0; PU.load(); PU.render();
 
-  /* Random background */
-  document.body.style.background=['linear-gradient(135deg,#0a0e1a,#1a2a1a)','linear-gradient(135deg,#1a0800,#2e1200)','linear-gradient(135deg,#001a2e,#003a5c)','linear-gradient(135deg,#0d1a2e,#1a2e4a)','linear-gradient(135deg,#3a0a00,#6c1800)','linear-gradient(135deg,#0e0020,#1a0040)','linear-gradient(135deg,#0a1a08,#152e10)','linear-gradient(135deg,#001018,#002030)'][(S.lv-1)%8];
+  /* Arka plan — ilk levellerde açık, sonra dönüşümlü açık/koyu */
+  const eff2=((S.lv-1)%99)+1;
+  const BG_LIGHT=[
+    'linear-gradient(135deg,#2d5a1b,#4a8a2a)',  // Açık yeşil orman
+    'linear-gradient(135deg,#1a4a6e,#2e7aaa)',  // Açık mavi gökyüzü
+    'linear-gradient(135deg,#6e3a1a,#aa6a2e)',  // Açık turuncu sonbahar
+    'linear-gradient(135deg,#1a6e4a,#2eaa7a)',  // Açık tropikal yeşil
+    'linear-gradient(135deg,#5a3a8e,#8a6aaa)',  // Açık mor gün batımı
+  ];
+  const BG_DARK=[
+    'linear-gradient(135deg,#0a0e1a,#1a2a1a)',  // Koyu gece ormanı
+    'linear-gradient(135deg,#1a0800,#2e1200)',  // Koyu sonbahar
+    'linear-gradient(135deg,#001a2e,#003a5c)',  // Koyu tropikal gece
+    'linear-gradient(135deg,#0d1a2e,#1a2e4a)',  // Koyu kar gecesi
+    'linear-gradient(135deg,#3a0a00,#6c1800)',  // Koyu gün batımı
+    'linear-gradient(135deg,#0e0020,#1a0040)',  // Koyu mistik mor
+    'linear-gradient(135deg,#0a1a08,#152e10)',  // Koyu bambu
+    'linear-gradient(135deg,#001018,#002030)',  // Koyu buz mağarası
+  ];
+  let bg;
+  if(eff2<=5){
+    bg=BG_LIGHT[(eff2-1)%BG_LIGHT.length];
+  } else {
+    // Level 6'dan itibaren: tek levellerde açık, çift levellerde koyu
+    if(eff2%2===1) bg=BG_LIGHT[(eff2-1)%BG_LIGHT.length];
+    else bg=BG_DARK[(eff2-1)%BG_DARK.length];
+  }
+  document.body.style.background=bg;
 
-  S.curType=rndDrop();S.nxtType=rndDrop();
+  S.curType=rndDrop();S.nxtType=rndDrop();S.nxt2Type=rndDrop();S.nxt3Type=rndDrop();
   S.dropX=(cfg.wL+cfg.wR)/2;
 
   CV.width=cfg.cw;CV.height=cfg.ch;
@@ -1306,6 +1723,11 @@ function beginLevel(){
   document.getElementById('h-mult').style.color='#44ff88';
   const badge=getBadge(S.lv);
   document.getElementById('ubadge').textContent=badge?badge.icon+' '+badge.title:'👤 '+S.user;
+  /* Hedef meyveyi göster */
+  const hedefEl=document.getElementById('h-hedef');
+  if(hedefEl) hedefEl.textContent=FR[cfg.target][0];
+  const hedefHud=document.getElementById('h-hedef-hud');
+  if(hedefHud) hedefHud.textContent=FR[cfg.target][0];
   updNxt();updProg();
 
   show('s-game');
@@ -1314,27 +1736,22 @@ function beginLevel(){
   cancelAnimationFrame(S.rafId);
   S.rafId=requestAnimationFrame(loop);
 
-  /* Müzik */
-  if(musicOn){MUS.stop();setTimeout(()=>MUS.start(),200);}
+  /* Müzik + ambient */
+  if(musicOn){MUS.stop();setTimeout(()=>{MUS.start();playAmbient((S.lv-1)%8);},200);}
 }
 
 function rndDrop(){
-  const max = S.cfg.maxDrop;
-  const lv  = S.lv;
+  const target = S.cfg.target;
+  const max = Math.min(S.cfg.maxDrop, target - 1);
 
-  /*
-   * 16 meyve zinciri için base ağırlıklar (index 0-14, 15=🍉 hiç düşmez)
-   * Küçükten büyüğe: 🍒🫐🍓🍋🍇🍊🥝🍎🍐🍑🥭🍍🥥🍈🫒
-   */
-  const baseW = [36, 30, 26, 22, 18, 15, 12, 10, 8, 6, 5, 4, 3, 2, 1];
-
+  /* Hedeften uzaklığa göre ağırlık:
+     dist=1 (hemen öncesi) → çok nadir
+     dist arttıkça daha sık gelir */
   const weights = [];
   for(let i = 0; i <= max; i++){
-    /* Büyük meyvelere artan bonus, küçüklere kayan ceza */
-    const bonus   = i * lv * 0.5;
-    const penalty = Math.max(0, (max - i - 2)) * lv * 0.25;
-    const w = Math.max(0.5, (baseW[i] || 1) + bonus - penalty);
-    weights.push(w);
+    const dist = target - i; // 1=hedefin hemen öncesi, büyük=uzak
+    const w = Math.pow(dist, 1.8);
+    weights.push(Math.max(0.5, w));
   }
 
   const total = weights.reduce((a,b)=>a+b, 0);
@@ -1348,21 +1765,27 @@ function rndDrop(){
 
 function updNxt(){
   document.getElementById('nxt').textContent=FR[S.nxtType][0];
+  const n2=document.getElementById('nxt2');
+  const n3=document.getElementById('nxt3');
+  if(n2)n2.textContent=FR[S.nxt2Type][0];
+  if(n3)n3.textContent=FR[S.nxt3Type][0];
 }
 function updProg(){
   document.getElementById('prog-f').style.width='0%';
-  document.getElementById('prog-txt').textContent='🍉 Karpuz yap → Level geç!';
+  const tgt=S.cfg?FR[S.cfg.target][0]:'🍉';
+  document.getElementById('prog-txt').textContent=tgt+' yap → Level geç!';
 }
 
 function tick(){
   if(S.dead)return;
   S.timeElapsed++;
   document.getElementById('h-tm').textContent=S.timeElapsed;
-  const mult=Math.max(0.1,100/(100+S.timeElapsed));
-  document.getElementById('h-mult').textContent='×'+mult.toFixed(2);
-  /* Çarpan rengini ayarla */
+  const timeMult=Math.max(0.1,100/(100+S.timeElapsed));
+  const lvMult=1+Math.floor((((S.lv-1)%99))/10)*0.5;
+  const totalMult=timeMult*lvMult;
+  document.getElementById('h-mult').textContent='×'+totalMult.toFixed(2);
   const el=document.getElementById('h-mult');
-  el.style.color=mult>0.75?'#44ff88':mult>0.4?'#f5a623':'#ff4466';
+  el.style.color=totalMult>1.5?'#44ffff':totalMult>1.0?'#44ff88':totalMult>0.5?'#f5a623':'#ff4466';
 }
 
 /* ══════════════════════════════════════════
@@ -1395,7 +1818,7 @@ function drop(x){
   setTimeout(()=>{
     if(S.dead)return;
     S.dropping=false;
-    S.curType=S.nxtType;S.nxtType=rndDrop();updNxt();
+    S.curType=S.nxtType;S.nxtType=S.nxt2Type;S.nxt2Type=S.nxt3Type;S.nxt3Type=rndDrop();updNxt();
   },320);
 }
 
@@ -1444,9 +1867,10 @@ function physics(dt){
         const nf=new Fruit((a.x+b.x)/2,(a.y+b.y)/2,a.t+1);
         nf.vx=(a.vx+b.vx)*.2;nf.vy=(a.vy+b.vy)*.2-100;nf.age=0;
         S.fruits.push(nf);
-        /* Ters orantılı puan × power-up × combo */
+        /* Ters orantılı puan × level çarpanı × power-up × combo */
         const timeMult=Math.max(0.1,100/(100+S.timeElapsed));
-        const basePts=Math.round(FR[a.t+1][2]*timeMult);
+        const lvMult=1+Math.floor((((S.lv-1)%99))/10)*0.5; /* her 10 lvl'de +0.5× */
+        const basePts=Math.round(FR[a.t+1][2]*timeMult*lvMult);
         const comboMult=COMBO.hit(nf.x,nf.y,basePts*PU.multiplier());
         const pts=Math.round(basePts*PU.multiplier()*comboMult);
         S.lvSc+=pts;S.totSc+=pts;
@@ -1460,14 +1884,14 @@ function physics(dt){
         snd(a.t+1,true);
         document.getElementById('h-sc').textContent=S.lvSc.toLocaleString();
         document.getElementById('h-tot').textContent=S.totSc.toLocaleString();
-        /* 🍉 Karpuz! — animasyon başlatılacak */
-        if(a.t+1===FR.length-1){
+        /* 🍉 Hedef meyve! — animasyon başlatılacak */
+        if(a.t+1===S.cfg.target){
           clearInterval(S.timerId);
           S.dropping=true;
           S.winPending=true;
           S.winFruit=nf;
-          missionProgress('m_watermelons',1);
-          break outer; /* döngüden çık ama physics'i bitir */
+          if(a.t+1===FR.length-1) missionProgress('m_watermelons',1);
+          break outer;
         }
         continue outer;
       }
@@ -1526,8 +1950,18 @@ function render(){
 
   /* Sparkle partiküller */
   drawSparks();
+
+  /* Danger kırmızı flaş */
   if(S.dangerT>.5){
-    ctx.fillStyle=`rgba(255,0,0,${Math.min(S.dangerT*.09,.2)})`;
+    ctx.fillStyle=`rgba(255,0,0,${Math.min(S.dangerT*.09,.22)})`;
+    ctx.fillRect(0,0,W,H);
+  }
+
+  /* Hedef meyveye yakın — yeşil parlama */
+  const nearTarget=S.fruits.some(f=>!f.merged && f.t===S.cfg.target-1);
+  if(nearTarget){
+    const glow=Math.abs(Math.sin(Date.now()/400))*.12;
+    ctx.fillStyle=`rgba(80,255,120,${glow})`;
     ctx.fillRect(0,0,W,H);
   }
 
@@ -1553,9 +1987,24 @@ function render(){
     drawFruit(S.dropX,dy-FR[S.curType][1]-5,S.curType,.5);
   }
 
-  /* Meyveler */
+  /* Meyveler + gölge */
   for(const f of S.fruits){
-    if(!f.merged)drawFruit(f.x,f.y,f.t,1);
+    if(f.merged)continue;
+    /* Zemine düşen gölge */
+    const shadowY=S.cfg.floor-2;
+    const dist=Math.max(0,shadowY-f.y);
+    const shadowAlpha=Math.max(0,0.3-dist/300);
+    const shadowScale=Math.max(0.3,1-dist/400);
+    if(shadowAlpha>0.02){
+      ctx.save();
+      ctx.globalAlpha=shadowAlpha;
+      ctx.fillStyle='rgba(0,0,0,.6)';
+      ctx.beginPath();
+      ctx.ellipse(f.x,shadowY,f.r*shadowScale,f.r*shadowScale*0.3,0,0,Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+    drawFruit(f.x,f.y,f.t,1);
   }
 }
 
@@ -1580,13 +2029,15 @@ function loop(ts){
 
   /* ── 2. Karpuz oluştu, animasyonu başlat ── */
   if(S.winPending && S.winFruit){
-    physics(dt); /* bir kare daha yerleştir */
+    physics(dt);
     render();
-    const rank=submitLB(S.user,S.totSc,S.lv);
-    S._winRank=rank; S._winScore=S.totSc;
-    WA.start(S.winFruit.x, S.winFruit.y,
-      {rank, score:S.totSc, lv:S.lv, elapsed:S.timeElapsed});
     S.winPending=false;
+    /* Async submit — animasyonu bekletmeden başlat */
+    submitLB(S.user,S.totSc,S.lv).then(rank=>{
+      S._winRank=rank; S._winScore=S.totSc;
+      WA.start(S.winFruit.x, S.winFruit.y,
+        {rank, score:S.totSc, lv:S.lv, elapsed:S.timeElapsed});
+    });
     S.rafId=requestAnimationFrame(loop);
     return;
   }
@@ -1624,7 +2075,11 @@ function showComboPop(x,y,cnt,pts){
   el.textContent=cnt+'× COMBO! +'+pts;
   layer.appendChild(el);
   setTimeout(()=>el.remove(),800);
-  if(navigator.vibrate) navigator.vibrate([30,10,30]);
+  if(navigator.vibrate){
+    if(cnt>=7) navigator.vibrate([50,20,50,20,100,20,150]);
+    else if(cnt>=5) navigator.vibrate([40,20,40,20,80]);
+    else navigator.vibrate([30,10,30]);
+  }
 }
 
 /* ══════════════════════════════════════════
@@ -1730,13 +2185,22 @@ function usePower(type){
   if(S.dead||!S.cfg)return;
   if(type==='bomb'){
     if(PU.stock.bomb<=0){showToast('💣 Bomban yok! Mağazadan al.');return;}
-    /* En üstteki 3 meyveyi patlat */
     const sorted=[...S.fruits].sort((a,b)=>a.y-b.y).slice(0,3);
-    sorted.forEach(f=>{ f.merged=true; addSparks(f.x,f.y,'#ff4400'); });
+    sorted.forEach(f=>{
+      f.merged=true;
+      /* Büyük patlama efekti */
+      for(let i=0;i<20;i++) addSparks(f.x,f.y,'#ff6600');
+      for(let i=0;i<10;i++) addSparks(f.x,f.y,'#ffff00');
+    });
     S.fruits=S.fruits.filter(f=>!f.merged);
     PU.stock.bomb--; PU.save(); PU.render();
-    if(navigator.vibrate)navigator.vibrate([80,20,80]);
-    showToast('💣 BOMBA!');
+    if(navigator.vibrate)navigator.vibrate([100,30,100,30,200]);
+    /* Ekran flaşı */
+    const flash=document.createElement('div');
+    flash.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,100,0,.35);pointer-events:none;z-index:999;';
+    document.body.appendChild(flash);
+    setTimeout(()=>flash.remove(),200);
+    showToast('💥 BOOM!');
   } else if(type==='freeze'){
     if(PU.stock.freeze<=0){showToast('❄️ Dondurucu yok! Mağazadan al.');return;}
     PU.freezeActive=true; PU.freezeTimer=5;
@@ -1751,13 +2215,22 @@ function usePower(type){
   }
 }
 
+let _toastTimer=null;
 function showToast(msg){
+  const area=document.getElementById('game-toast-area');
+  if(area){
+    clearTimeout(_toastTimer);
+    area.textContent=msg;
+    area.style.opacity='1';
+    _toastTimer=setTimeout(()=>{area.style.opacity='0';},2200);
+    return;
+  }
   const el=document.createElement('div');
-  el.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.85);color:#fff;padding:8px 18px;border-radius:20px;font-size:13px;font-weight:700;z-index:600;pointer-events:none;white-space:nowrap;';
+  el.style.cssText='position:fixed;bottom:140px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.88);color:#fff;padding:8px 18px;border-radius:20px;font-size:13px;font-weight:700;z-index:600;pointer-events:none;white-space:nowrap;max-width:90%;text-align:center;';
   el.textContent=msg;
   document.body.appendChild(el);
-  setTimeout(()=>el.style.opacity='0',1500);
-  setTimeout(()=>el.remove(),2000);
+  setTimeout(()=>el.style.opacity='0',1800);
+  setTimeout(()=>el.remove(),2300);
 }
 
 /* ══════════════════════════════════════════
@@ -2099,51 +2572,71 @@ function rotateBanners(){
 function bannerClick(i){ alert('🎮 Uygulama mağazasına yönlendiriliyor...\n(Gerçek reklamda Google Play açılacak)'); }
 setInterval(rotateBanners,15000);
 
-function winLevel(){
+async function winLevel(){
   if(S.dead)return; stop();
   S.totSc = S._winScore ?? S.totSc;
-  const rank = S._winRank || submitLB(S.user,S.totSc,S.lv);
+  const rank = S._winRank || await submitLB(S.user,S.totSc,S.lv);
   const nextLvNum = S.lv + 1;
 
-  /* ── Level geçiş overlay'ini göster ── */
+  /* Yeni rekor kontrolü */
+  const bestKey='karpuz_best_'+S.user;
+  const prevBest=parseInt(localStorage.getItem(bestKey)||'0');
+  const isNewRecord=S.totSc>prevBest;
+  if(isNewRecord) try{localStorage.setItem(bestKey,S.totSc);}catch{}
+
+  /* Level overlay güncelle */
   const ov = document.getElementById('lv-overlay');
-  document.getElementById('lv-done').textContent  = `LEVEL ${S.lv}`;
+  const tgtEmoji=FR[S.cfg.target][0];
+  const lvFruit=document.getElementById('lv-fruit');
+  if(lvFruit){ lvFruit.textContent=tgtEmoji; lvFruit.style.animation='none'; requestAnimationFrame(()=>{lvFruit.style.animation='fruitPop .5s ease';}); }
+  document.getElementById('lv-done').textContent  = `LEVEL ${S.lv} ✓`;
   document.getElementById('lv-score').textContent = S.totSc.toLocaleString() + ' puan';
   document.getElementById('lv-rank').textContent  = `🏆 #${rank}. Sıradasın`;
-  document.getElementById('lv-next').textContent  = `LEVEL ${nextLvNum} BAŞLIYOR…`;
+  document.getElementById('lv-next').textContent  = nextLvNum<=99?`LEVEL ${nextLvNum} BAŞLIYOR…`:'TÜM LEVELLAR TAMAMLANDI! 👑';
   document.getElementById('lv-bar').style.width   = '0%';
+  const nrEl=document.getElementById('lv-newrecord');
+  if(nrEl) nrEl.style.display=isNewRecord?'block':'none';
+  const statsEl=document.getElementById('lv-stats');
+  if(statsEl) statsEl.textContent=`${S.timeElapsed}s'de tamamlandı · ${S.lvSc.toLocaleString()} level puanı`;
   ov.style.display = 'flex';
   requestAnimationFrame(()=>{ document.getElementById('lv-bar').style.width='100%'; });
+
+  if(isNewRecord) showToast('🏆 YENİ REKOR! '+S.totSc.toLocaleString()+' puan!');
 
   const prevLv=S.lv;
   S.lv = nextLvNum;
   checkBadgeUnlock(prevLv, S.lv);
   missionProgress('m_levels',1);
+  clearSavedGame();
 
   setTimeout(()=>{
     ov.style.display='none';
-    /* Reklamsız satın alınmışsa reklam gösterme */
     if(S.lv % 2 === 0 && !isAdFree()){
       showAd(()=>beginLevel());
     } else {
       beginLevel();
     }
-  }, 2600);
+  }, 2800);
 }
 
-function killGame(rsn){
+async function killGame(rsn){
   if(S.dead)return; stop();
-  const rank=submitLB(S.user,S.totSc,S.lv);
-  /* Extra life teklif et */
+  if(navigator.vibrate)navigator.vibrate([100,50,200]);
+  const rank=await submitLB(S.user,S.totSc,S.lv);
+
+  /* Ekran kırmızı flaş */
+  const flash=document.createElement('div');
+  flash.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,0,0,.4);pointer-events:none;z-index:998;transition:opacity .5s;';
+  document.body.appendChild(flash);
+  setTimeout(()=>{flash.style.opacity='0';setTimeout(()=>flash.remove(),500);},300);
+
   if(!S._extraUsed){
     S._extraUsed=true;
     offerExtraLife(rsn,()=>{
-      /* Hayatı kullan: oyunu kaldığı yerden devam ettir */
       S.dead=false;
       S.dangerT=0;
       S.dropping=false;
       S.autoT=0.8;
-      /* Üstteki 2 meyveyi kaldır */
       S.fruits.sort((a,b)=>a.y-b.y).slice(0,2).forEach(f=>f.merged=true);
       S.fruits=S.fruits.filter(f=>!f.merged);
       S.lastTs=null;
@@ -2154,11 +2647,22 @@ function killGame(rsn){
     });
     return;
   }
+
+  /* Hedefe ne kadar yakındı? */
+  const maxFruit=S.fruits.reduce((m,f)=>Math.max(m,f.t),0);
+  const target=S.cfg?S.cfg.target:15;
+  const pct=Math.round((maxFruit/target)*100);
+  const closeMsg=maxFruit>=target-1?'😮 Hedefe çok yakındın!'
+    :maxFruit>=target-2?`💪 ${FR[maxFruit][0]} yapabildın, ${FR[target][0]} bir adım ötedeydi`
+    :`🎯 En büyük meyven: ${FR[maxFruit][0]}`;
+
   S._extraUsed=false;
   document.getElementById('ov-rsn').textContent=rsn;
   document.getElementById('ov-lv').textContent=S.lv;
   document.getElementById('ov-sc').textContent=S.totSc.toLocaleString();
   document.getElementById('ov-rank').textContent=`🎖 Şampiyona tablosunda #${rank}. sıradasın!`;
+  const closeEl=document.getElementById('ov-close');
+  if(closeEl)closeEl.textContent=closeMsg;
   show('s-over');
 }
 
@@ -2169,7 +2673,135 @@ function nextLv(){if(S.lv>=99){S.lv=1;S.totSc=0;}else S.lv++;clearSavedGame();be
 function retry(){clearSavedGame();beginLevel();}
 function home(){saveGameState();stop();initUserScreen();show('s-user');}
 function backGame(){if(S.cfg)show('s-game');else show('s-user');}
-function openLB(){renderLB(S.user);show('s-lb');}
+function pauseAndHome(){
+  if(S.cfg && !S.dead && !_paused){
+    _paused=true;
+    document.getElementById('pause-icon').textContent='▶';
+    cancelAnimationFrame(S.rafId);
+    clearInterval(S.timerId);
+    MUS.stop();
+    saveGameState();
+  }
+  initUserScreen();
+  show('s-user');
+}
+
+function openInfo(){document.getElementById('info-overlay').style.display='flex';}
+function closeInfo(){document.getElementById('info-overlay').style.display='none';}
+function openLB(){show('s-lb');renderLB(S.user);}
+
+/* ══════════════════════════════════════════
+   TUTORIAL
+══════════════════════════════════════════ */
+let tutStep=0;
+function showTutorial(){
+  const tgt=getLevelTarget(1);
+  const el=document.getElementById('tut-target');
+  if(el)el.textContent=FR[tgt][0];
+  tutStep=0;
+  updateTutStep();
+  document.getElementById('tutorial-overlay').style.display='flex';
+}
+function updateTutStep(){
+  for(let i=0;i<3;i++){
+    const s=document.getElementById('tut-'+i);
+    if(s)s.style.display=i===tutStep?'block':'none';
+    const d=document.getElementById('tut-dot-'+i);
+    if(d)d.style.background=i===tutStep?'#f5a623':'rgba(255,255,255,.3)';
+  }
+  const prev=document.getElementById('tut-prev');
+  const next=document.getElementById('tut-next');
+  if(prev)prev.style.display=tutStep>0?'block':'none';
+  if(next)next.textContent=tutStep<2?'Devam →':'Oynamaya Başla! 🚀';
+}
+function tutNext(){
+  if(tutStep<2){tutStep++;updateTutStep();}
+  else{
+    document.getElementById('tutorial-overlay').style.display='none';
+    try{localStorage.setItem('karpuz_tutdone','1');}catch{}
+    beginLevel();
+  }
+}
+function tutPrev(){if(tutStep>0){tutStep--;updateTutStep();}}
+
+/* ══════════════════════════════════════════
+   GÜNLÜK ÖDÜL
+══════════════════════════════════════════ */
+const DAILY_REWARDS=[
+  [{type:'bomb',n:1}],
+  [{type:'freeze',n:1}],
+  [{type:'x2',n:1}],
+  [{type:'bomb',n:1},{type:'freeze',n:1}],
+  [{type:'x2',n:2}],
+  [{type:'bomb',n:2},{type:'freeze',n:1}],
+  [{type:'bomb',n:1},{type:'freeze',n:1},{type:'x2',n:1}],
+];
+function checkDailyReward(){
+  const today=new Date().toDateString();
+  let data={};
+  try{data=JSON.parse(localStorage.getItem('karpuz_daily')||'{}');}catch{}
+  if(data.day===today)return;
+  const streak=((data.streak||0)%7)+1;
+  const rewards=DAILY_REWARDS[(streak-1)%DAILY_REWARDS.length];
+  const rwEl=document.getElementById('daily-rewards');
+  const stEl=document.getElementById('daily-streak');
+  if(rwEl){
+    const icons={bomb:'💣',freeze:'❄️',x2:'⚡'};
+    rwEl.innerHTML=rewards.map(r=>`
+      <div style="text-align:center">
+        <div style="font-size:32px">${icons[r.type]}</div>
+        <div style="font-weight:800;margin-top:4px">×${r.n}</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.5)">${r.type==='bomb'?'Bomba':r.type==='freeze'?'Dondur':'2× Puan'}</div>
+      </div>`).join('');
+  }
+  if(stEl)stEl.textContent=`${streak}. gün streaki! 🔥`;
+  document.getElementById('daily-overlay').style.display='flex';
+  try{localStorage.setItem('karpuz_daily',JSON.stringify({day:today,streak,pending:rewards}));}catch{}
+}
+function claimDailyReward(){
+  let data={};
+  try{data=JSON.parse(localStorage.getItem('karpuz_daily')||'{}');}catch{}
+  const rewards=data.pending||[];
+  rewards.forEach(r=>PU.add(r.type,r.n));
+  document.getElementById('daily-overlay').style.display='none';
+  if(rewards.length)showToast('🎁 Günlük ödül alındı!');
+}
+
+/* ══════════════════════════════════════════
+   ORMAN AMBIENT SESLERİ
+══════════════════════════════════════════ */
+let ambientInterval=null;
+function playAmbient(forestIdx){
+  clearInterval(ambientInterval);
+  if(!musicOn||!AC)return;
+  const patterns=[
+    ()=>{ /* Çam ormanı - kuş */
+      try{
+        const o=AC.createOscillator();const g=AC.createGain();
+        o.connect(g);g.connect(MUS.masterG||AC.destination);
+        o.type='sine';o.frequency.setValueAtTime(1200,AC.currentTime);
+        o.frequency.setValueAtTime(1400,AC.currentTime+0.1);
+        g.gain.setValueAtTime(0,AC.currentTime);
+        g.gain.linearRampToValueAtTime(0.04,AC.currentTime+0.05);
+        g.gain.linearRampToValueAtTime(0,AC.currentTime+0.3);
+        o.start(AC.currentTime);o.stop(AC.currentTime+0.3);
+      }catch{}
+    },
+    ()=>{ /* Sonbahar - rüzgar */
+      try{
+        const buf=AC.createBuffer(1,AC.sampleRate*.3|0,AC.sampleRate);
+        const d=buf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*0.02;
+        const s=AC.createBufferSource();s.buffer=buf;
+        const f=AC.createBiquadFilter();f.type='bandpass';f.frequency.value=800;
+        const g=AC.createGain();g.gain.value=0.3;
+        s.connect(f);f.connect(g);g.connect(MUS.masterG||AC.destination);
+        s.start();
+      }catch{}
+    },
+  ];
+  const fn=patterns[forestIdx%patterns.length];
+  ambientInterval=setInterval(fn,3000+Math.random()*2000);
+}
 
 /* ══════════════════════════════════════════
    INIT
