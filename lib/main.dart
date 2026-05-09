@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
@@ -58,13 +59,9 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                 .get(Uri.parse(url))
                 .timeout(const Duration(seconds: 10));
           }
-          final escaped = response.body
-              .replaceAll('\\', '\\\\')
-              .replaceAll('"', '\\"')
-              .replaceAll('\n', '\\n')
-              .replaceAll('\r', '');
+          final bodyJson = jsonEncode(response.body);
           await _controller.runJavaScript(
-              'window._ftCb("$id",${response.statusCode},"$escaped")');
+              'window._ftCb("$id",${response.statusCode},$bodyJson)');
         } catch (e) {
           try {
             final data = jsonDecode(msg.message) as Map<String, dynamic>;
@@ -76,8 +73,10 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       ..addJavaScriptChannel('FlutterShare',
           onMessageReceived: (JavaScriptMessage msg) async {
         final text = Uri.encodeComponent(msg.message);
-        await _controller
-            .runJavaScript('window.location.href="whatsapp://send?text=$text"');
+        final uri = Uri.parse('whatsapp://send?text=$text');
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri);
+        }
       })
       ..loadFlutterAsset('assets/game.html');
   }
