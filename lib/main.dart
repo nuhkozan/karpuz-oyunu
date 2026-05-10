@@ -5,6 +5,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
+const String fbUrl = 'https://karpuz-oyunu-default-rtdb.europe-west1.firebasedatabase.app';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
@@ -40,14 +42,13 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(Colors.black)
+
+      // Genel Firebase istekleri
       ..addJavaScriptChannel('FlutterFetch',
           onMessageReceived: (JavaScriptMessage msg) async {
         Map<String, dynamic> data;
-        try {
-          data = jsonDecode(msg.message) as Map<String, dynamic>;
-        } catch (e) {
-          return;
-        }
+        try { data = jsonDecode(msg.message) as Map<String, dynamic>; }
+        catch (e) { return; }
         final id = data['id'] as String? ?? '';
         final url = data['url'] as String? ?? '';
         final method = (data['method'] as String?) ?? 'GET';
@@ -56,50 +57,68 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
           http.Response response;
           final headers = {'Content-Type': 'application/json'};
           if (method == 'PUT' && body != null) {
-            response = await http.put(
-              Uri.parse(url), headers: headers, body: body,
-            ).timeout(const Duration(seconds: 15));
+            response = await http.put(Uri.parse(url), headers: headers, body: body)
+                .timeout(const Duration(seconds: 15));
           } else {
-            response = await http.get(
-              Uri.parse(url), headers: headers,
-            ).timeout(const Duration(seconds: 15));
+            response = await http.get(Uri.parse(url), headers: headers)
+                .timeout(const Duration(seconds: 15));
           }
           final safeBody = jsonEncode(response.body);
-          _controller.runJavaScript(
-            'try{window._ftCb("$id",${response.statusCode},$safeBody)}catch(e){}'
-          );
+          _controller.runJavaScript('try{window._ftCb("$id",${response.statusCode},$safeBody)}catch(e){}');
         } catch (e) {
-          _controller.runJavaScript(
-            'try{window._ftCb("$id",0,null)}catch(e){}'
-          );
+          _controller.runJavaScript('try{window._ftCb("$id",0,null)}catch(e){}');
         }
       })
+
+      // Kullanıcı adı kontrol ve kayıt — tamamen Dart'ta
+      ..addJavaScriptChannel('FlutterRegister',
+          onMessageReceived: (JavaScriptMessage msg) async {
+        Map<String, dynamic> data;
+        try { data = jsonDecode(msg.message) as Map<String, dynamic>; }
+        catch (e) { return; }
+        final id = data['id'] as String? ?? '';
+        final name = data['name'] as String? ?? '';
+        final key = name.replaceAll(RegExp(r'[.#\$\[\]/]'), '_');
+        try {
+          // Users ve leaderboard'u paralel kontrol et
+          final results = await Future.wait([
+            http.get(Uri.parse('$fbUrl/users/$key.json'))
+                .timeout(const Duration(seconds: 10)),
+            http.get(Uri.parse('$fbUrl/leaderboard/$key.json'))
+                .timeout(const Duration(seconds: 10)),
+          ]);
+          final usersData = jsonDecode(results[0].body);
+          final lbData = jsonDecode(results[1].body);
+          final taken = (usersData != null && usersData is Map && usersData['name'] != null) ||
+                        (lbData != null && lbData is Map && lbData['name'] != null);
+          if (!taken) {
+            // Kullanıcıyı kaydet
+            await http.put(
+              Uri.parse('$fbUrl/users/$key.json'),
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode({'name': name, 't': DateTime.now().millisecondsSinceEpoch}),
+            ).timeout(const Duration(seconds: 10));
+          }
+          _controller.runJavaScript('try{window._regCb("$id",${taken ? 'true' : 'false'})}catch(e){}');
+        } catch (e) {
+          _controller.runJavaScript('try{window._regCb("$id",null)}catch(e){}');
+        }
+      })
+
+      // WhatsApp
       ..addJavaScriptChannel('FlutterShare',
           onMessageReceived: (JavaScriptMessage msg) async {
         final text = Uri.encodeComponent(msg.message);
         final uri = Uri.parse('whatsapp://send?text=$text');
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri);
-        }
+        if (await canLaunchUrl(uri)) await launchUrl(uri);
       })
-      ..setNavigationDelegate(NavigationDelegate(
-        onPageFinished: (url) {
-          // Firebase bağlantısını test et
-          _controller.runJavaScript(
-            'console.log("FlutterFetch available:", typeof FlutterFetch)'
-          );
-        },
-      ))
       ..loadFlutterAsset('assets/game.html');
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.inactive) {
-      _controller.runJavaScript(
-        'if(typeof saveGameState==="function")saveGameState();'
-      );
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      _controller.runJavaScript('if(typeof saveGameState==="function")saveGameState();');
     }
   }
 
@@ -113,9 +132,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: SafeArea(
-        child: WebViewWidget(controller: _controller),
-      ),
+      body: SafeArea(child: WebViewWidget(controller: _controller)),
     );
   }
 }
