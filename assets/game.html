@@ -1806,13 +1806,17 @@ async function registerUser(){
     return;
   }
 
-  /* Kullanıcı adı kontrolü */
+  /* Kullanıcı adı kontrolü — hem users hem leaderboard */
   errEl.textContent='🔍 Kullanıcı adı kontrol ediliyor...';
   const key=n.replace(/[.#$[\]/]/g,'_');
   try{
-    const resp=await flutterFetch(`${FB_URL}/users/${key}.json`,'GET');
-    const data=await resp.json();
-    if(data && data.name){
+    const [usersResp, lbResp] = await Promise.all([
+      flutterFetch(`${FB_URL}/users/${key}.json`,'GET'),
+      flutterFetch(`${FB_URL}/leaderboard/${key}.json`,'GET')
+    ]);
+    const usersData = await usersResp.json();
+    const lbData = await lbResp.json();
+    if((usersData && usersData.name) || (lbData && lbData.name)){
       errEl.textContent='🚫 Bu kullanıcı adı alınmış! Başka bir isim seç.';
       if(btn){btn.textContent='KAYDET & OYNA 🚀';btn.disabled=false;}
       return;
