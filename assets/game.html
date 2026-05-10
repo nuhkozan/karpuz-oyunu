@@ -1500,26 +1500,32 @@ window._ftCb = function(id, status, body){
 /* Flutter channel üzerinden fetch yap, yoksa direkt fetch dene */
 function flutterFetch(url, method='GET', body=null){
   return new Promise((resolve, reject)=>{
-    if(window.FlutterFetch){
-      const id = 'ft_'+Date.now()+'_'+Math.random().toString(36).slice(2);
-      window._ftCallbacks[id]=(status, responseBody)=>{
-        if(status===0){reject(new Error('fetch failed'));return;}
-        try{resolve({status, json:()=>Promise.resolve(JSON.parse(responseBody||'null'))});}
-        catch(e){resolve({status, json:()=>Promise.resolve(null)});}
-      };
-      FlutterFetch.postMessage(JSON.stringify({id, url, method, body}));
-      setTimeout(()=>{
-        if(window._ftCallbacks[id]){
-          delete window._ftCallbacks[id];
-          reject(new Error('timeout'));
+    /* Önce direkt fetch dene — daha güvenilir */
+    const opts={method,headers:{'Content-Type':'application/json'}};
+    if(body)opts.body=body;
+    fetch(url,opts)
+      .then(r=>r.json())
+      .then(data=>resolve({status:200,json:()=>Promise.resolve(data)}))
+      .catch(()=>{
+        /* fetch başarısız olduysa FlutterFetch kanalını dene */
+        if(window.FlutterFetch){
+          const id='ft_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+          window._ftCallbacks[id]=(status,responseBody)=>{
+            if(status===0){reject(new Error('fetch failed'));return;}
+            try{resolve({status,json:()=>Promise.resolve(JSON.parse(responseBody||'null'))});}
+            catch(e){resolve({status,json:()=>Promise.resolve(null)});}
+          };
+          FlutterFetch.postMessage(JSON.stringify({id,url,method,body}));
+          setTimeout(()=>{
+            if(window._ftCallbacks[id]){
+              delete window._ftCallbacks[id];
+              reject(new Error('timeout'));
+            }
+          },12000);
+        } else {
+          reject(new Error('No fetch method available'));
         }
-      }, 12000);
-    } else {
-      /* Tarayıcıda direkt fetch */
-      const opts = {method, headers:{'Content-Type':'application/json'}};
-      if(body) opts.body=body;
-      fetch(url, opts).then(r=>r.json()).then(data=>resolve({status:200,json:()=>Promise.resolve(data)})).catch(reject);
-    }
+      });
   });
 }
 
@@ -1766,35 +1772,48 @@ async function registerUser(){
   if(n.length<2){errEl.textContent='⚠️ En az 2 karakter gir.';return;}
   if(n.length>16){errEl.textContent='⚠️ En fazla 16 karakter olabilir.';return;}
 
-  /* Lokal kontrol */
   if(isNameTaken(n)){
-    errEl.textContent='🚫 Bu kullanıcı adı alınmış! Başka bir isim seç.';
+    errEl.textContent='🚫 Bu kullanıcı adı bu cihazda alınmış!';
     document.getElementById('uname').select();
     return;
   }
 
-  /* Firebase kontrolü */
   const btn=document.querySelector('button[onclick="registerUser()"]');
   if(btn){btn.textContent='⏳ Kontrol ediliyor...';btn.disabled=true;}
-  errEl.textContent='🔍 Kullanıcı adı kontrol ediliyor...';
 
-  try{
-    const key=n.replace(/[.#$[\]/]/g,'_');
-    const url=`${FB_URL}/leaderboard/${key}.json`;
-    const resp=await flutterFetch(url,'GET');
-    const data=await resp.json();
-    if(data && data.name){
-      errEl.textContent='🚫 Bu kullanıcı adı alınmış! Başka bir isim seç.';
-      if(btn){btn.textContent='KAYDET & OYNA 🚀';btn.disabled=false;}
-      return;
+  /* Firebase kontrolü — 3 deneme */
+  const key=n.replace(/[.#$[\]/]/g,'_');
+  let taken=null;
+  let attempts=0;
+
+  while(attempts<3){
+    attempts++;
+    errEl.textContent=`🔍 Kontrol ediliyor... (${attempts}/3)`;
+    try{
+      const resp=await flutterFetch(`${FB_URL}/leaderboard/${key}.json`,'GET');
+      const data=await resp.json();
+      taken=(data && data.name && data.name!==n);
+      break; /* Başarılı — döngüden çık */
+    }catch(e){
+      if(attempts<3){
+        await new Promise(r=>setTimeout(r,2000)); /* 2 sn bekle, tekrar dene */
+      }
     }
-  }catch(e){
-    errEl.textContent='⚠️ Sunucuya bağlanılamadı. İnternet bağlantını kontrol et.';
-    if(btn){btn.textContent='KAYDET & OYNA 🚀';btn.disabled=false;}
-    return;
   }
 
   if(btn){btn.textContent='KAYDET & OYNA 🚀';btn.disabled=false;}
+
+  if(taken===true){
+    errEl.textContent='🚫 Bu kullanıcı adı alınmış! Başka bir isim seç.';
+    return;
+  }
+
+  if(taken===null){
+    /* 3 denemede de bağlanamadı */
+    errEl.textContent='⚠️ Sunucuya bağlanılamadı (3 deneme). İnternet bağlantını kontrol edip tekrar dene.';
+    return;
+  }
+
   errEl.textContent='';
   addRegistered(n);
   try{localStorage.setItem(UKEY,n);}catch{}
