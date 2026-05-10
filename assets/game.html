@@ -1799,13 +1799,14 @@ async function registerUser(){
     attempts++;
     errEl.textContent=`🔍 Kontrol ediliyor... (${attempts}/3)`;
     try{
-      const resp=await flutterFetch(`${FB_URL}/leaderboard/${key}.json`,'GET');
+      /* users koleksiyonunu kontrol et */
+      const resp=await flutterFetch(`${FB_URL}/users/${key}.json`,'GET');
       const data=await resp.json();
-      taken=(data && data.name && data.name!==n);
-      break; /* Başarılı — döngüden çık */
+      taken=(data && data.name); /* Herhangi bir kayıt varsa alınmış */
+      break;
     }catch(e){
       if(attempts<3){
-        await new Promise(r=>setTimeout(r,2000)); /* 2 sn bekle, tekrar dene */
+        await new Promise(r=>setTimeout(r,2000));
       }
     }
   }
@@ -1827,6 +1828,14 @@ async function registerUser(){
   addRegistered(n);
   try{localStorage.setItem(UKEY,n);}catch{}
   S.user=n;S.lv=1;S.totSc=0;
+
+  /* Kullanıcı adını Firebase users koleksiyonuna kaydet */
+  try{
+    const key=n.replace(/[.#$[\]/]/g,'_');
+    await flutterFetch(`${FB_URL}/users/${key}.json`,'PUT',
+      JSON.stringify({name:n,t:Date.now()}));
+  }catch(e){console.log('User register err:',e);}
+
   const tutDone=localStorage.getItem('karpuz_tutdone');
   if(!tutDone){ showTutorial(); }
   else { checkDailyReward(); beginLevel(); }
