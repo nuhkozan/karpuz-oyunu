@@ -1497,35 +1497,44 @@ window._ftCb = function(id, status, body){
   }
 };
 
-/* Flutter channel üzerinden fetch yap, yoksa direkt fetch dene */
 function flutterFetch(url, method='GET', body=null){
   return new Promise((resolve, reject)=>{
-    /* Önce direkt fetch dene — daha güvenilir */
     const opts={method,headers:{'Content-Type':'application/json'}};
     if(body)opts.body=body;
-    fetch(url,opts)
-      .then(r=>r.json())
-      .then(data=>resolve({status:200,json:()=>Promise.resolve(data)}))
-      .catch(()=>{
-        /* fetch başarısız olduysa FlutterFetch kanalını dene */
-        if(window.FlutterFetch){
-          const id='ft_'+Date.now()+'_'+Math.random().toString(36).slice(2);
-          window._ftCallbacks[id]=(status,responseBody)=>{
-            if(status===0){reject(new Error('fetch failed'));return;}
-            try{resolve({status,json:()=>Promise.resolve(JSON.parse(responseBody||'null'))});}
-            catch(e){resolve({status,json:()=>Promise.resolve(null)});}
-          };
-          FlutterFetch.postMessage(JSON.stringify({id,url,method,body}));
-          setTimeout(()=>{
-            if(window._ftCallbacks[id]){
-              delete window._ftCallbacks[id];
-              reject(new Error('timeout'));
-            }
-          },12000);
-        } else {
-          reject(new Error('No fetch method available'));
+
+    if(window.FlutterFetch){
+      /* FlutterFetch kanalı — birincil yöntem */
+      const id='ft_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+      let done=false;
+      window._ftCallbacks[id]=(status,responseBody)=>{
+        if(done)return; done=true;
+        if(status===0){
+          /* FlutterFetch başarısız — direkt fetch dene */
+          fetch(url,opts).then(r=>r.json())
+            .then(data=>resolve({status:200,json:()=>Promise.resolve(data)}))
+            .catch(e=>reject(e));
+          return;
         }
-      });
+        try{resolve({status,json:()=>Promise.resolve(JSON.parse(responseBody||'null'))});}
+        catch(e){resolve({status,json:()=>Promise.resolve(null)});}
+      };
+      FlutterFetch.postMessage(JSON.stringify({id,url,method,body}));
+      setTimeout(()=>{
+        if(window._ftCallbacks[id]&&!done){
+          done=true;
+          delete window._ftCallbacks[id];
+          /* Timeout — direkt fetch ile dene */
+          fetch(url,opts).then(r=>r.json())
+            .then(data=>resolve({status:200,json:()=>Promise.resolve(data)}))
+            .catch(e=>reject(e));
+        }
+      },8000);
+    } else {
+      /* FlutterFetch yok — direkt fetch */
+      fetch(url,opts).then(r=>r.json())
+        .then(data=>resolve({status:200,json:()=>Promise.resolve(data)}))
+        .catch(reject);
+    }
   });
 }
 
