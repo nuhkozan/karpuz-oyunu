@@ -1788,54 +1788,52 @@ async function registerUser(){
   }
 
   const btn=document.querySelector('button[onclick="registerUser()"]');
-  if(btn){btn.textContent='⏳ Kontrol ediliyor...';btn.disabled=true;}
+  if(btn){btn.textContent='⏳ Bağlanıyor...';btn.disabled=true;}
 
-  /* Firebase kontrolü — 3 deneme */
-  const key=n.replace(/[.#$[\]/]/g,'_');
-  let taken=null;
-  let attempts=0;
-
-  while(attempts<3){
-    attempts++;
-    errEl.textContent=`🔍 Kontrol ediliyor... (${attempts}/3)`;
-    try{
-      /* users koleksiyonunu kontrol et */
-      const resp=await flutterFetch(`${FB_URL}/users/${key}.json`,'GET');
-      const data=await resp.json();
-      taken=(data && data.name); /* Herhangi bir kayıt varsa alınmış */
-      break;
-    }catch(e){
-      if(attempts<3){
-        await new Promise(r=>setTimeout(r,2000));
-      }
+  /* FlutterFetch hazır değilse bekle (max 10 sn) */
+  if(!_ftReady){
+    errEl.textContent='🔄 Sunucuya bağlanılıyor...';
+    let waited=0;
+    while(!_ftReady && waited<10000){
+      await new Promise(r=>setTimeout(r,500));
+      waited+=500;
     }
   }
 
+  if(!_ftReady){
+    errEl.textContent='⚠️ Sunucuya bağlanılamadı. İnternet bağlantını kontrol et.';
+    if(btn){btn.textContent='KAYDET & OYNA 🚀';btn.disabled=false;}
+    return;
+  }
+
+  /* Kullanıcı adı kontrolü */
+  errEl.textContent='🔍 Kullanıcı adı kontrol ediliyor...';
+  const key=n.replace(/[.#$[\]/]/g,'_');
+  try{
+    const resp=await flutterFetch(`${FB_URL}/users/${key}.json`,'GET');
+    const data=await resp.json();
+    if(data && data.name){
+      errEl.textContent='🚫 Bu kullanıcı adı alınmış! Başka bir isim seç.';
+      if(btn){btn.textContent='KAYDET & OYNA 🚀';btn.disabled=false;}
+      return;
+    }
+  }catch(e){
+    errEl.textContent='⚠️ Kontrol edilemedi. Tekrar dene.';
+    if(btn){btn.textContent='KAYDET & OYNA 🚀';btn.disabled=false;}
+    return;
+  }
+
+  /* Kullanıcı adını rezerve et */
+  try{
+    await flutterFetch(`${FB_URL}/users/${key}.json`,'PUT',
+      JSON.stringify({name:n,t:Date.now()}));
+  }catch(e){}
+
   if(btn){btn.textContent='KAYDET & OYNA 🚀';btn.disabled=false;}
-
-  if(taken===true){
-    errEl.textContent='🚫 Bu kullanıcı adı alınmış! Başka bir isim seç.';
-    return;
-  }
-
-  if(taken===null){
-    /* 3 denemede de bağlanamadı */
-    errEl.textContent='⚠️ Sunucuya bağlanılamadı (3 deneme). İnternet bağlantını kontrol edip tekrar dene.';
-    return;
-  }
-
   errEl.textContent='';
   addRegistered(n);
   try{localStorage.setItem(UKEY,n);}catch{}
   S.user=n;S.lv=1;S.totSc=0;
-
-  /* Kullanıcı adını Firebase users koleksiyonuna kaydet */
-  try{
-    const key=n.replace(/[.#$[\]/]/g,'_');
-    await flutterFetch(`${FB_URL}/users/${key}.json`,'PUT',
-      JSON.stringify({name:n,t:Date.now()}));
-  }catch(e){console.log('User register err:',e);}
-
   const tutDone=localStorage.getItem('karpuz_tutdone');
   if(!tutDone){ showTutorial(); }
   else { checkDailyReward(); beginLevel(); }
@@ -3198,6 +3196,20 @@ setInterval(()=>{if(S.user)_checkIncomingChallenge();},3000);
 
 /* Otomatik kayıt - her 20 saniyede bir */
 setInterval(()=>{if(S.cfg&&!S.dead&&!_paused)saveGameState();},20000);
+
+/* ══ FlutterFetch Ön Isıtma ══
+   Sayfa açılınca kanalı ısıt, kayıt hazır olsun */
+let _ftReady=false;
+async function warmupFlutterFetch(){
+  try{
+    await flutterFetch(`${FB_URL}/ping.json`,'GET');
+    _ftReady=true;
+    console.log('FlutterFetch hazır!');
+  }catch(e){
+    setTimeout(warmupFlutterFetch,2000);
+  }
+}
+setTimeout(warmupFlutterFetch,800);
 
 /* Uygulama kapanınca/arka plana geçince kaydet */
 document.addEventListener('visibilitychange',()=>{
