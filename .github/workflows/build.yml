@@ -29,6 +29,8 @@ jobs:
           c = c.replace('android:label="karpuz"','android:label="Karpuz"')
           c = c.replace('</manifest>','<queries><package android:name="com.whatsapp"/><package android:name="com.whatsapp.w4b"/></queries></manifest>')
           c = c.replace('android:label="Karpuz"','android:label="Karpuz" android:usesCleartextTraffic="true" android:networkSecurityConfig="@xml/network_security_config"')
+          if 'INTERNET' not in c:
+              c = c.replace('<application','<uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>\n    <application')
           with open('android/app/src/main/AndroidManifest.xml','w') as f:
               f.write(c)
           import os
