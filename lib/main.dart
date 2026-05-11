@@ -22,6 +22,7 @@ class KarpuzApp extends StatelessWidget {
     return MaterialApp(
       title: 'Karpuz',
       debugShowCheckedModeBanner: false,
+      theme: ThemeData(scaffoldBackgroundColor: Colors.black),
       home: const GameScreen(),
     );
   }
@@ -35,6 +36,7 @@ class GameScreen extends StatefulWidget {
 
 class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   late final WebViewController _controller;
+  bool _webViewReady = false;
 
   @override
   void initState() {
@@ -43,7 +45,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(Colors.black)
+      ..setBackgroundColor(Colors.transparent)
       ..addJavaScriptChannel('FlutterFetch',
           onMessageReceived: (JavaScriptMessage msg) async {
         Map<String, dynamic> data;
@@ -112,21 +114,19 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         if (await canLaunchUrl(uri)) await launchUrl(uri);
       })
       ..setNavigationDelegate(NavigationDelegate(
-        onPageFinished: (url) async {
+        onPageFinished: (url) {
+          setState(() => _webViewReady = true);
           if (_controller.platform is AndroidWebViewController) {
-            final AndroidWebViewController androidController =
-                _controller.platform as AndroidWebViewController;
-            await androidController.setMediaPlaybackRequiresUserGesture(false);
+            (_controller.platform as AndroidWebViewController)
+                .setMediaPlaybackRequiresUserGesture(false);
           }
         },
       ))
       ..loadFlutterAsset('assets/game.html');
 
-    /* Xiaomi/MIUI için ek WebView ayarları */
     if (_controller.platform is AndroidWebViewController) {
-      final AndroidWebViewController androidController =
-          _controller.platform as AndroidWebViewController;
-      androidController.setMediaPlaybackRequiresUserGesture(false);
+      (_controller.platform as AndroidWebViewController)
+          .setMediaPlaybackRequiresUserGesture(false);
     }
   }
 
@@ -150,7 +150,25 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
-        child: WebViewWidget(controller: _controller),
+        child: Stack(
+          children: [
+            WebViewWidget(controller: _controller),
+            if (!_webViewReady)
+              Container(
+                color: Colors.black,
+                child: const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('🍉', style: TextStyle(fontSize: 64)),
+                      SizedBox(height: 16),
+                      CircularProgressIndicator(color: Colors.green),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
