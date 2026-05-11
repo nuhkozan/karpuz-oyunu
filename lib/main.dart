@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -39,11 +40,10 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(Colors.black)
-
-      // Genel Firebase istekleri
       ..addJavaScriptChannel('FlutterFetch',
           onMessageReceived: (JavaScriptMessage msg) async {
         Map<String, dynamic> data;
@@ -64,13 +64,13 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                 .timeout(const Duration(seconds: 15));
           }
           final safeBody = jsonEncode(response.body);
-          _controller.runJavaScript('try{window._ftCb("$id",${response.statusCode},$safeBody)}catch(e){}');
+          _controller.runJavaScript(
+              'try{window._ftCb("$id",${response.statusCode},$safeBody)}catch(e){}');
         } catch (e) {
-          _controller.runJavaScript('try{window._ftCb("$id",0,null)}catch(e){}');
+          _controller.runJavaScript(
+              'try{window._ftCb("$id",0,null)}catch(e){}');
         }
       })
-
-      // Kullanıcı adı kontrol ve kayıt — tamamen Dart'ta
       ..addJavaScriptChannel('FlutterRegister',
           onMessageReceived: (JavaScriptMessage msg) async {
         Map<String, dynamic> data;
@@ -80,7 +80,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         final name = data['name'] as String? ?? '';
         final key = name.replaceAll(RegExp(r'[.#\$\[\]/]'), '_');
         try {
-          // Users ve leaderboard'u paralel kontrol et
           final results = await Future.wait([
             http.get(Uri.parse('$fbUrl/users/$key.json'))
                 .timeout(const Duration(seconds: 10)),
@@ -89,36 +88,54 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
           ]);
           final usersData = jsonDecode(results[0].body);
           final lbData = jsonDecode(results[1].body);
-          final taken = (usersData != null && usersData is Map && usersData['name'] != null) ||
-                        (lbData != null && lbData is Map && lbData['name'] != null);
+          final taken =
+              (usersData != null && usersData is Map && usersData['name'] != null) ||
+              (lbData != null && lbData is Map && lbData['name'] != null);
           if (!taken) {
-            // Kullanıcıyı kaydet
             await http.put(
               Uri.parse('$fbUrl/users/$key.json'),
               headers: {'Content-Type': 'application/json'},
               body: jsonEncode({'name': name, 't': DateTime.now().millisecondsSinceEpoch}),
             ).timeout(const Duration(seconds: 10));
           }
-          _controller.runJavaScript('try{window._regCb("$id",${taken ? 'true' : 'false'})}catch(e){}');
+          _controller.runJavaScript(
+              'try{window._regCb("$id",${taken ? 'true' : 'false'})}catch(e){}');
         } catch (e) {
-          _controller.runJavaScript('try{window._regCb("$id",null)}catch(e){}');
+          _controller.runJavaScript(
+              'try{window._regCb("$id",null)}catch(e){}');
         }
       })
-
-      // WhatsApp
       ..addJavaScriptChannel('FlutterShare',
           onMessageReceived: (JavaScriptMessage msg) async {
         final text = Uri.encodeComponent(msg.message);
         final uri = Uri.parse('whatsapp://send?text=$text');
         if (await canLaunchUrl(uri)) await launchUrl(uri);
       })
+      ..setNavigationDelegate(NavigationDelegate(
+        onPageFinished: (url) async {
+          if (_controller.platform is AndroidWebViewController) {
+            final AndroidWebViewController androidController =
+                _controller.platform as AndroidWebViewController;
+            await androidController.setMediaPlaybackRequiresUserGesture(false);
+          }
+        },
+      ))
       ..loadFlutterAsset('assets/game.html');
+
+    /* Xiaomi/MIUI için ek WebView ayarları */
+    if (_controller.platform is AndroidWebViewController) {
+      final AndroidWebViewController androidController =
+          _controller.platform as AndroidWebViewController;
+      androidController.setMediaPlaybackRequiresUserGesture(false);
+    }
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
-      _controller.runJavaScript('if(typeof saveGameState==="function")saveGameState();');
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      _controller.runJavaScript(
+          'if(typeof saveGameState==="function")saveGameState();');
     }
   }
 
@@ -132,7 +149,9 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: SafeArea(child: WebViewWidget(controller: _controller)),
+      body: SafeArea(
+        child: WebViewWidget(controller: _controller),
+      ),
     );
   }
 }
