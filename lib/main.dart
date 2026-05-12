@@ -134,8 +134,22 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
-      _controller.runJavaScript(
-          'if(typeof saveGameState==="function")saveGameState();');
+      // Oyunu kaydet ve müziği durdur
+      _controller.runJavaScript('''
+        if(typeof saveGameState==="function") saveGameState();
+        if(typeof MUS!=="undefined" && MUS) try{MUS.stop();}catch(e){}
+        if(typeof ambientInterval!=="undefined") clearInterval(ambientInterval);
+        if(typeof stopHomeAnim==="function") stopHomeAnim();
+      ''');
+    } else if (state == AppLifecycleState.resumed) {
+      // Uygulamaya dönünce müziği yeniden başlat
+      _controller.runJavaScript('''
+        if(typeof musicOn!=="undefined" && musicOn && 
+           typeof MUS!=="undefined" && MUS &&
+           typeof S!=="undefined" && S.cfg && !S.dead) {
+          try{MUS.start();}catch(e){}
+        }
+      ''');
     }
   }
 
