@@ -97,7 +97,7 @@ body {
 .prog-bg   { height:5px; background:rgba(255,255,255,.1); border-radius:3px; overflow:hidden; }
 .prog-fill { height:100%; background:linear-gradient(90deg,#e94560,#f5a623); border-radius:3px; transition:width .35s; }
 
-canvas { display:block; cursor:crosshair; touch-action:none; border-radius:14px; border:3px solid rgba(255,255,255,.15); width:100% !important; }
+canvas { display:block; cursor:crosshair; touch-action:none; border-radius:14px; border:3px solid rgba(255,255,255,.15); width:100% !important; filter:saturate(1.4) contrast(1.15) brightness(1.05); }
 
 /* ── RESULT ── */
 .r-card {
@@ -340,8 +340,30 @@ window._fbReady=true;
   </div>
 </div>
 <style>
-@keyframes lvIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
-@keyframes fruitPop{0%{transform:scale(0) rotate(-20deg)}60%{transform:scale(1.3) rotate(5deg)}100%{transform:scale(1) rotate(0)}}
+<style>
+@keyframes floatFruit{
+  0%{transform:translateY(0) rotate(0deg) scale(1);}
+  25%{transform:translateY(-30px) rotate(90deg) scale(1.1);}
+  50%{transform:translateY(-10px) rotate(180deg) scale(0.9);}
+  75%{transform:translateY(-40px) rotate(270deg) scale(1.05);}
+  100%{transform:translateY(0) rotate(360deg) scale(1);}
+}
+@keyframes driftFruit{
+  0%{transform:translate(0,0) rotate(0deg);}
+  33%{transform:translate(20px,-40px) rotate(120deg);}
+  66%{transform:translate(-15px,-20px) rotate(240deg);}
+  100%{transform:translate(0,0) rotate(360deg);}
+}
+@keyframes bounceFruit{
+  0%,100%{transform:translateY(0) rotate(0deg);}
+  50%{transform:translateY(-60px) rotate(180deg);}
+}
+@keyframes spinFruit{
+  0%{transform:rotate(0deg) scale(1);}
+  50%{transform:rotate(180deg) scale(1.2);}
+  100%{transform:rotate(360deg) scale(1);}
+}
+</style>
 </style>
 
 <!-- WhatsApp bar — her zaman üstte -->
@@ -362,7 +384,13 @@ window._fbReady=true;
 
 <!-- Müzik toggle -->
 <!-- ① USERNAME -->
-<div id="s-user" class="screen active">
+<div id="s-user" class="screen active" style="position:relative;overflow:hidden;">
+  <!-- Hareketli arka plan meyveleri -->
+  <canvas id="home-canvas" style="display:none"></canvas>
+  <!-- CSS ile yüzen meyveler -->
+  <div id="home-fruits" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:hidden"></div>
+
+  <div style="position:relative;z-index:1;width:100%;display:flex;flex-direction:column;align-items:center;padding-bottom:20px">
   <div class="brand">🍉</div>
   <div class="brand-name">KARPUZ</div>
   <div class="brand-sub">Meyveleri birleştir · Sonsuz level · Şampiyona!</div>
@@ -399,6 +427,7 @@ window._fbReady=true;
   <div style="margin-top:18px;display:flex;gap:8px;justify-content:center">
     <button class="btn-out" onclick="openLB()">🏆 Şampiyonlar Ligi</button>
     <button class="btn-out" onclick="openInfo()">📖 Rehber</button>
+  </div>
   </div>
 </div>
 
@@ -777,6 +806,13 @@ window._fbReady=true;
   </div>
 </div>
 
+<!-- Pause touch blocker -->
+<div id="pause-block-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:150;background:rgba(0,0,0,.6);flex-direction:column;align-items:center;justify-content:center;">
+  <div style="font-size:60px;margin-bottom:12px">⏸</div>
+  <div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:6px">DURAKLATILDI</div>
+  <div style="font-size:13px;color:rgba(255,255,255,.5)">Devam etmek için ▶ bas</div>
+</div>
+
 <!-- ④ GAME OVER -->
 <div id="s-over" class="screen">
   <div class="r-card">
@@ -800,12 +836,27 @@ window._fbReady=true;
 <!-- ⑤ LEADERBOARD -->
 <div id="s-lb" class="screen">
   <button class="btn-out" style="align-self:flex-start;margin-bottom:10px" onclick="home()">🏠 Ana Sayfa</button>
-  <div class="lb-title">🏆 ŞAMPİYONLAR LİGİ</div>
-  <div class="lb-wrap" id="lb-tbl"></div>
-  <!-- Rakip takip bölümü -->
-  <div id="rival-section" style="display:none;width:100%;max-width:320px;margin-top:14px">
-    <div style="font-size:13px;font-weight:800;color:#f5a623;margin-bottom:8px">⚔️ RAKİBİM</div>
-    <div id="rival-tbl" class="lb-wrap"></div>
+
+  <!-- Şampiyonlar Ligi accordion -->
+  <div style="width:100%;max-width:340px;margin-bottom:10px">
+    <div onclick="toggleLBSection('lb-body')" style="background:rgba(255,255,255,.08);border-radius:14px;padding:12px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-weight:900;font-size:15px">🏆 ŞAMPİYONLAR LİGİ</span>
+      <span id="lb-arrow">▼</span>
+    </div>
+    <div id="lb-body">
+      <div class="lb-wrap" id="lb-tbl"></div>
+    </div>
+  </div>
+
+  <!-- Rakiplerim accordion -->
+  <div style="width:100%;max-width:340px">
+    <div onclick="toggleLBSection('rivals-body')" style="background:rgba(233,69,96,.15);border-radius:14px;padding:12px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-weight:900;font-size:15px">⚔️ RAKİPLERİM</span>
+      <span id="rivals-arrow">▼</span>
+    </div>
+    <div id="rivals-body">
+      <div class="lb-wrap" id="rival-tbl2"></div>
+    </div>
   </div>
 </div>
 
@@ -950,18 +1001,10 @@ function drawForest(W, H){
 
   /* Tema özel çizimler */
   if(f.theme==='cream'||f.theme==='cream2'){
-    /* Krem - yumuşak daireler */
-    for(let i=0;i<5;i++){
-      const cx=rng()*W, cy=H*0.1+rng()*H*0.5, cr=40+rng()*60;
-      ctx.save();ctx.globalAlpha=0.06+rng()*0.05;
-      ctx.fillStyle='#c8a87a';
-      ctx.beginPath();ctx.arc(cx,cy,cr,0,Math.PI*2);ctx.fill();
-      ctx.restore();
-    }
-    /* Küçük çiçekler */
+    /* Krem - sadece küçük çiçekler, büyük daireler yok */
     for(let i=0;i<8;i++){
-      const fx=rng()*W, fy=H*0.5+rng()*H*0.4;
-      drawFlower(fx,fy,6+rng()*8,'rgba(200,160,100,0.25)');
+      const fx=rng()*W, fy=H*0.4+rng()*H*0.5;
+      drawFlower(fx,fy,5+rng()*7,'rgba(180,140,80,0.18)');
     }
   }
   else if(f.theme==='beach'){
@@ -1028,16 +1071,10 @@ function drawForest(W, H){
     ctx.beginPath();ctx.arc(W*0.8,H*0.12,16,0,Math.PI*2);ctx.fill();ctx.restore();
   }
   else if(f.theme==='morning'){
-    /* Güneş ışıkları */
-    for(let i=0;i<6;i++){
-      const a=(i/6)*Math.PI-Math.PI/2;
-      ctx.save();ctx.globalAlpha=0.06;ctx.strokeStyle='#ffdd88';ctx.lineWidth=18;
-      ctx.beginPath();ctx.moveTo(W*0.5,0);ctx.lineTo(W*0.5+Math.cos(a)*W,Math.sin(a)*H);ctx.stroke();ctx.restore();
-    }
     /* Kuşlar */
     for(let i=0;i<6;i++){
       const bx=rng()*W*0.8+W*0.1, by=H*0.05+rng()*H*0.25;
-      drawBird(bx,by,'rgba(60,120,40,0.25)');
+      drawBird(bx,by,'rgba(60,120,40,0.35)');
     }
   }
   else if(f.theme==='ocean'){
@@ -1106,13 +1143,6 @@ function drawForest(W, H){
   grd.addColorStop(1, 'rgba(0,0,0,0.3)');
   ctx.fillStyle = grd;
   ctx.fillRect(0, H-groundH, W, groundH);
-
-  /* Hafif sis/vinyeti — meyveleri öne çıkarır */
-  const vignette = ctx.createRadialGradient(W/2, H/2, H*0.25, W/2, H/2, H*0.75);
-  vignette.addColorStop(0, 'rgba(0,0,0,0)');
-  vignette.addColorStop(1, 'rgba(0,0,0,0.22)');
-  ctx.fillStyle = vignette;
-  ctx.fillRect(0, 0, W, H);
 }
 
 /* Yardımcı çizim fonksiyonları */
@@ -1597,43 +1627,43 @@ async function renderLB(me){
   }
 
   const medals=['🥇','🥈','🥉'];
-  el.innerHTML=entries.map((e,i)=>{
-    const rc=i===0?'g':i===1?'s':i===2?'b':'';
-    const md=medals[i]||i+1+'.';
+  const myIdx=entries.findIndex(e=>e.name===me);
+  const myRank=myIdx+1;
+
+  /* Gösterilecek satırları hesapla */
+  let showIdxs=new Set();
+  /* İlk 10 */
+  for(let i=0;i<Math.min(10,entries.length);i++)showIdxs.add(i);
+  /* Kendi etrafındaki 5'er */
+  if(myIdx>=0){
+    for(let i=Math.max(0,myIdx-5);i<=Math.min(entries.length-1,myIdx+5);i++)showIdxs.add(i);
+  }
+  const sortedIdxs=[...showIdxs].sort((a,b)=>a-b);
+
+  let html='';
+  let lastIdx=-1;
+  for(const i of sortedIdxs){
+    if(lastIdx>=0 && i>lastIdx+1){
+      html+=`<div style="text-align:center;color:rgba(255,255,255,.3);font-size:11px;padding:4px">• • •</div>`;
+    }
+    const e=entries[i];
     const isMe=e.name===me;
-    return`<div class="lb-row${isMe?' me':''}" ${isMe?'style="background:rgba(245,166,35,.18)"':''}>
+    const md=medals[i]||(i+1)+'.';
+    const rc=i===0?'g':i===1?'s':i===2?'b':'';
+    const bdg=getBadge(i+1);
+    const badge=bdg?`<span style="font-size:10px;margin-left:4px;opacity:.7">${bdg.icon}</span>`:'';
+    html+=`<div class="lb-row${isMe?' me':''}" ${isMe?'style="background:rgba(245,166,35,.18)"':''}>
       <div class="lb-rank ${rc}">${md}</div>
-      <div class="lb-name">${e.name}${isMe?' 👈':''}</div>
+      <div class="lb-name">${e.name}${badge}${isMe?' 👈':''}</div>
       <div class="lb-score">${(e.score||0).toLocaleString()}</div>
       <div class="lb-lv">Lv${e.lv||1}</div>
     </div>`;
-  }).join('');
-
-  /* Rakip bölümü */
-  if(_activeChallenge){
-    const rival=_activeChallenge.challenger===me?_activeChallenge.opponent:_activeChallenge.challenger;
-    const myData=entries.find(e=>e.name===me);
-    const rivalData=entries.find(e=>e.name===rival);
-    const rs=document.getElementById('rival-section');
-    const rt=document.getElementById('rival-tbl');
-    if(rs&&rt&&rivalData){
-      rs.style.display='block';
-      const myScore=myData?myData.score:0;
-      const rvScore=rivalData.score||0;
-      const diff=Math.abs(myScore-rvScore);
-      const ahead=myScore>rvScore;
-      rt.innerHTML=`
-        <div class="lb-row" style="background:rgba(233,69,96,.12)">
-          <div class="lb-rank">⚔️</div>
-          <div class="lb-name">${rival}</div>
-          <div class="lb-score">${rvScore.toLocaleString()}</div>
-          <div class="lb-lv">Lv${rivalData.lv||1}</div>
-        </div>
-        <div style="padding:8px 12px;font-size:11px;color:${ahead?'#44ff88':'#ff6655'}">
-          ${ahead?`🔥 ${diff.toLocaleString()} puan önündesin!`:`💪 ${diff.toLocaleString()} puan geride, yetişebilirsin!`}
-        </div>`;
-    }
+    lastIdx=i;
   }
+  if(myRank>0){
+    html=`<div style="font-size:11px;color:rgba(255,255,255,.4);padding:6px 12px;">Sen: #${myRank}. sıradasın</div>`+html;
+  }
+  el.innerHTML=html;
 }
 
 /* ══════════════════════════════════════════
@@ -1823,8 +1853,9 @@ async function registerUser(){
       return;
     }
   }catch(e){
-    errEl.textContent='⚠️ Sunucuya bağlanılamadı. İnternet bağlantını kontrol et.';
+    /* Sunucuya ulaşılamadı — yine de gir seçeneği sun */
     if(btn){btn.textContent='KAYDET & OYNA 🚀';btn.disabled=false;}
+    errEl.innerHTML='⚠️ Sunucuya bağlanılamadı.<br><small style="color:rgba(255,255,255,.5)">İnternet bağlantını kontrol et veya</small><br><button onclick="forceRegister(\''+n+'\')" style="margin-top:6px;padding:6px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;font-size:12px;cursor:pointer;">Yine de Gir (çevrimdışı)</button>';
     return;
   }
   if(btn){btn.textContent='KAYDET & OYNA 🚀';btn.disabled=false;}
@@ -1838,6 +1869,15 @@ async function registerUser(){
 }
 
 function startNew(){registerUser();}
+function forceRegister(n){
+  document.getElementById('uname-err').textContent='';
+  addRegistered(n);
+  try{localStorage.setItem(UKEY,n);}catch{}
+  S.user=n;S.lv=1;S.totSc=0;
+  const tutDone=localStorage.getItem('karpuz_tutdone');
+  if(!tutDone){showTutorial();}
+  else{checkDailyReward();beginLevel();}
+}
 function showUserError(msg){
   const el=document.getElementById('uname-err');
   if(el)el.textContent='⚠️ '+msg;
@@ -1911,6 +1951,7 @@ function beginLevel(){
   cancelAnimationFrame(S.rafId);
   S.rafId=requestAnimationFrame(loop);
 
+  stopHomeAnim();
   /* Müzik + ambient */
   if(musicOn){MUS.stop();setTimeout(()=>{MUS.start();playAmbient((S.lv-1)%8);},200);}
 }
@@ -2096,19 +2137,19 @@ function drawFruit(x,y,type,alpha){
   ctx.save();
   ctx.globalAlpha=alpha??1;
 
-  /* Hafif renkli hale — daire değil, blur ile */
+  /* Hafif renkli hale */
   ctx.shadowColor=f[5];
-  ctx.shadowBlur=r*0.9;
+  ctx.shadowBlur=r*0.4;
   ctx.shadowOffsetX=0;
   ctx.shadowOffsetY=0;
 
   /* Büyük, canlı emoji */
-  ctx.font=`${r*2.3}px serif`;
+  ctx.font=`${r*2.4}px serif`;
   ctx.textAlign='center';
   ctx.textBaseline='middle';
   ctx.fillText(f[0],x,y);
 
-  /* İkinci geçiş — shadow sıfırla, emoji net çiz */
+  /* İkinci geçiş — net çiz */
   ctx.shadowColor='transparent';
   ctx.shadowBlur=0;
   ctx.fillText(f[0],x,y);
@@ -2168,7 +2209,7 @@ function render(){
     /* Zemine düşen gölge */
     const shadowY=S.cfg.floor-2;
     const dist=Math.max(0,shadowY-f.y);
-    const shadowAlpha=Math.max(0,0.3-dist/300);
+    const shadowAlpha=Math.max(0,0.15-dist/400);
     const shadowScale=Math.max(0.3,1-dist/400);
     if(shadowAlpha>0.02){
       ctx.save();
@@ -2747,6 +2788,8 @@ function togglePause(){
   if(!S.cfg||S.dead)return;
   _paused=!_paused;
   document.getElementById('pause-icon').textContent=_paused?'▶':'⏸';
+  const overlay=document.getElementById('pause-block-overlay');
+  if(overlay)overlay.style.display=_paused?'flex':'none';
   if(_paused){
     cancelAnimationFrame(S.rafId);
     clearInterval(S.timerId);
@@ -2881,7 +2924,7 @@ async function killGame(rsn){
 ══════════════════════════════════════════ */
 function nextLv(){if(S.lv>=99){S.lv=1;S.totSc=0;}else S.lv++;clearSavedGame();beginLevel();}
 function retry(){clearSavedGame();S.lvSc=0;beginLevel();}/* Aynı leveli yeniden başlat */
-function home(){saveGameState();stop();initUserScreen();show('s-user');}
+function home(){saveGameState();stop();initUserScreen();show('s-user');setTimeout(startHomeAnim,100);}
 function backGame(){if(S.cfg)show('s-game');else show('s-user');}
 function pauseAndHome(){
   clearInterval(ambientInterval);
@@ -2902,7 +2945,56 @@ function pauseAndHome(){
 
 function openInfo(){document.getElementById('info-overlay').style.display='flex';}
 function closeInfo(){document.getElementById('info-overlay').style.display='none';}
-function openLB(){show('s-lb');renderLB(S.user);}
+async function renderRivals(me){
+  const el=document.getElementById('rival-tbl2');
+  if(!el)return;
+  const rivals=getRivals();
+  if(!rivals.length){
+    el.innerHTML='<div style="padding:12px;text-align:center;color:rgba(255,255,255,.35);font-size:12px">Henüz rakibin yok.<br>Meydan Oku butonunu kullan! ⚔️</div>';
+    return;
+  }
+  el.innerHTML='<div style="padding:8px;text-align:center;color:rgba(255,255,255,.3);font-size:11px">⏳ Yükleniyor...</div>';
+
+  try{
+    const resp=await flutterFetch(`${FB_URL}/leaderboard.json`,'GET');
+    const data=await resp.json();
+    const all=data&&typeof data==='object'?Object.values(data).filter(e=>e&&e.name&&e.score!=null):[];
+    all.sort((a,b)=>b.score-a.score);
+
+    const myData=all.find(e=>e.name===me);
+    const myScore=myData?myData.score:0;
+
+    let html='';
+    for(const rival of rivals){
+      const rd=all.find(e=>e.name===rival);
+      const rvScore=rd?rd.score:0;
+      const diff=Math.abs(myScore-rvScore);
+      const ahead=myScore>rvScore;
+      const diffTxt=ahead?`🔥 +${diff.toLocaleString()} önde`:`💪 ${diff.toLocaleString()} geride`;
+      html+=`<div class="lb-row" style="background:rgba(233,69,96,.1)">
+        <div class="lb-rank">⚔️</div>
+        <div class="lb-name" style="flex:1">${rival}<br><span style="font-size:10px;color:${ahead?'#44ff88':'#ff8855'}">${diffTxt}</span></div>
+        <div style="text-align:right">
+          <div class="lb-score">${rvScore.toLocaleString()}</div>
+          <div class="lb-lv">Lv${rd?rd.lv:1}</div>
+        </div>
+        <button onclick="removeRival('${rival}');renderRivals('${me}')" style="background:none;border:none;color:rgba(255,255,255,.3);font-size:16px;cursor:pointer;padding:0 4px">✕</button>
+      </div>`;
+    }
+    el.innerHTML=html||'<div style="padding:12px;text-align:center;color:rgba(255,255,255,.35)">Rakip bulunamadı</div>';
+  }catch(e){
+    el.innerHTML='<div style="padding:12px;text-align:center;color:rgba(255,255,255,.35)">Yüklenemedi</div>';
+  }
+}
+function toggleLBSection(id){
+  const el=document.getElementById(id);
+  const arrow=document.getElementById(id==='lb-body'?'lb-arrow':'rivals-arrow');
+  if(!el)return;
+  const open=el.style.display!=='none';
+  el.style.display=open?'none':'block';
+  if(arrow)arrow.textContent=open?'▶':'▼';
+}
+function openLB(){show('s-lb');renderLB(S.user);renderRivals(S.user);}
 
 /* ══════════════════════════════════════════
    TUTORIAL
@@ -3079,6 +3171,7 @@ function _listenChallengeResponse(opponent){
       if(data.status==='accepted'){
         clearInterval(iv);
         _activeChallenge={challenger:S.user,opponent,startedAt:Date.now()};
+        addRival(opponent);
         /* Büyük kutlama */
         const ov=document.createElement('div');
         ov.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.88);z-index:700;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;padding:20px;font-family:Segoe UI,Arial;';
@@ -3138,6 +3231,7 @@ async function acceptChallenge(){
     await flutterFetch(`${FB_URL}/challenges/${fromKey}_response.json`,'PUT',
       JSON.stringify({from,to:S.user,status:'accepted',t:Date.now()}));
     _activeChallenge={challenger:from,opponent:S.user,startedAt:Date.now()};
+    addRival(from);
     showToast(`✅ ${from} ile yarış başladı! 🔥`);
   }catch(e){showToast('❌ Hata oluştu');}
 }
@@ -3180,6 +3274,51 @@ async function showChallengeStatus(){
 }
 
 
+/* ══════════════════════════════════════════
+   🏠 ANA EKRAN ANİMASYONU
+══════════════════════════════════════════ */
+const HOME_FRUITS=['🍒','🫐','🍓','🍋','🍇','🍊','🥝','🍎','🍐','🍑','🥭','🍍','🥥','🍈','🫒','🥑','🍅','🎃','🍉'];
+let _homeAnim=null;
+let _homeFruits=[];
+
+function startHomeAnim(){
+  const container=document.getElementById('home-fruits');
+  if(!container)return;
+  container.innerHTML='';
+  const anims=['floatFruit','driftFruit','bounceFruit','spinFruit'];
+  for(let i=0;i<16;i++){
+    const el=document.createElement('div');
+    const emoji=HOME_FRUITS[Math.floor(Math.random()*HOME_FRUITS.length)];
+    const size=18+Math.random()*28;
+    const left=Math.random()*90;
+    const top=Math.random()*85;
+    const duration=4+Math.random()*8;
+    const delay=-Math.random()*8;
+    const anim=anims[Math.floor(Math.random()*anims.length)];
+    const opacity=0.2+Math.random()*0.3;
+    el.style.cssText=`position:absolute;left:${left}%;top:${top}%;font-size:${size}px;opacity:${opacity};animation:${anim} ${duration}s ${delay}s infinite ease-in-out;pointer-events:none;`;
+    el.textContent=emoji;
+    container.appendChild(el);
+  }
+}
+function stopHomeAnim(){
+  const container=document.getElementById('home-fruits');
+  if(container)container.innerHTML='';
+  if(_homeAnim){cancelAnimationFrame(_homeAnim);_homeAnim=null;}
+}
+function stopHomeAnim(){
+  if(_homeAnim){cancelAnimationFrame(_homeAnim);_homeAnim=null;}
+}
+
+/* ══════════════════════════════════════════
+   ⚔️ RİVAL SİSTEMİ (localStorage kalıcı)
+══════════════════════════════════════════ */
+const RIVALS_KEY='karpuz_rivals';
+function getRivals(){try{return JSON.parse(localStorage.getItem(RIVALS_KEY)||'[]');}catch{return[];}}
+function saveRivals(arr){try{localStorage.setItem(RIVALS_KEY,JSON.stringify(arr));}catch{}}
+function addRival(name){const r=getRivals();if(!r.includes(name)){r.push(name);saveRivals(r);}}
+function removeRival(name){saveRivals(getRivals().filter(r=>r!==name));}
+
 document.getElementById('uname').addEventListener('keydown',e=>{if(e.key==='Enter')registerUser();});
 /* Kayıtlı ses tercihleri */
 try{
@@ -3188,12 +3327,13 @@ try{
 }catch{}
 initUserScreen();
 document.body.style.background='linear-gradient(135deg,#0a0e1a,#1a2a1a)';
+setTimeout(startHomeAnim, 100);
 
 /* Meydan okuma kontrolü - her 3 saniyede bir */
 setInterval(()=>{if(S.user)_checkIncomingChallenge();},3000);
 
-/* Otomatik kayıt - her 20 saniyede bir */
-setInterval(()=>{if(S.cfg&&!S.dead&&!_paused)saveGameState();},20000);
+/* Otomatik kayıt - her 5 saniyede bir */
+setInterval(()=>{if(S.cfg&&!S.dead&&!_paused)saveGameState();},5000);
 
 /* Uygulama kapanınca/arka plana geçince kaydet */
 document.addEventListener('visibilitychange',()=>{
