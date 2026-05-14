@@ -3,15 +3,18 @@ import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 const String fbUrl = 'https://karpuz-oyunu-default-rtdb.europe-west1.firebasedatabase.app';
+const String _adUnitId = 'ca-app-pub-5226177276862447/9323975802';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  await MobileAds.instance.initialize();
   runApp(const KarpuzApp());
 }
 
@@ -37,15 +40,20 @@ class GameScreen extends StatefulWidget {
 class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   late final WebViewController _controller;
   bool _webViewReady = false;
+  InterstitialAd? _interstitialAd;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-
+    _loadInterstitialAd();
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(Colors.transparent)
+      ..addJavaScriptChannel('FlutterAd',
+          onMessageReceived: (JavaScriptMessage msg) {
+        if (msg.message == 'show') _showInterstitialAd();
+      })
       ..addJavaScriptChannel('FlutterFetch',
           onMessageReceived: (JavaScriptMessage msg) async {
         Map<String, dynamic> data;
@@ -123,10 +131,42 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         },
       ))
       ..loadFlutterAsset('assets/game.html');
-
     if (_controller.platform is AndroidWebViewController) {
       (_controller.platform as AndroidWebViewController)
           .setMediaPlaybackRequiresUserGesture(false);
+    }
+  }
+
+  void _loadInterstitialAd() {
+    InterstitialAd.load(
+      adUnitId: _adUnitId,
+      request: const AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (ad) {
+          _interstitialAd = ad;
+          _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+            onAdDismissedFullScreenContent: (ad) {
+              ad.dispose();
+              _interstitialAd = null;
+              _loadInterstitialAd();
+            },
+            onAdFailedToShowFullScreenContent: (ad, err) {
+              ad.dispose();
+              _interstitialAd = null;
+              _loadInterstitialAd();
+            },
+          );
+        },
+        onAdFailedToLoad: (err) {
+          _interstitialAd = null;
+        },
+      ),
+    );
+  }
+
+  void _showInterstitialAd() {
+    if (_interstitialAd != null) {
+      _interstitialAd!.show();
     }
   }
 
@@ -134,7 +174,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
-      // Oyunu kaydet ve müziği durdur
       _controller.runJavaScript('''
         if(typeof saveGameState==="function") saveGameState();
         if(typeof MUS!=="undefined" && MUS) try{MUS.stop();}catch(e){}
@@ -142,9 +181,8 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         if(typeof stopHomeAnim==="function") stopHomeAnim();
       ''');
     } else if (state == AppLifecycleState.resumed) {
-      // Uygulamaya dönünce müziği yeniden başlat
       _controller.runJavaScript('''
-        if(typeof musicOn!=="undefined" && musicOn && 
+        if(typeof musicOn!=="undefined" && musicOn &&
            typeof MUS!=="undefined" && MUS &&
            typeof S!=="undefined" && S.cfg && !S.dead) {
           try{MUS.start();}catch(e){}
@@ -155,6 +193,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    _interstitialAd?.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
