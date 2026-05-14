@@ -31,6 +31,8 @@ jobs:
           c = c.replace('android:label="Karpuz"','android:label="Karpuz" android:usesCleartextTraffic="true" android:networkSecurityConfig="@xml/network_security_config"')
           if 'INTERNET' not in c:
               c = c.replace('<application','<uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>\n    <application')
+          admob_meta = '<meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-5226177276862447~6516032377"/>'
+          c = c.replace('</application>', admob_meta + '\n    </application>')
           with open('android/app/src/main/AndroidManifest.xml','w') as f:
               f.write(c)
           import os
