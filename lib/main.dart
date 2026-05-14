@@ -149,11 +149,15 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
               ad.dispose();
               _interstitialAd = null;
               _loadInterstitialAd();
+              _controller.runJavaScript(
+                'try{if(typeof window._adDone==="function")window._adDone();}catch(e){}');
             },
             onAdFailedToShowFullScreenContent: (ad, err) {
               ad.dispose();
               _interstitialAd = null;
               _loadInterstitialAd();
+              _controller.runJavaScript(
+                'try{if(typeof window._adDone==="function")window._adDone();}catch(e){}');
             },
           );
         },
@@ -167,6 +171,10 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   void _showInterstitialAd() {
     if (_interstitialAd != null) {
       _interstitialAd!.show();
+    } else {
+      // Reklam yüklenmediyse direkt devam et
+      _controller.runJavaScript(
+        'try{if(typeof window._adDone==="function")window._adDone();}catch(e){}');
     }
   }
 
