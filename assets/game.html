@@ -11,6 +11,7 @@ body {
   display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
   font-family:'Segoe UI',Arial,sans-serif;
   color:#fff; padding:0 8px 28px;
+  background:linear-gradient(135deg,#0a0e1a,#1a2a1a);
   transition:background 1.2s ease;
   user-select:none; -webkit-user-select:none;
   overflow-x:hidden;
@@ -97,7 +98,7 @@ body {
 .prog-bg   { height:5px; background:rgba(255,255,255,.1); border-radius:3px; overflow:hidden; }
 .prog-fill { height:100%; background:linear-gradient(90deg,#e94560,#f5a623); border-radius:3px; transition:width .35s; }
 
-canvas { display:block; cursor:crosshair; touch-action:none; border-radius:14px; border:3px solid rgba(255,255,255,.15); width:100% !important; filter:saturate(1.4) contrast(1.15) brightness(1.05); }
+canvas { display:block; cursor:crosshair; touch-action:none; border-radius:14px; border:3px solid rgba(255,255,255,.15); width:100% !important; }
 
 /* ── RESULT ── */
 .r-card {
@@ -2632,20 +2633,26 @@ const ADS = [
 let adTimer=null;
 
 function showAd(onDone){
+  /* ── Gerçek AdMob (Flutter içinde) ── */
+  try{
+    if(typeof FlutterAd!=='undefined'){
+      window._adDone=function(){window._adDone=null;if(onDone)onDone();};
+      FlutterAd.postMessage('show');
+      return;
+    }
+  }catch(e){}
+  /* ── Web/preview için sahte reklam (fallback) ── */
   const ov = document.getElementById('ad-overlay');
   const ad = ADS[Math.floor(Math.random()*ADS.length)];
-
   document.getElementById('ad-icon').textContent  = ad.icon;
   document.getElementById('ad-title').textContent = ad.title;
   document.getElementById('ad-cat').textContent   = ad.cat;
   document.getElementById('ad-stars').textContent = ad.stars + '  ' + ad.rating;
   document.getElementById('ad-pkg').textContent   = 'Google Play · ' + ad.pkg;
-
   document.getElementById('ad-skip-btn').style.display='none';
   document.getElementById('ad-countdown').textContent='5';
   ov.style.display='flex';
   ov._onDone=onDone;
-
   let sec=5;
   adTimer=setInterval(()=>{
     sec--;
