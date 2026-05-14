@@ -69,14 +69,23 @@ jobs:
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/keystore.jks
       - name: Flutter pub get
         run: flutter pub get
-      - name: Build Debug APK
-        run: flutter build apk --debug
+      - name: Build Release APK (Amazon)
+        env:
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          flutter build apk --release \
+            -Pandroid.injected.signing.store.file=$(pwd)/android/app/keystore.jks \
+            -Pandroid.injected.signing.store.password=$STORE_PASSWORD \
+            -Pandroid.injected.signing.key.alias=$KEY_ALIAS \
+            -Pandroid.injected.signing.key.password=$KEY_PASSWORD
       - uses: actions/upload-artifact@v4
         with:
-          name: karpuz-debug.apk
-          path: build/app/outputs/flutter-apk/app-debug.apk
-          retention-days: 7
-      - name: Build Release AAB
+          name: karpuz-release.apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
+      - name: Build Release AAB (Play Store)
         env:
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
