@@ -1919,7 +1919,15 @@ function showUserError(msg){
    CANLI ARKA PLAN TEMALARı
 ══════════════════════════════════════════ */
 const BG_THEMES=[
-  { /* 0 - Orman */
+  { /* 0 - Bambu Ormanı */
+    bg:'linear-gradient(160deg,#0a1a08 0%,#152e10 50%,#0a1a08 100%)',
+    els:[
+      {e:'🎋',cnt:8,pos:'bottom',sz:[50,80],anim:'bgSway',dur:[2,4],side:true},
+      {e:'🐼',cnt:2,pos:'bottom',sz:[30,40],anim:'bgSway',dur:[3,5],side:true},
+      {e:'🌿',cnt:10,pos:'mid',sz:[16,26],anim:'bgSway',dur:[2,3],side:false},
+    ]
+  },
+  { /* 1 - Orman */
     bg:'linear-gradient(160deg,#0a1f06 0%,#153010 50%,#0d1f08 100%)',
     els:[
       {e:'🌳',cnt:6,pos:'bottom',sz:[40,70],anim:'bgSway',dur:[3,5],side:true},
@@ -1928,7 +1936,7 @@ const BG_THEMES=[
       {e:'🦋',cnt:4,pos:'mid',sz:[18,28],anim:'bgDrift',dur:[8,14],side:false},
     ]
   },
-  { /* 1 - Sonbahar */
+  { /* 2 - Sonbahar */
     bg:'linear-gradient(160deg,#2e1000 0%,#5a2a00 50%,#3a1500 100%)',
     els:[
       {e:'🍂',cnt:14,pos:'top',sz:[14,26],anim:'bgFall',dur:[3,7],side:false},
@@ -1936,7 +1944,7 @@ const BG_THEMES=[
       {e:'🌾',cnt:6,pos:'bottom',sz:[30,50],anim:'bgSway',dur:[2,4],side:true},
     ]
   },
-  { /* 2 - Tropikal Deniz */
+  { /* 3 - Tropikal Deniz */
     bg:'linear-gradient(160deg,#001a3a 0%,#003a6e 50%,#001a3a 100%)',
     els:[
       {e:'🌊',cnt:5,pos:'bottom',sz:[40,70],anim:'bgWave',dur:[2,4],side:false},
@@ -1945,7 +1953,7 @@ const BG_THEMES=[
       {e:'🫧',cnt:10,pos:'bottom',sz:[12,20],anim:'bgFloat',dur:[3,7],side:false},
     ]
   },
-  { /* 3 - Gece Ormanı */
+  { /* 4 - Gece Ormanı */
     bg:'linear-gradient(160deg,#050810 0%,#0a1020 50%,#050810 100%)',
     els:[
       {e:'⭐',cnt:16,pos:'top',sz:[10,18],anim:'bgPulse',dur:[1,3],side:false},
@@ -1954,7 +1962,7 @@ const BG_THEMES=[
       {e:'🦗',cnt:4,pos:'bottom',sz:[16,22],anim:'bgSway',dur:[1,2],side:true},
     ]
   },
-  { /* 4 - Gün Batımı */
+  { /* 5 - Gün Batımı */
     bg:'linear-gradient(160deg,#3a0a00 0%,#8a2a00 40%,#4a1a00 100%)',
     els:[
       {e:'☁️',cnt:5,pos:'top',sz:[40,70],anim:'bgDrift',dur:[12,20],side:false},
@@ -1962,21 +1970,13 @@ const BG_THEMES=[
       {e:'🌅',cnt:1,pos:'bottom',sz:[60,60],anim:'bgWave',dur:[5,5],side:false},
     ]
   },
-  { /* 5 - Mistik */
+  { /* 6 - Mistik */
     bg:'linear-gradient(160deg,#0e0020 0%,#1a0040 50%,#0a0018 100%)',
     els:[
       {e:'💫',cnt:10,pos:'mid',sz:[16,28],anim:'bgFloat',dur:[3,7],side:false},
       {e:'🔮',cnt:4,pos:'mid',sz:[20,32],anim:'bgPulse',dur:[2,4],side:false},
       {e:'✨',cnt:12,pos:'top',sz:[10,18],anim:'bgPulse',dur:[1,3],side:false},
       {e:'🌌',cnt:2,pos:'bottom',sz:[50,70],anim:'bgWave',dur:[6,8],side:false},
-    ]
-  },
-  { /* 6 - Bambu Ormanı */
-    bg:'linear-gradient(160deg,#0a1a08 0%,#152e10 50%,#0a1a08 100%)',
-    els:[
-      {e:'🎋',cnt:8,pos:'bottom',sz:[50,80],anim:'bgSway',dur:[2,4],side:true},
-      {e:'🐼',cnt:2,pos:'bottom',sz:[30,40],anim:'bgSway',dur:[3,5],side:true},
-      {e:'🌿',cnt:10,pos:'mid',sz:[16,26],anim:'bgSway',dur:[2,3],side:false},
     ]
   },
   { /* 7 - Buz & Kar */
@@ -2242,7 +2242,8 @@ function physics(dt){
   /* Danger check — kazanırken veya animasyon sırasında atla */
   if(!S.winPending){
     let danger=false;
-    for(const f of S.fruits){if(!f.merged&&f.y-f.r<S.cfg.dangerY&&f.age>1.3){danger=true;break;}}
+    const checkDY = S.lv>=5 ? S.cfg.dangerY + Math.min(S.cfg.ch*0.15, S.timeElapsed*0.22) : S.cfg.dangerY;
+    for(const f of S.fruits){if(!f.merged&&f.y-f.r<checkDY&&f.age>1.3){danger=true;break;}}
     if(danger){S.dangerT+=dt;if(S.dangerT>1.8)killGame('🚨 Alan taştı!');}
     else S.dangerT=Math.max(0,S.dangerT-dt*2.5);
   }
@@ -2302,8 +2303,16 @@ function render(){
   }
 
   /* ── Tehlike çizgisi — kırmızı kesik çizgi ── */
-  const dy=c.dangerY;
-  ctx.strokeStyle='rgba(255,80,100,.7)';
+  /* Level 5'ten itibaren süre uzadıkça yavaşça aşağı iner */
+  let dy=c.dangerY;
+  if(S.lv>=5){
+    const maxShift=c.ch*0.15; /* max canvas yüksekliğinin %15'i */
+    const shift=Math.min(maxShift, S.timeElapsed*0.22);
+    dy=c.dangerY+shift;
+  }
+  /* Tehlike oranına göre çizgi rengi */
+  const lineAlpha=S.dangerT>0?0.9:0.6;
+  ctx.strokeStyle=`rgba(255,80,100,${lineAlpha})`;
   ctx.lineWidth=2;
   ctx.setLineDash([8,6]);
   ctx.beginPath();ctx.moveTo(0,dy);ctx.lineTo(W,dy);ctx.stroke();
@@ -2483,13 +2492,14 @@ function drawSparks(){
    ROZET (BADGE) SİSTEMİ
 ══════════════════════════════════════════ */
 const BADGES=[
-  {lv:5,  icon:'🌱', title:'Acemi',      color:'#44cc66'},
-  {lv:10, icon:'⭐', title:'Çaylak',     color:'#f5a623'},
-  {lv:20, icon:'🌟', title:'Usta',       color:'#f5a623'},
-  {lv:30, icon:'💫', title:'Uzman',      color:'#44aaff'},
-  {lv:50, icon:'🏅', title:'Şampiyon',   color:'#e94560'},
-  {lv:75, icon:'🥇', title:'Efsane',     color:'#ff4400'},
-  {lv:99, icon:'👑', title:'KARPUZ REİS',color:'#ff0000'},
+  {lv:1,  icon:'⭐',               title:'⭐',               color:'#aaaaaa'},
+  {lv:5,  icon:'⭐⭐',             title:'⭐⭐',             color:'#44cc66'},
+  {lv:10, icon:'⭐⭐⭐',           title:'⭐⭐⭐',           color:'#f5a623'},
+  {lv:20, icon:'⭐⭐⭐⭐',         title:'⭐⭐⭐⭐',         color:'#44aaff'},
+  {lv:35, icon:'⭐⭐⭐⭐⭐',       title:'⭐⭐⭐⭐⭐',       color:'#e94560'},
+  {lv:50, icon:'🌟⭐⭐⭐⭐⭐',     title:'🌟⭐⭐⭐⭐⭐',     color:'#ff8800'},
+  {lv:75, icon:'🌟🌟⭐⭐⭐⭐⭐',   title:'🌟🌟⭐⭐⭐⭐⭐',   color:'#ff4400'},
+  {lv:99, icon:'👑',               title:'👑 KARPUZ REİS',   color:'#ff0000'},
 ];
 function getBadge(lv){
   let b=null;
@@ -2867,6 +2877,8 @@ function resumeGame(){
   if(!st) return;
   ensureAC();
   _paused = false;
+  const _pi = document.getElementById('pause-icon');
+  if(_pi) _pi.textContent = '⏸';
 
   S.user = st.user;
   S.lv = st.lv;
@@ -3042,7 +3054,7 @@ async function winLevel(){
     } else {
       beginLevel();
     }
-  }, 2800);
+  }, 4800);
 }
 
 async function killGame(rsn){
