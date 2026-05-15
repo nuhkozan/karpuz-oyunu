@@ -5,6 +5,7 @@ import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'dart:convert';
+import 'dart:async';
 import 'package:http/http.dart' as http;
 
 const String fbUrl = 'https://karpuz-oyunu-default-rtdb.europe-west1.firebasedatabase.app';
@@ -41,6 +42,8 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   late final WebViewController _controller;
   bool _webViewReady = false;
   InterstitialAd? _interstitialAd;
+  bool _isLoadingAd = false;
+  Timer? _retryTimer;
 
   @override
   void initState() {
@@ -138,16 +141,22 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   }
 
   void _loadInterstitialAd() {
+    if (_isLoadingAd || _interstitialAd != null) return;
+    _isLoadingAd = true;
+    _retryTimer?.cancel();
+
     InterstitialAd.load(
       adUnitId: _adUnitId,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (ad) {
+          _isLoadingAd = false;
           _interstitialAd = ad;
           _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
             onAdDismissedFullScreenContent: (ad) {
               ad.dispose();
               _interstitialAd = null;
+              _isLoadingAd = false;
               _loadInterstitialAd();
               _controller.runJavaScript(
                 'try{if(typeof window._adDone==="function")window._adDone();}catch(e){}');
@@ -155,14 +164,19 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
             onAdFailedToShowFullScreenContent: (ad, err) {
               ad.dispose();
               _interstitialAd = null;
+              _isLoadingAd = false;
               _loadInterstitialAd();
+              // Gerçek reklam gösterilemedi — sahte reklam göster
               _controller.runJavaScript(
                 'try{if(typeof window.showFallbackAd==="function")window.showFallbackAd();}catch(e){try{if(typeof window._adDone==="function")window._adDone();}catch(e2){}}');
             },
           );
         },
         onAdFailedToLoad: (err) {
+          _isLoadingAd = false;
           _interstitialAd = null;
+          // 30 saniye sonra tekrar dene — "Hazırlanıyor" durumunda kritik
+          _retryTimer = Timer(const Duration(seconds: 30), _loadInterstitialAd);
         },
       ),
     );
@@ -172,7 +186,8 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     if (_interstitialAd != null) {
       _interstitialAd!.show();
     } else {
-      // Gerçek reklam yok — JS'deki sahte reklamı göster
+      // Gerçek reklam yok — sahte reklam göster, arka planda yüklemeyi dene
+      _loadInterstitialAd();
       _controller.runJavaScript(
         'try{if(typeof window.showFallbackAd==="function")window.showFallbackAd();}catch(e){try{if(typeof window._adDone==="function")window._adDone();}catch(e2){}}');
     }
@@ -191,6 +206,10 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         if(typeof stopHomeAnim==="function") stopHomeAnim();
       ''');
     } else if (state == AppLifecycleState.resumed) {
+      // Uygulama geri gelince reklam yüklenmiş mi kontrol et
+      if (_interstitialAd == null && !_isLoadingAd) {
+        _loadInterstitialAd();
+      }
       _controller.runJavaScript('''
         if(typeof musicOn!=="undefined" && musicOn &&
            typeof MUS!=="undefined" && MUS &&
@@ -203,6 +222,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    _retryTimer?.cancel();
     _interstitialAd?.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
