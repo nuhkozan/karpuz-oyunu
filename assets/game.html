@@ -98,7 +98,29 @@ body {
 .prog-bg   { height:5px; background:rgba(255,255,255,.1); border-radius:3px; overflow:hidden; }
 .prog-fill { height:100%; background:linear-gradient(90deg,#e94560,#f5a623); border-radius:3px; transition:width .35s; }
 
-canvas { display:block; cursor:crosshair; touch-action:none; border-radius:14px; border:3px solid rgba(255,255,255,.15); width:100% !important; }
+canvas { display:block; cursor:crosshair; touch-action:none; border-radius:14px; border:3px solid rgba(100,255,120,.5); width:100% !important; }
+#c { animation:canvasGlow 4s linear infinite; }
+@keyframes hedefPulse{
+  0%,100%{transform:scale(1);text-shadow:0 0 10px rgba(255,200,50,.5);}
+  50%{transform:scale(1.15);text-shadow:0 0 20px rgba(255,200,50,.9);}
+}
+/* ── Arka plan animasyonları ── */
+@keyframes bgFall{0%{transform:translateY(-80px) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
+@keyframes bgFloat{0%{transform:translateY(0) rotate(0deg);opacity:.7}100%{transform:translateY(-110vh) rotate(360deg);opacity:0}}
+@keyframes bgSway{0%,100%{transform:rotate(-12deg) translateX(0)}50%{transform:rotate(12deg) translateX(14px)}}
+@keyframes bgDrift{0%{transform:translateX(-120px) scaleX(1)}50%{transform:translateX(calc(50vw)) scaleX(-1)}100%{transform:translateX(calc(100vw + 120px)) scaleX(-1)}}
+@keyframes bgPulse{0%,100%{opacity:.25;transform:scale(1)}50%{opacity:.8;transform:scale(1.4)}}
+@keyframes bgWave{0%{transform:translateX(0) scaleY(1)}50%{transform:translateX(-30px) scaleY(1.15)}100%{transform:translateX(0) scaleY(1)}}
+@keyframes bgSnow{0%{transform:translateY(-60px) translateX(0) rotate(0deg);opacity:1}100%{transform:translateY(110vh) translateX(40px) rotate(540deg);opacity:0}}
+@keyframes bgOrbit{0%{transform:rotate(0deg) translateX(60px) rotate(0deg)}100%{transform:rotate(360deg) translateX(60px) rotate(-360deg)}}
+.bg-el{position:absolute;pointer-events:none;user-select:none;will-change:transform;}
+@keyframes canvasGlow{
+  0%  {border-color:rgba(100,255,120,.6);box-shadow:0 0 18px rgba(100,255,120,.35);}
+  25% {border-color:rgba(255,200,60,.6); box-shadow:0 0 18px rgba(255,200,60,.35);}
+  50% {border-color:rgba(255,80,120,.6); box-shadow:0 0 18px rgba(255,80,120,.35);}
+  75% {border-color:rgba(80,160,255,.6); box-shadow:0 0 18px rgba(80,160,255,.35);}
+  100%{border-color:rgba(100,255,120,.6);box-shadow:0 0 18px rgba(100,255,120,.35);}
+}
 
 /* ── RESULT ── */
 .r-card {
@@ -215,6 +237,7 @@ window._fbReady=true;
 </script>
 </head>
 <body>
+<div id="bg-anim" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;overflow:hidden"></div>
 
 <!-- ══ GÖREV OVERLAY ══ -->
 <div class="mission-overlay" id="mis-overlay">
@@ -335,7 +358,11 @@ window._fbReady=true;
   <div style="font-size:26px;font-weight:900;color:#f5a623" id="lv-score">0 puan</div>
   <div style="font-size:14px;font-weight:700;color:#44ff88;margin-top:4px" id="lv-rank">🏆 #1. Sırada</div>
   <div style="margin-top:6px;font-size:11px;color:rgba(255,255,255,.4)" id="lv-stats"></div>
-  <div style="margin-top:16px;font-size:13px;color:rgba(255,255,255,.4);letter-spacing:1px" id="lv-next">LEVEL 2 BAŞLIYOR…</div>
+  <div style="margin-top:10px;font-size:13px;color:rgba(255,255,255,.4);letter-spacing:1px" id="lv-next">LEVEL 2 BAŞLIYOR…</div>
+  <div id="lv-reward" style="margin-top:10px;background:linear-gradient(90deg,rgba(69,160,73,.35),rgba(245,166,35,.35));border:1.5px solid rgba(255,255,255,.25);border-radius:16px;padding:8px 22px;display:none">
+    <div style="font-size:9px;letter-spacing:2px;opacity:.6;margin-bottom:2px">LEVEL ÖDÜLÜ</div>
+    <div id="lv-reward-txt" style="font-size:22px;font-weight:900">💣 +1 Bomba</div>
+  </div>
   <div style="margin-top:12px;width:160px;height:3px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden">
     <div id="lv-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#e94560,#f5a623);transition:width 2.5s linear;border-radius:2px"></div>
   </div>
@@ -667,15 +694,15 @@ window._fbReady=true;
 </div>
 
 <!-- ══ GÜNLÜK ÖDÜL OVERLAY ══ -->
-<div id="daily-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.88);z-index:550;flex-direction:column;align-items:center;justify-content:center;font-family:'Segoe UI',Arial;color:#fff;text-align:center">
-  <div style="font-size:52px;margin-bottom:8px">🎁</div>
-  <div style="font-size:20px;font-weight:900;color:#f5a623;margin-bottom:4px">Günlük Ödül!</div>
-  <div style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:20px">Her gün giriş yapana özel</div>
-  <div style="background:#1a1a2e;border-radius:18px;padding:20px;width:240px;margin-bottom:18px">
-    <div id="daily-rewards" style="display:flex;justify-content:center;gap:16px;font-size:13px">
-    </div>
+<div id="daily-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.92);z-index:550;flex-direction:column;align-items:center;justify-content:center;font-family:'Segoe UI',Arial;color:#fff;text-align:center;padding:16px">
+  <div style="font-size:52px;margin-bottom:6px" id="daily-icon">🎁</div>
+  <div style="font-size:22px;font-weight:900;color:#f5a623;margin-bottom:2px" id="daily-title">Günlük Ödül!</div>
+  <div style="font-size:13px;color:rgba(255,255,255,.6);margin-bottom:6px" id="daily-streak"></div>
+  <!-- Streak gün göstergesi -->
+  <div style="display:flex;gap:6px;margin-bottom:16px;justify-content:center" id="daily-days-row"></div>
+  <div style="background:#1a1a2e;border-radius:18px;padding:20px;width:260px;margin-bottom:16px">
+    <div id="daily-rewards" style="display:flex;justify-content:center;gap:16px;font-size:13px"></div>
   </div>
-  <div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:14px" id="daily-streak"></div>
   <button class="btn-main" onclick="claimDailyReward()">🎉 Al!</button>
 </div>
 
@@ -722,7 +749,7 @@ window._fbReady=true;
     <span id="nxt2" style="font-size:18px;opacity:.6">🍒</span>
     <span id="nxt3" style="font-size:14px;opacity:.35">🍒</span>
     <span style="flex:1"></span>
-    <span style="font-size:11px;opacity:.55">Hedef: <span id="h-hedef" style="color:#ff6655;font-weight:800;font-size:18px">🍉</span></span>
+    <span style="font-size:11px;opacity:.7;font-weight:700;letter-spacing:.5px">HEDEF:</span> <span id="h-hedef" style="color:#ffdd44;font-weight:900;font-size:22px;text-shadow:0 0 10px rgba(255,200,50,.6);animation:hedefPulse 2s ease-in-out infinite">🍉</span>
     <span id="ubadge" style="font-size:11px;opacity:.5;margin-left:8px"></span>
   </div>
   <!-- Canvas -->
@@ -1888,6 +1915,120 @@ function showUserError(msg){
   if(el)el.textContent='⚠️ '+msg;
 }
 
+/* ══════════════════════════════════════════
+   CANLI ARKA PLAN TEMALARı
+══════════════════════════════════════════ */
+const BG_THEMES=[
+  { /* 0 - Orman */
+    bg:'linear-gradient(160deg,#0a1f06 0%,#153010 50%,#0d1f08 100%)',
+    els:[
+      {e:'🌳',cnt:6,pos:'bottom',sz:[40,70],anim:'bgSway',dur:[3,5],side:true},
+      {e:'🌿',cnt:8,pos:'bottom',sz:[20,35],anim:'bgSway',dur:[2,4],side:false},
+      {e:'🍃',cnt:12,pos:'top',sz:[14,24],anim:'bgFall',dur:[4,8],side:false},
+      {e:'🦋',cnt:4,pos:'mid',sz:[18,28],anim:'bgDrift',dur:[8,14],side:false},
+    ]
+  },
+  { /* 1 - Sonbahar */
+    bg:'linear-gradient(160deg,#2e1000 0%,#5a2a00 50%,#3a1500 100%)',
+    els:[
+      {e:'🍂',cnt:14,pos:'top',sz:[14,26],anim:'bgFall',dur:[3,7],side:false},
+      {e:'🍁',cnt:10,pos:'top',sz:[16,28],anim:'bgFall',dur:[4,9],side:false},
+      {e:'🌾',cnt:6,pos:'bottom',sz:[30,50],anim:'bgSway',dur:[2,4],side:true},
+    ]
+  },
+  { /* 2 - Tropikal Deniz */
+    bg:'linear-gradient(160deg,#001a3a 0%,#003a6e 50%,#001a3a 100%)',
+    els:[
+      {e:'🌊',cnt:5,pos:'bottom',sz:[40,70],anim:'bgWave',dur:[2,4],side:false},
+      {e:'🐠',cnt:5,pos:'mid',sz:[20,32],anim:'bgDrift',dur:[6,12],side:false},
+      {e:'🐡',cnt:3,pos:'mid',sz:[18,28],anim:'bgDrift',dur:[8,15],side:false},
+      {e:'🫧',cnt:10,pos:'bottom',sz:[12,20],anim:'bgFloat',dur:[3,7],side:false},
+    ]
+  },
+  { /* 3 - Gece Ormanı */
+    bg:'linear-gradient(160deg,#050810 0%,#0a1020 50%,#050810 100%)',
+    els:[
+      {e:'⭐',cnt:16,pos:'top',sz:[10,18],anim:'bgPulse',dur:[1,3],side:false},
+      {e:'✨',cnt:8,pos:'mid',sz:[14,22],anim:'bgPulse',dur:[1,2],side:false},
+      {e:'🌙',cnt:1,pos:'top',sz:[40,40],anim:'bgPulse',dur:[4,4],side:false},
+      {e:'🦗',cnt:4,pos:'bottom',sz:[16,22],anim:'bgSway',dur:[1,2],side:true},
+    ]
+  },
+  { /* 4 - Gün Batımı */
+    bg:'linear-gradient(160deg,#3a0a00 0%,#8a2a00 40%,#4a1a00 100%)',
+    els:[
+      {e:'☁️',cnt:5,pos:'top',sz:[40,70],anim:'bgDrift',dur:[12,20],side:false},
+      {e:'🦅',cnt:3,pos:'mid',sz:[24,36],anim:'bgDrift',dur:[8,14],side:false},
+      {e:'🌅',cnt:1,pos:'bottom',sz:[60,60],anim:'bgWave',dur:[5,5],side:false},
+    ]
+  },
+  { /* 5 - Mistik */
+    bg:'linear-gradient(160deg,#0e0020 0%,#1a0040 50%,#0a0018 100%)',
+    els:[
+      {e:'💫',cnt:10,pos:'mid',sz:[16,28],anim:'bgFloat',dur:[3,7],side:false},
+      {e:'🔮',cnt:4,pos:'mid',sz:[20,32],anim:'bgPulse',dur:[2,4],side:false},
+      {e:'✨',cnt:12,pos:'top',sz:[10,18],anim:'bgPulse',dur:[1,3],side:false},
+      {e:'🌌',cnt:2,pos:'bottom',sz:[50,70],anim:'bgWave',dur:[6,8],side:false},
+    ]
+  },
+  { /* 6 - Bambu Ormanı */
+    bg:'linear-gradient(160deg,#0a1a08 0%,#152e10 50%,#0a1a08 100%)',
+    els:[
+      {e:'🎋',cnt:8,pos:'bottom',sz:[50,80],anim:'bgSway',dur:[2,4],side:true},
+      {e:'🐼',cnt:2,pos:'bottom',sz:[30,40],anim:'bgSway',dur:[3,5],side:true},
+      {e:'🌿',cnt:10,pos:'mid',sz:[16,26],anim:'bgSway',dur:[2,3],side:false},
+    ]
+  },
+  { /* 7 - Buz & Kar */
+    bg:'linear-gradient(160deg,#001018 0%,#002040 50%,#001018 100%)',
+    els:[
+      {e:'❄️',cnt:16,pos:'top',sz:[12,22],anim:'bgSnow',dur:[4,9],side:false},
+      {e:'🌨️',cnt:6,pos:'top',sz:[20,32],anim:'bgSnow',dur:[5,10],side:false},
+      {e:'⛄',cnt:2,pos:'bottom',sz:[32,42],anim:'bgSway',dur:[4,6],side:true},
+      {e:'🧊',cnt:5,pos:'bottom',sz:[16,24],anim:'bgPulse',dur:[2,4],side:false},
+    ]
+  },
+];
+
+function setBgTheme(lv){
+  const t=BG_THEMES[(lv-1)%BG_THEMES.length];
+  const bg=document.getElementById('bg-anim');
+  if(!bg)return;
+  bg.innerHTML='';
+  document.body.style.background=t.bg;
+  const W=window.innerWidth, H=window.innerHeight;
+  t.els.forEach(cfg=>{
+    for(let i=0;i<cfg.cnt;i++){
+      const el=document.createElement('div');
+      el.className='bg-el';
+      el.textContent=cfg.e;
+      const sz=cfg.sz[0]+Math.random()*(cfg.sz[1]-cfg.sz[0]);
+      el.style.fontSize=sz+'px';
+      el.style.lineHeight='1';
+      /* Pozisyon */
+      let x,y;
+      if(cfg.side){
+        /* Sol veya sağ kenar */
+        x=Math.random()<0.5?(-sz*0.3):(W-sz*0.7+Math.random()*20);
+        y=H*0.4+Math.random()*H*0.5;
+      } else if(cfg.pos==='top'){
+        x=Math.random()*W;y=-sz;
+      } else if(cfg.pos==='bottom'){
+        x=Math.random()*W;y=H*0.7+Math.random()*H*0.25;
+      } else {
+        x=Math.random()*W;y=H*0.15+Math.random()*H*0.6;
+      }
+      el.style.left=x+'px';
+      el.style.top=y+'px';
+      const dur=cfg.dur[0]+Math.random()*(cfg.dur[1]-cfg.dur[0]);
+      const delay=Math.random()*dur;
+      el.style.animation=`${cfg.anim} ${dur.toFixed(1)}s ${delay.toFixed(1)}s ease-in-out infinite`;
+      el.style.opacity=(0.25+Math.random()*0.45).toFixed(2);
+      bg.appendChild(el);
+    }
+  });
+}
+
 function beginLevel(){
   ensureAC();
   _paused=false;
@@ -1900,34 +2041,8 @@ function beginLevel(){
   S._winBonus=0;S._winRank=0;S._winScore=null;S._extraUsed=false;
   COMBO.reset(); SPARKS.length=0; PU.load(); PU.render();
 
-  /* Arka plan — ilk levellerde açık, sonra dönüşümlü açık/koyu */
-  const eff2=((S.lv-1)%99)+1;
-  const BG_LIGHT=[
-    'linear-gradient(135deg,#2d5a1b,#4a8a2a)',  // Açık yeşil orman
-    'linear-gradient(135deg,#1a4a6e,#2e7aaa)',  // Açık mavi gökyüzü
-    'linear-gradient(135deg,#6e3a1a,#aa6a2e)',  // Açık turuncu sonbahar
-    'linear-gradient(135deg,#1a6e4a,#2eaa7a)',  // Açık tropikal yeşil
-    'linear-gradient(135deg,#5a3a8e,#8a6aaa)',  // Açık mor gün batımı
-  ];
-  const BG_DARK=[
-    'linear-gradient(135deg,#0a0e1a,#1a2a1a)',  // Koyu gece ormanı
-    'linear-gradient(135deg,#1a0800,#2e1200)',  // Koyu sonbahar
-    'linear-gradient(135deg,#001a2e,#003a5c)',  // Koyu tropikal gece
-    'linear-gradient(135deg,#0d1a2e,#1a2e4a)',  // Koyu kar gecesi
-    'linear-gradient(135deg,#3a0a00,#6c1800)',  // Koyu gün batımı
-    'linear-gradient(135deg,#0e0020,#1a0040)',  // Koyu mistik mor
-    'linear-gradient(135deg,#0a1a08,#152e10)',  // Koyu bambu
-    'linear-gradient(135deg,#001018,#002030)',  // Koyu buz mağarası
-  ];
-  let bg;
-  if(eff2<=5){
-    bg=BG_LIGHT[(eff2-1)%BG_LIGHT.length];
-  } else {
-    // Level 6'dan itibaren: tek levellerde açık, çift levellerde koyu
-    if(eff2%2===1) bg=BG_LIGHT[(eff2-1)%BG_LIGHT.length];
-    else bg=BG_DARK[(eff2-1)%BG_DARK.length];
-  }
-  document.body.style.background=bg;
+  /* Canlı arka plan teması */
+  setBgTheme(S.lv);
 
   S.curType=rndDrop();S.nxtType=rndDrop();S.nxt2Type=rndDrop();S.nxt3Type=rndDrop();
   S.dropX=(cfg.wL+cfg.wR)/2;
@@ -2096,7 +2211,7 @@ function physics(dt){
         const pts=Math.round(basePts*PU.multiplier()*comboMult);
         S.lvSc+=pts;S.totSc+=pts;
         /* Sparkle */
-        addSparks(nf.x,nf.y,FR[a.t+1][5]);
+        addSparks(nf.x,nf.y,FR[a.t+1][5],a.t+1);
         /* Vibrasyon */
         if(navigator.vibrate)navigator.vibrate(15);
         /* Görev ilerlemesi */
@@ -2307,26 +2422,59 @@ function showComboPop(x,y,cnt,pts){
    SPARKLE / PARTİKÜL (düşme efekti)
 ══════════════════════════════════════════ */
 const SPARKS=[];
-function addSparks(x,y,col){
-  for(let i=0;i<8;i++){
+const MERGE_RINGS=[];
+function addSparks(x,y,col,ft){
+  const count=15+Math.floor((ft||0)*1.5);
+  const sz=3+(ft||0)*0.5;
+  for(let i=0;i<count;i++){
     const a=Math.random()*Math.PI*2;
-    const s=60+Math.random()*80;
-    SPARKS.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-60,life:0.55,col:col||'#ffffff'});
+    const s=80+Math.random()*220;
+    SPARKS.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-90,life:0.8+Math.random()*0.4,maxLife:1.2,col:col||'#ffffff',sz:sz+Math.random()*3});
+  }
+  /* Şok dalgası halkası */
+  MERGE_RINGS.push({x,y,r:6,maxR:45+(ft||0)*4,life:1,col:col||'#ffffff'});
+  /* Büyük meyvelerde ekstra renk patlaması */
+  if((ft||0)>=5){
+    const extra=['#ff4466','#ff8800','#44ff88','#ffff00','#44ccff','#ff44ff'];
+    for(let i=0;i<10;i++){
+      const a=(i/10)*Math.PI*2;
+      SPARKS.push({x,y,vx:Math.cos(a)*180,vy:Math.sin(a)*180-60,life:1.0,maxLife:1.0,col:extra[i%extra.length],sz:5+Math.random()*4});
+    }
+    /* İkinci halka */
+    MERGE_RINGS.push({x,y,r:6,maxR:70+(ft||0)*5,life:0.8,col:'#ffffff'});
   }
 }
 function updateSparks(dt){
   for(let i=SPARKS.length-1;i>=0;i--){
     const p=SPARKS[i];
-    p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=200*dt; p.life-=dt*2;
+    p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=280*dt;p.vx*=0.97;
+    p.life-=dt*1.4;
     if(p.life<=0)SPARKS.splice(i,1);
+  }
+  for(let i=MERGE_RINGS.length-1;i>=0;i--){
+    const r=MERGE_RINGS[i];
+    r.r+=(r.maxR-r.r)*dt*9;
+    r.life-=dt*2.2;
+    if(r.life<=0)MERGE_RINGS.splice(i,1);
   }
 }
 function drawSparks(){
-  for(const p of SPARKS){
+  for(const r of MERGE_RINGS){
     ctx.save();
-    ctx.globalAlpha=Math.max(0,p.life);
+    ctx.globalAlpha=Math.max(0,r.life)*0.75;
+    ctx.strokeStyle=r.col;
+    ctx.lineWidth=3;
+    ctx.shadowColor=r.col;ctx.shadowBlur=18;
+    ctx.beginPath();ctx.arc(r.x,r.y,r.r,0,Math.PI*2);ctx.stroke();
+    ctx.restore();
+  }
+  for(const p of SPARKS){
+    const alpha=Math.max(0,p.life/(p.maxLife||1));
+    ctx.save();
+    ctx.globalAlpha=alpha;
+    ctx.shadowColor=p.col;ctx.shadowBlur=12;
     ctx.fillStyle=p.col;
-    ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(p.x,p.y,p.sz||3,0,Math.PI*2);ctx.fill();
     ctx.restore();
   }
 }
@@ -2734,7 +2882,7 @@ function resumeGame(){
   S._extraUsed = false;
   WA.active = false;
   COMBO.reset();
-  SPARKS.length = 0;
+  SPARKS.length = 0; MERGE_RINGS.length = 0;
 
   const cfg = lvlCfg(st.lv);
   S.cfg = cfg;
@@ -2766,7 +2914,8 @@ function resumeGame(){
   document.getElementById('ubadge').textContent = badge ? badge.icon+' '+badge.title : '👤 '+S.user;
   updNxt(); updProg();
 
-  document.body.style.background = ['linear-gradient(135deg,#0a0e1a,#1a2a1a)','linear-gradient(135deg,#1a0800,#2e1200)','linear-gradient(135deg,#001a2e,#003a5c)','linear-gradient(135deg,#0d1a2e,#1a2e4a)','linear-gradient(135deg,#3a0a00,#6c1800)','linear-gradient(135deg,#0e0020,#1a0040)','linear-gradient(135deg,#0a1a08,#152e10)','linear-gradient(135deg,#001018,#002030)'][(S.lv-1)%8];
+  document.body.style.background = BG_THEMES[(st.lv-1)%BG_THEMES.length]?.bg || '#0a0e1a';
+  setBgTheme(st.lv);
 
   show('s-game');
   clearInterval(S.timerId);
@@ -2776,6 +2925,7 @@ function resumeGame(){
   S.rafId = requestAnimationFrame(loop);
   if(musicOn){ MUS.stop(); setTimeout(()=>MUS.start(), 200); }
   showToast('▶ Kaldığın yerden devam ediliyor…');
+  setTimeout(()=>checkDailyReward(), 800); /* Günlük ödül varsa göster */
 }
 
 function checkContinueButton(){
@@ -2864,6 +3014,18 @@ async function winLevel(){
   requestAnimationFrame(()=>{ document.getElementById('lv-bar').style.width='100%'; });
 
   if(isNewRecord) showToast('🏆 YENİ REKOR! '+S.totSc.toLocaleString()+' puan!');
+
+  /* Level ödülü ver */
+  const rewardTypes=[{type:'bomb',emoji:'💣',name:'Bomba'},{type:'freeze',emoji:'❄️',name:'Dondur'},{type:'x2',emoji:'⚡',name:'2× Puan'}];
+  const ri=rewardTypes[(S.lv-1)%3];
+  const rAmt=(S.lv%10===0)?2:1;
+  PU.add(ri.type,rAmt);
+  const rvEl=document.getElementById('lv-reward');
+  const rvTxt=document.getElementById('lv-reward-txt');
+  if(rvEl&&rvTxt){
+    rvTxt.textContent=`${ri.emoji} +${rAmt} ${ri.name}`;
+    rvEl.style.display='block';
+  }
   /* Meydan okuma durumu göster */
   setTimeout(()=>showChallengeStatus(),500);
 
@@ -3049,33 +3211,64 @@ function tutPrev(){if(tutStep>0){tutStep--;updateTutStep();}}
    GÜNLÜK ÖDÜL
 ══════════════════════════════════════════ */
 const DAILY_REWARDS=[
-  [{type:'bomb',n:1}],
-  [{type:'freeze',n:1}],
-  [{type:'x2',n:1}],
-  [{type:'bomb',n:1},{type:'freeze',n:1}],
-  [{type:'x2',n:2}],
-  [{type:'bomb',n:2},{type:'freeze',n:1}],
-  [{type:'bomb',n:1},{type:'freeze',n:1},{type:'x2',n:1}],
+  /* Gün 1 — Hoş geldin bonusu */ [{type:'bomb',n:2},{type:'freeze',n:1}],
+  /* Gün 2 */                      [{type:'freeze',n:1}],
+  /* Gün 3 */                      [{type:'x2',n:1}],
+  /* Gün 4 */                      [{type:'bomb',n:1},{type:'freeze',n:1}],
+  /* Gün 5 — Hafta ortası özel */  [{type:'x2',n:2},{type:'bomb',n:1}],
+  /* Gün 6 */                      [{type:'bomb',n:2}],
+  /* Gün 7 — Haftalık özel */      [{type:'bomb',n:2},{type:'freeze',n:2},{type:'x2',n:1}],
+  /* Gün 8 */                      [{type:'freeze',n:1}],
+  /* Gün 9 */                      [{type:'x2',n:1},{type:'bomb',n:1}],
+  /* Gün 10 — Mega bonus */        [{type:'bomb',n:3},{type:'freeze',n:2},{type:'x2',n:2}],
 ];
+const SPECIAL_DAYS=[1,5,7,10];
 function checkDailyReward(){
   const today=new Date().toDateString();
   let data={};
   try{data=JSON.parse(localStorage.getItem('karpuz_daily')||'{}');}catch{}
   if(data.day===today)return;
-  const streak=((data.streak||0)%7)+1;
+  const streak=((data.streak||0)%10)+1;
   const rewards=DAILY_REWARDS[(streak-1)%DAILY_REWARDS.length];
+  const isSpecial=SPECIAL_DAYS.includes(streak);
+  const icons={bomb:'💣',freeze:'❄️',x2:'⚡'};
+  const names={bomb:'Bomba',freeze:'Dondur',x2:'2× Puan'};
+
+  /* Ödül listesi */
   const rwEl=document.getElementById('daily-rewards');
-  const stEl=document.getElementById('daily-streak');
   if(rwEl){
-    const icons={bomb:'💣',freeze:'❄️',x2:'⚡'};
     rwEl.innerHTML=rewards.map(r=>`
       <div style="text-align:center">
-        <div style="font-size:32px">${icons[r.type]}</div>
-        <div style="font-weight:800;margin-top:4px">×${r.n}</div>
-        <div style="font-size:10px;color:rgba(255,255,255,.5)">${r.type==='bomb'?'Bomba':r.type==='freeze'?'Dondur':'2× Puan'}</div>
+        <div style="font-size:36px">${icons[r.type]}</div>
+        <div style="font-weight:900;font-size:18px;margin-top:2px">×${r.n}</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.5)">${names[r.type]}</div>
       </div>`).join('');
   }
-  if(stEl)stEl.textContent=`${streak}. gün streaki! 🔥`;
+
+  /* Streak yazısı */
+  const stEl=document.getElementById('daily-streak');
+  if(stEl) stEl.textContent=isSpecial?`🌟 ${streak}. GÜN — ÖZEL ÖDÜL!`:`${streak}. gün streaki 🔥`;
+
+  /* Başlık */
+  const ttEl=document.getElementById('daily-title');
+  if(ttEl) ttEl.textContent=isSpecial?'🌟 Özel Günlük Ödül!':'Günlük Ödül!';
+  const icEl=document.getElementById('daily-icon');
+  if(icEl) icEl.textContent=isSpecial?'⭐':'🎁';
+
+  /* Gün göstergesi (10 halka) */
+  const dRow=document.getElementById('daily-days-row');
+  if(dRow){
+    dRow.innerHTML=Array.from({length:10},(_,i)=>{
+      const d=i+1;
+      const done=d<streak;
+      const cur=d===streak;
+      const spec=SPECIAL_DAYS.includes(d);
+      const bg=cur?'#f5a623':done?'#22aa66':'rgba(255,255,255,.12)';
+      const border=spec?'2px solid #f5a623':'2px solid transparent';
+      return `<div style="width:24px;height:24px;border-radius:50%;background:${bg};border:${border};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;color:${cur||done?'#fff':'rgba(255,255,255,.4)'}">${spec?'★':d}</div>`;
+    }).join('');
+  }
+
   document.getElementById('daily-overlay').style.display='flex';
   try{localStorage.setItem('karpuz_daily',JSON.stringify({day:today,streak,pending:rewards}));}catch{}
 }
@@ -3085,7 +3278,10 @@ function claimDailyReward(){
   const rewards=data.pending||[];
   rewards.forEach(r=>PU.add(r.type,r.n));
   document.getElementById('daily-overlay').style.display='none';
-  if(rewards.length)showToast('🎁 Günlük ödül alındı!');
+  if(rewards.length){
+    const names={bomb:'💣 Bomba',freeze:'❄️ Dondur',x2:'⚡ 2× Puan'};
+    showToast('🎁 Ödül: '+rewards.map(r=>`${r.n}× ${names[r.type]}`).join(', '));
+  }
 }
 
 /* ══════════════════════════════════════════
@@ -3352,12 +3548,15 @@ setInterval(()=>{if(S.cfg&&!S.dead&&!_paused)saveGameState();},5000);
 
 /* Uygulama kapanınca/arka plana geçince kaydet */
 document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='hidden' && S.cfg && !S.dead){
-    if(!_paused){_paused=true;cancelAnimationFrame(S.rafId);clearInterval(S.timerId);}
-    saveGameState();
+  if(document.visibilityState==='hidden'){
+    if(S.cfg && !S.dead){
+      home(); /* kaydet + dur + ana ekrana dön → Devam Et butonu aktif */
+    }
   }
 });
-window.addEventListener('pagehide',()=>{if(S.cfg&&!S.dead)saveGameState();});
+window.addEventListener('pagehide',()=>{
+  try{if(S.cfg&&!S.dead)saveGameState();}catch{}
+});
 </script>
 </body>
 </html>
