@@ -157,7 +157,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
               _interstitialAd = null;
               _loadInterstitialAd();
               _controller.runJavaScript(
-                'try{if(typeof window._adDone==="function")window._adDone();}catch(e){}');
+                'try{if(typeof window.showFallbackAd==="function")window.showFallbackAd();}catch(e){try{if(typeof window._adDone==="function")window._adDone();}catch(e2){}}');
             },
           );
         },
@@ -172,8 +172,9 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     if (_interstitialAd != null) {
       _interstitialAd!.show();
     } else {
+      // Gerçek reklam yok — JS'deki sahte reklamı göster
       _controller.runJavaScript(
-        'try{if(typeof window._adDone==="function")window._adDone();}catch(e){}');
+        'try{if(typeof window.showFallbackAd==="function")window.showFallbackAd();}catch(e){try{if(typeof window._adDone==="function")window._adDone();}catch(e2){}}');
     }
   }
 
