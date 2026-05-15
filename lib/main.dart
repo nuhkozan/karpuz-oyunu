@@ -172,7 +172,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     if (_interstitialAd != null) {
       _interstitialAd!.show();
     } else {
-      // Reklam yüklenmediyse direkt devam et
       _controller.runJavaScript(
         'try{if(typeof window._adDone==="function")window._adDone();}catch(e){}');
     }
@@ -183,7 +182,9 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
       _controller.runJavaScript('''
-        if(typeof saveGameState==="function") saveGameState();
+        if(typeof S!=="undefined" && S.cfg && !S.dead){
+          if(typeof home==="function") home();
+        }
         if(typeof MUS!=="undefined" && MUS) try{MUS.stop();}catch(e){}
         if(typeof ambientInterval!=="undefined") clearInterval(ambientInterval);
         if(typeof stopHomeAnim==="function") stopHomeAnim();
