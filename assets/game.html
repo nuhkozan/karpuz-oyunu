@@ -1443,58 +1443,116 @@ function toggleSfx(){
 ══════════════════════════════════════════ */
 const WA={
   active:false, x:0, y:0,
-  /* 0=ekranda bekle(2s)  1=büyü(0.6s)  2=flash  3=partiküller */
+  /* 0=dans/salla(2.5s) 1=büyü(0.6s) 2=flash+patlama 3=partiküller+meyve suyu */
   phase:0, timer:0, scale:1,
-  particles:[],
-  info:null,  /* {rank, score, bonus, lv} */
+  particles:[], juiceDrops:[],
+  info:null,
 
   start(x,y,info){
     this.active=true; this.x=x; this.y=y;
     this.phase=0; this.timer=0; this.scale=1;
     this.info=info||null;
-    this.particles=[];
-    const cols=['#ff4466','#ff8800','#44ff66','#ffff00','#44ccff','#ff44ff','#ffffff','#ff2200','#ff6600'];
-    /* Karpuz dilimleri */
-    for(let i=0;i<16;i++){
-      const a=(i/16)*Math.PI*2;
-      const spd=200+Math.random()*350;
-      this.particles.push({x,y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd-150,
-        type:'slice',rot:Math.random()*Math.PI*2,rotSpd:(Math.random()-.5)*12,
-        size:30+Math.random()*26,alpha:1});
+    this.particles=[]; this.juiceDrops=[];
+    const tgt=S.cfg?S.cfg.target:FR.length-1;
+    const col=FR[tgt]?FR[tgt][5]:'#33cc55';
+    const cols=['#ff4466','#ff8800','#44ff66','#ffff00','#44ccff','#ff44ff','#ffffff','#ff2200','#ff6600',col];
+    /* Meyve parçaları */
+    for(let i=0;i<20;i++){
+      const a=(i/20)*Math.PI*2;
+      const spd=220+Math.random()*380;
+      this.particles.push({x,y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd-180,
+        type:'slice',rot:Math.random()*Math.PI*2,rotSpd:(Math.random()-.5)*14,
+        size:28+Math.random()*28,alpha:1});
     }
     /* Konfeti */
-    for(let i=0;i<50;i++){
+    for(let i=0;i<60;i++){
       const a=Math.random()*Math.PI*2;
-      const spd=60+Math.random()*500;
+      const spd=80+Math.random()*550;
       this.particles.push({x,y,
-        vx:Math.cos(a)*spd+(Math.random()-.5)*100,
-        vy:Math.sin(a)*spd-400,
+        vx:Math.cos(a)*spd+(Math.random()-.5)*120,
+        vy:Math.sin(a)*spd-450,
         type:'conf',
         color:cols[Math.floor(Math.random()*cols.length)],
-        rot:Math.random()*Math.PI*2,rotSpd:(Math.random()-.5)*16,
-        w:5+Math.random()*12,h:3+Math.random()*6,alpha:1});
+        rot:Math.random()*Math.PI*2,rotSpd:(Math.random()-.5)*18,
+        w:5+Math.random()*14,h:3+Math.random()*7,alpha:1});
     }
-    /* Tebrikler sesi */
+    /* Meyve suyu damlaları — ekrana yansıyor */
+    for(let i=0;i<18;i++){
+      const a=Math.random()*Math.PI*2;
+      const spd=300+Math.random()*500;
+      this.juiceDrops.push({
+        x,y,
+        vx:Math.cos(a)*spd,vy:Math.sin(a)*spd-300,
+        r:8+Math.random()*20,
+        color:col,
+        alpha:0.85,
+        splat:false, splatX:0, splatY:0, splatR:0
+      });
+    }
+    /* Dans/dans sesi */
     snd(9,true);
+    /* 2.5sn sonra patlama sesi */
+    setTimeout(()=>{ try{
+      const o=AC.createOscillator();const g=AC.createGain();
+      o.connect(g);g.connect(AC.destination);
+      o.type='sawtooth';
+      o.frequency.setValueAtTime(180,AC.currentTime);
+      o.frequency.exponentialRampToValueAtTime(60,AC.currentTime+0.4);
+      g.gain.setValueAtTime(0.35,AC.currentTime);
+      g.gain.linearRampToValueAtTime(0,AC.currentTime+0.5);
+      o.start(AC.currentTime);o.stop(AC.currentTime+0.5);
+      /* Kısa zil */
+      setTimeout(()=>{try{
+        const o2=AC.createOscillator();const g2=AC.createGain();
+        o2.connect(g2);g2.connect(AC.destination);
+        o2.type='sine';o2.frequency.value=1200;
+        g2.gain.setValueAtTime(0.2,AC.currentTime);
+        g2.gain.linearRampToValueAtTime(0,AC.currentTime+0.3);
+        o2.start(AC.currentTime);o2.stop(AC.currentTime+0.3);
+      }catch{}},150);
+    }catch{}}, 2500);
   },
 
   update(dt){
     this.timer+=dt;
     if(this.phase===0){
-      if(this.timer>2.0){this.phase=1;this.timer=0;}   /* 2 saniye bekle */
+      if(this.timer>2.5){this.phase=1;this.timer=0;}
     }else if(this.phase===1){
       this.scale=1+this.timer*5;
       if(this.timer>.65){this.phase=2;this.timer=0;}
     }else if(this.phase===2){
+      /* Meyve suyu damlaları hareketi */
+      for(const d of this.juiceDrops){
+        if(!d.splat){
+          d.x+=d.vx*dt; d.y+=d.vy*dt;
+          d.vy+=600*dt;
+          if(d.y>S.cfg.ch+20){
+            d.splat=true; d.splatX=d.x; d.splatY=S.cfg.ch-5;
+            d.splatR=d.r*2.5;
+          }
+        } else {
+          d.splatR+=80*dt;
+          d.alpha=Math.max(0,d.alpha-dt*1.5);
+        }
+      }
       this.phase=3;this.timer=0;
     }else{
       for(const p of this.particles){
         p.x+=p.vx*dt;p.y+=p.vy*dt;
         p.vy+=500*dt;
         p.rot+=p.rotSpd*dt;
-        p.alpha=Math.max(0,1-this.timer/2.6);
+        p.alpha=Math.max(0,1-this.timer/2.8);
       }
-      if(this.timer>3.0){this.active=false;}
+      for(const d of this.juiceDrops){
+        if(!d.splat){
+          d.x+=d.vx*dt; d.y+=d.vy*dt; d.vy+=600*dt;
+          if(d.y>S.cfg.ch+20){d.splat=true;d.splatX=d.x;d.splatY=S.cfg.ch-5;d.splatR=d.r*2.5;}
+        } else {
+          d.splatR+=60*dt;
+          d.alpha=Math.max(0,d.alpha-dt*0.8);
+        }
+      }
+      if(this.timer>3.2){this.active=false;}
     }
   },
 
@@ -1527,18 +1585,33 @@ const WA={
   },
 
   draw(W,H){
-    const tgtEmoji = S.cfg ? FR[S.cfg.target][0] : '🍉';
-    const tgtName  = S.cfg ? FR[S.cfg.target][0] : '🍉';
-    const pulse=1+Math.sin(this.timer*10)*0.06;
+    const tgtEmoji=S.cfg?FR[S.cfg.target][0]:'🍉';
+    const tgtCol=S.cfg&&FR[S.cfg.target]?FR[S.cfg.target][5]:'#33cc55';
+
     if(this.phase===0){
-      /* Hedef meyve ekranda bekliyor — büyük ve parlak */
+      /* Dans animasyonu — meyve salla, zıpla, dönsün */
+      const wobble=Math.sin(this.timer*8)*18;
+      const bounce=Math.abs(Math.sin(this.timer*5))*-30;
+      const spin=Math.sin(this.timer*3)*0.15;
+      const sz=1+Math.abs(Math.sin(this.timer*4))*0.12;
       ctx.save();
-      ctx.translate(this.x,this.y);
-      ctx.scale(pulse,pulse);
-      ctx.shadowColor='transparent';ctx.shadowBlur=0;
+      ctx.translate(this.x+wobble,this.y+bounce);
+      ctx.rotate(spin);
+      ctx.scale(sz,sz);
       ctx.font='110px serif';
       ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.shadowColor='transparent';ctx.shadowBlur=0;
       ctx.fillText(tgtEmoji,0,0);
+      ctx.restore();
+      /* Parlayan halka */
+      const ringAlpha=0.3+Math.abs(Math.sin(this.timer*4))*0.4;
+      ctx.save();
+      ctx.globalAlpha=ringAlpha;
+      ctx.strokeStyle=tgtCol;
+      ctx.lineWidth=4;
+      ctx.beginPath();
+      ctx.arc(this.x+wobble,this.y+bounce,70+Math.abs(Math.sin(this.timer*6))*20,0,Math.PI*2);
+      ctx.stroke();
       ctx.restore();
       /* KAZANDIN yazısı */
       ctx.save();
@@ -1546,26 +1619,28 @@ const WA={
       ctx.fillStyle='#ffff00';
       ctx.shadowColor='transparent';ctx.shadowBlur=0;
       ctx.textAlign='center';ctx.textBaseline='middle';
-      const bounce=Math.sin(this.timer*6)*4;
-      ctx.fillText(`🎉 ${tgtName} YAPTIN! 🎉`,W/2,this.y-90+bounce);
+      ctx.fillText(`🎉 ${tgtEmoji} YAPTIN! 🎉`,W/2,this.y-110);
       ctx.restore();
-      /* Puan / Sıra paneli */
-      this._drawInfoPanel(W,H,Math.min(1,this.timer*2));
+      this._drawInfoPanel(W,H,Math.min(1,this.timer*1.5));
+
     }else if(this.phase===1){
-      /* Büyüyen hedef meyve */
+      /* Büyüyen meyve — patlama öncesi */
       ctx.save();
       ctx.translate(this.x,this.y);
       ctx.scale(this.scale,this.scale);
-      ctx.shadowColor='transparent';ctx.shadowBlur=0;
       ctx.font='110px serif';
       ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.shadowColor='transparent';ctx.shadowBlur=0;
       ctx.fillText(tgtEmoji,0,0);
       ctx.restore();
+
     }else if(this.phase===2){
+      /* Beyaz flaş */
       ctx.fillStyle='rgba(255,255,255,.95)';
       ctx.fillRect(0,0,W,H);
+
     }else{
-      /* Partiküller */
+      /* Partiküller + meyve suyu */
       for(const p of this.particles){
         ctx.save();
         ctx.globalAlpha=p.alpha;
@@ -1574,8 +1649,6 @@ const WA={
         if(p.type==='slice'){
           ctx.font=`${p.size}px serif`;
           ctx.textAlign='center';ctx.textBaseline='middle';
-          ctx.shadowColor='rgba(0,0,0,.3)';ctx.shadowBlur=5;
-          ctx.fillText(tgtEmoji,0,0);
           ctx.shadowColor='transparent';ctx.shadowBlur=0;
           ctx.fillText(tgtEmoji,0,0);
         }else{
@@ -1584,7 +1657,25 @@ const WA={
         }
         ctx.restore();
       }
-      /* Konfetiler arasında puan paneli */
+      /* Meyve suyu damlaları */
+      for(const d of this.juiceDrops){
+        ctx.save();
+        ctx.globalAlpha=Math.max(0,d.alpha);
+        if(d.splat){
+          /* Yere çarpınca yayılıyor */
+          ctx.fillStyle=tgtCol+'99';
+          ctx.beginPath();
+          ctx.ellipse(d.splatX,d.splatY,d.splatR,d.splatR*0.35,0,0,Math.PI*2);
+          ctx.fill();
+        } else {
+          /* Uçarken damla */
+          ctx.fillStyle=tgtCol+'cc';
+          ctx.beginPath();
+          ctx.ellipse(d.x,d.y,d.r*0.5,d.r,0,0,Math.PI*2);
+          ctx.fill();
+        }
+        ctx.restore();
+      }
       const pa=Math.max(0,1-this.timer/1.8);
       if(pa>0) this._drawInfoPanel(W,H,pa);
     }
@@ -2088,6 +2179,32 @@ function setBgTheme(lv){
   });
 }
 
+/* Hedef meyve giriş animasyonu — ortadan HUD'a uçar */
+function animateTargetIntro(emoji){
+  const el=document.createElement('div');
+  el.textContent=emoji;
+  el.style.cssText='position:fixed;z-index:200;pointer-events:none;font-size:72px;line-height:1;transition:none;';
+  const W=window.innerWidth, H=window.innerHeight;
+  el.style.left=(W/2-36)+'px';
+  el.style.top=(H/2-36)+'px';
+  document.body.appendChild(el);
+  /* Hedef HUD elementinin konumu */
+  const hedefEl=document.getElementById('h-hedef');
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      const rect=hedefEl?hedefEl.getBoundingClientRect():{left:W-60,top:80,width:22,height:22};
+      const endX=rect.left+rect.width/2-11;
+      const endY=rect.top+rect.height/2-11;
+      el.style.transition='left 0.9s cubic-bezier(.4,0,.2,1), top 0.9s cubic-bezier(.4,0,.2,1), font-size 0.9s ease, opacity 0.7s ease 0.5s';
+      el.style.left=endX+'px';
+      el.style.top=endY+'px';
+      el.style.fontSize='22px';
+      el.style.opacity='0';
+      setTimeout(()=>el.remove(),1100);
+    });
+  });
+}
+
 function beginLevel(){
   ensureAC();
   _paused=false;
@@ -2132,6 +2249,8 @@ function beginLevel(){
   S.rafId=requestAnimationFrame(loop);
 
   stopHomeAnim();
+  /* Hedef meyve giriş animasyonu */
+  setTimeout(()=>animateTargetIntro(FR[cfg.target][0]), 200);
   /* Müzik + ambient */
   if(musicOn){MUS.stop();setTimeout(()=>{MUS.start();playAmbient((S.lv-1)%8);},200);}
 }
@@ -2615,14 +2734,14 @@ function drawSparks(){
    ROZET (BADGE) SİSTEMİ
 ══════════════════════════════════════════ */
 const BADGES=[
-  {lv:1,  icon:'⭐',               title:'⭐',               color:'#aaaaaa'},
-  {lv:5,  icon:'⭐⭐',             title:'⭐⭐',             color:'#44cc66'},
-  {lv:10, icon:'⭐⭐⭐',           title:'⭐⭐⭐',           color:'#f5a623'},
-  {lv:20, icon:'⭐⭐⭐⭐',         title:'⭐⭐⭐⭐',         color:'#44aaff'},
-  {lv:35, icon:'⭐⭐⭐⭐⭐',       title:'⭐⭐⭐⭐⭐',       color:'#e94560'},
-  {lv:50, icon:'🌟⭐⭐⭐⭐⭐',     title:'🌟⭐⭐⭐⭐⭐',     color:'#ff8800'},
-  {lv:75, icon:'🌟🌟⭐⭐⭐⭐⭐',   title:'🌟🌟⭐⭐⭐⭐⭐',   color:'#ff4400'},
-  {lv:99, icon:'👑',               title:'👑 KARPUZ REİS',   color:'#ff0000'},
+  {lv:1,  icon:'⭐',               title:'⭐',               name:'1 Yıldız',    color:'#aaaaaa'},
+  {lv:5,  icon:'⭐⭐',             title:'⭐⭐',             name:'2 Yıldız',    color:'#44cc66'},
+  {lv:10, icon:'⭐⭐⭐',           title:'⭐⭐⭐',           name:'3 Yıldız',    color:'#f5a623'},
+  {lv:20, icon:'⭐⭐⭐⭐',         title:'⭐⭐⭐⭐',         name:'4 Yıldız',    color:'#44aaff'},
+  {lv:35, icon:'⭐⭐⭐⭐⭐',       title:'⭐⭐⭐⭐⭐',       name:'5 Yıldız',    color:'#e94560'},
+  {lv:50, icon:'🌟⭐⭐⭐⭐⭐',     title:'🌟⭐⭐⭐⭐⭐',     name:'6 Yıldız',    color:'#ff8800'},
+  {lv:75, icon:'🌟🌟⭐⭐⭐⭐⭐',   title:'🌟🌟⭐⭐⭐⭐⭐',   name:'7 Yıldız',    color:'#ff4400'},
+  {lv:99, icon:'👑',               title:'👑 KARPUZ REİS',   name:'KARPUZ REİS', color:'#ff0000'},
 ];
 function getBadge(lv){
   let b=null;
@@ -2639,14 +2758,12 @@ function checkBadgeUnlock(prevLv,newLv){
 }
 
 function showBadgeCelebration(bd, lv){
-  /* Sonraki ünvanı bul */
   const idx=BADGES.findIndex(b=>b.lv===bd.lv);
   const next=BADGES[idx+1]||null;
   const nextMsg=next
-    ? `Sonraki hedef: ${next.icon} <b>${next.title}</b> (Level ${next.lv})`
+    ? `Sonraki hedef: ${next.icon} <b>${next.name}</b> (Level ${next.lv})`
     : '🎊 En yüksek ünvana ulaştın!';
 
-  /* Övgü mesajları */
   const praises=[
     'Harika oynuyorsun! Gerçek bir meyve ustasısın!',
     'İnanılmaz ilerleme! Şampiyonlar seni izliyor!',
@@ -2656,15 +2773,16 @@ function showBadgeCelebration(bd, lv){
   const praise=praises[Math.floor(Math.random()*praises.length)];
 
   const ov=document.createElement('div');
-  ov.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.92);z-index:700;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:Segoe UI,Arial;color:#fff;text-align:center;padding:20px;';
+  ov.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.95);z-index:700;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:Segoe UI,Arial;color:#fff;text-align:center;padding:20px;';
   ov.innerHTML=`
-    <div style="font-size:80px;animation:fruitPop .6s ease;margin-bottom:8px">${bd.icon}</div>
-    <div style="font-size:13px;letter-spacing:3px;color:rgba(255,255,255,.5);margin-bottom:4px">YENİ ÜNVAN KAZANILDI!</div>
-    <div style="font-size:32px;font-weight:900;color:${bd.color};margin-bottom:6px">${bd.title}</div>
-    <div style="width:200px;height:2px;background:linear-gradient(90deg,${bd.color},transparent);margin:10px auto;border-radius:2px"></div>
+    <div style="font-size:13px;letter-spacing:3px;color:rgba(255,255,255,.5);margin-bottom:12px">🏆 YENİ ÜNVAN KAZANILDI!</div>
+    <div style="font-size:52px;animation:fruitPop .6s ease;margin-bottom:6px">${bd.icon}</div>
+    <div style="font-size:28px;font-weight:900;color:${bd.color};margin-bottom:4px;letter-spacing:1px">${bd.name}</div>
+    <div style="font-size:13px;color:rgba(255,255,255,.5);margin-bottom:16px">Level ${lv} ile kazanıldı</div>
+    <div style="width:200px;height:2px;background:linear-gradient(90deg,${bd.color},transparent);margin:0 auto 16px;border-radius:2px"></div>
     <div style="font-size:13px;color:rgba(255,255,255,.7);max-width:280px;line-height:1.7;margin-bottom:16px">${praise}</div>
     <div style="background:rgba(255,255,255,.06);border-radius:14px;padding:12px 20px;margin-bottom:20px;font-size:12px;color:rgba(255,255,255,.6)">🎯 ${nextMsg}</div>
-    <button onclick="this.parentElement.remove()" style="padding:12px 36px;border-radius:22px;border:none;background:linear-gradient(90deg,#e94560,#f5a623);color:#fff;font-size:15px;font-weight:800;cursor:pointer;">Devam Et 🚀</button>
+    <button onclick="this.parentElement.remove()" style="padding:12px 36px;border-radius:22px;border:none;background:linear-gradient(90deg,${bd.color},#f5a623);color:#fff;font-size:15px;font-weight:800;cursor:pointer;">Devam Et 🚀</button>
   `;
   document.body.appendChild(ov);
   setTimeout(()=>{if(ov.parentElement)ov.remove();},8000);
@@ -2926,16 +3044,7 @@ const ADS = [
 ];
 let adTimer=null;
 
-function showAd(onDone){
-  /* ── Gerçek AdMob (Flutter içinde) ── */
-  try{
-    if(typeof FlutterAd!=='undefined'){
-      window._adDone=function(){window._adDone=null;if(onDone)onDone();};
-      FlutterAd.postMessage('show');
-      return;
-    }
-  }catch(e){}
-  /* ── Web/preview için sahte reklam (fallback) ── */
+function showFakeAdOverlay(onDone){
   const ov = document.getElementById('ad-overlay');
   const ad = ADS[Math.floor(Math.random()*ADS.length)];
   document.getElementById('ad-icon').textContent  = ad.icon;
@@ -2956,6 +3065,26 @@ function showAd(onDone){
       document.getElementById('ad-skip-btn').style.display='block';
     }
   },1000);
+}
+
+/* Flutter tarafından cagrilir — gercek reklam yuklenemediginde */
+window.showFallbackAd=function(){
+  showFakeAdOverlay(function(){
+    if(typeof window._adDone==='function') window._adDone();
+  });
+};
+
+function showAd(onDone){
+  /* Gercek AdMob (Flutter icinde) */
+  try{
+    if(typeof FlutterAd!=='undefined'){
+      window._adDone=function(){window._adDone=null;if(onDone)onDone();};
+      FlutterAd.postMessage('show');
+      return;
+    }
+  }catch(e){}
+  /* Web/preview icin sahte reklam */
+  showFakeAdOverlay(onDone);
 }
 
 function closeAd(){
