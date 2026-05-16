@@ -435,7 +435,7 @@ window._fbReady=true;
   <div id="u-return" style="display:none;width:100%;text-align:center">
     <div style="font-size:13px;color:rgba(255,255,255,.5);letter-spacing:2px;margin-bottom:6px">HOŞ GELDİN</div>
     <div id="u-welcome" style="font-size:26px;font-weight:900;color:#f5a623;margin-bottom:18px">—</div>
-    <button class="btn-main" style="width:220px" onclick="continueUser()">🚀 OYNA</button>
+    <button class="btn-main" style="width:220px" onclick="continueUser()">🎮 YENİ OYUN</button>
     <div id="u-continue-wrap" style="margin-top:10px;display:none">
       <button class="btn-main" style="width:220px;background:linear-gradient(90deg,#22aa66,#1a7a4a);font-size:15px" onclick="resumeGame()">▶ Kaldığın Yerden Devam Et</button>
       <div id="u-continue-info" style="font-size:11px;color:rgba(255,255,255,.4);margin-top:5px"></div>
@@ -1924,7 +1924,7 @@ class Fruit{
    CANVAS — Device Pixel Ratio destekli
 ══════════════════════════════════════════ */
 const CV=document.getElementById('c');
-const ctx=CV.getContext('2d', {alpha:false});
+const ctx=CV.getContext('2d');
 
 /* DPR destekli canvas yeniden boyutlandırma */
 function resizeCanvas(logW, logH){
@@ -3229,7 +3229,11 @@ function resumeGame(){
   _paused = false;
   const _pi = document.getElementById('pause-icon');
   if(_pi) _pi.textContent = '⏸';
-  S._narrowingWarned = false;
+  S._narrowingWarned = st.timeElapsed >= 12;
+  S.dangerLineMoving = st.timeElapsed >= 13;
+  S.dangerLineY = S.dangerLineMoving ? (cfg.ch*0.5) : cfg.dangerY;
+  S.dangerLineDir = 1;
+  S.dangerLineFruitTimer = 0;
 
   S.user = st.user;
   S.lv = st.lv;
@@ -3294,7 +3298,7 @@ function checkContinueButton(){
   const st = loadGameState();
   const wrap = document.getElementById('u-continue-wrap');
   if(!wrap) return;
-  if(st && st.user === localStorage.getItem(UKEY) && st.fruits && st.fruits.length > 0){
+  if(st && st.user === localStorage.getItem(UKEY)){
     wrap.style.display = 'block';
     const ago = Math.round((Date.now()-st.savedAt)/60000);
     const agoTxt = ago < 1 ? 'Az önce' : ago < 60 ? ago+'dk önce' : Math.round(ago/60)+'sa önce';
@@ -3396,6 +3400,8 @@ async function winLevel(){
   checkBadgeUnlock(prevLv, S.lv);
   missionProgress('m_levels',1);
   clearSavedGame();
+  /* Hemen yeni level state'i kaydet — araya çıkılırsa devam etsin */
+  try{saveGameState();}catch(e){}
 
   setTimeout(()=>{
     ov.style.display='none';
@@ -3904,9 +3910,10 @@ setInterval(()=>{if(S.cfg&&!S.dead&&!_paused)saveGameState();},5000);
 /* Uygulama kapanınca/arka plana geçince kaydet */
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='hidden'){
-    if(S.cfg && !S.dead){
-      home(); /* kaydet + dur + ana ekrana dön → Devam Et butonu aktif */
-    }
+    try{
+      if(S.cfg && !S.dead) saveGameState();
+      if(typeof MUS!=='undefined'&&MUS) MUS.stop();
+    }catch(e){}
   }
 });
 window.addEventListener('pagehide',()=>{
