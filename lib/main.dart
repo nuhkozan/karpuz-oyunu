@@ -150,13 +150,10 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       size: AdSize.banner,
       request: const AdRequest(),
       listener: BannerAdListener(
-        onAdLoaded: (ad) {
-          setState(() => _bannerAdLoaded = true);
-        },
+        onAdLoaded: (ad) => setState(() => _bannerAdLoaded = true),
         onAdFailedToLoad: (ad, err) {
           ad.dispose();
           _bannerAd = null;
-          // 10 saniye sonra tekrar dene
           Timer(const Duration(seconds: 10), _loadBannerAd);
         },
       ),
@@ -212,17 +209,25 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     }
   }
 
+  Future<void> _saveAndGoHome() async {
+    await _controller.runJavaScript('''
+      try{
+        if(typeof saveGameState==="function") saveGameState();
+        if(typeof MUS!=="undefined"&&MUS) MUS.stop();
+      }catch(e){}
+    ''');
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
       _controller.runJavaScript('''
-        if(typeof S!=="undefined" && S.cfg && !S.dead){
-          if(typeof home==="function") home();
-        }
-        if(typeof MUS!=="undefined" && MUS) try{MUS.stop();}catch(e){}
-        if(typeof ambientInterval!=="undefined") clearInterval(ambientInterval);
-        if(typeof stopHomeAnim==="function") stopHomeAnim();
+        try{
+          if(typeof saveGameState==="function") saveGameState();
+          if(typeof MUS!=="undefined"&&MUS) MUS.stop();
+          if(typeof ambientInterval!=="undefined") clearInterval(ambientInterval);
+        }catch(e){}
       ''');
     } else if (state == AppLifecycleState.resumed) {
       if (_interstitialAd == null && !_isLoadingAd) _loadInterstitialAd();
@@ -248,39 +253,47 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: Stack(
-                children: [
-                  WebViewWidget(controller: _controller),
-                  if (!_webViewReady)
-                    Container(
-                      color: Colors.black,
-                      child: const Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text('🍉', style: TextStyle(fontSize: 64)),
-                            SizedBox(height: 16),
-                            CircularProgressIndicator(color: Colors.green),
-                          ],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        // Geri tuşu: kaydet, sonra uygulamayı minimize et
+        await _saveAndGoHome();
+        await SystemNavigator.pop();
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: Stack(
+                  children: [
+                    WebViewWidget(controller: _controller),
+                    if (!_webViewReady)
+                      Container(
+                        color: Colors.black,
+                        child: const Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text('🍉', style: TextStyle(fontSize: 64)),
+                              SizedBox(height: 16),
+                              CircularProgressIndicator(color: Colors.green),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            // Banner reklam — alt kısım
-            if (_bannerAdLoaded && _bannerAd != null)
-              SizedBox(
-                height: _bannerAd!.size.height.toDouble(),
-                child: AdWidget(ad: _bannerAd!),
-              ),
-          ],
+              if (_bannerAdLoaded && _bannerAd != null)
+                SizedBox(
+                  height: _bannerAd!.size.height.toDouble(),
+                  child: AdWidget(ad: _bannerAd!),
+                ),
+            ],
+          ),
         ),
       ),
     );
