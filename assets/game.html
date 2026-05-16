@@ -3231,7 +3231,6 @@ function resumeGame(){
   if(_pi) _pi.textContent = '⏸';
   S._narrowingWarned = st.timeElapsed >= 12;
   S.dangerLineMoving = st.timeElapsed >= 13;
-  S.dangerLineY = S.dangerLineMoving ? (cfg.ch*0.5) : cfg.dangerY;
   S.dangerLineDir = 1;
   S.dangerLineFruitTimer = 0;
 
@@ -3253,6 +3252,7 @@ function resumeGame(){
 
   const cfg = lvlCfg(st.lv);
   S.cfg = cfg;
+  S.dangerLineY = S.dangerLineMoving ? (cfg.ch*0.5) : cfg.dangerY;
   S.curType = st.curType;
   S.nxtType = st.nxtType;
   S.dropX = st.dropX || (cfg.wL+cfg.wR)/2;
