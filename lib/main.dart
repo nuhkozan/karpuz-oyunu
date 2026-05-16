@@ -166,7 +166,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
               _interstitialAd = null;
               _isLoadingAd = false;
               _loadInterstitialAd();
-              // Gerçek reklam gösterilemedi — sahte reklam göster
               _controller.runJavaScript(
                 'try{if(typeof window.showFallbackAd==="function")window.showFallbackAd();}catch(e){try{if(typeof window._adDone==="function")window._adDone();}catch(e2){}}');
             },
@@ -175,8 +174,8 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         onAdFailedToLoad: (err) {
           _isLoadingAd = false;
           _interstitialAd = null;
-          // 30 saniye sonra tekrar dene — "Hazırlanıyor" durumunda kritik
-          _retryTimer = Timer(const Duration(seconds: 30), _loadInterstitialAd);
+          // 5 saniye sonra tekrar dene
+          _retryTimer = Timer(const Duration(seconds: 5), _loadInterstitialAd);
         },
       ),
     );
@@ -186,7 +185,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     if (_interstitialAd != null) {
       _interstitialAd!.show();
     } else {
-      // Gerçek reklam yok — sahte reklam göster, arka planda yüklemeyi dene
       _loadInterstitialAd();
       _controller.runJavaScript(
         'try{if(typeof window.showFallbackAd==="function")window.showFallbackAd();}catch(e){try{if(typeof window._adDone==="function")window._adDone();}catch(e2){}}');
@@ -206,7 +204,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         if(typeof stopHomeAnim==="function") stopHomeAnim();
       ''');
     } else if (state == AppLifecycleState.resumed) {
-      // Uygulama geri gelince reklam yüklenmiş mi kontrol et
       if (_interstitialAd == null && !_isLoadingAd) {
         _loadInterstitialAd();
       }
