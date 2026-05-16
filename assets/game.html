@@ -695,6 +695,16 @@ window._fbReady=true;
         <div style="display:flex;align-items:center;gap:4px;font-size:13px">
           <span>🎃</span><span style="color:rgba(255,255,255,.3)">+</span><span>🎃</span>
           <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
+          <span>🌽</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Mısır</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
+          <span>🌽</span><span style="color:rgba(255,255,255,.3)">+</span><span>🌽</span>
+          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
+          <span>🍆</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Patlıcan</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
+          <span>🍆</span><span style="color:rgba(255,255,255,.3)">+</span><span>🍆</span>
+          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
           <span style="font-size:16px">🍉</span><span style="font-size:10px;color:#f5a623;font-weight:800;margin-left:2px">KARPUZ! 🏆</span>
         </div>
       </div>
@@ -3018,17 +3028,9 @@ function buyPower(type,n){
 
 function isAdFree(){ try{return localStorage.getItem('suika_adfree')==='1';}catch{return false;} }
 
-/* Reklam gösterilecek levellar: 3,6,8,11,13,16,18,21... (+3,+2,+3,+2 döngüsü) */
+/* Her 3 levelden sonra 1 reklam: 3,6,9,12,15,18... */
 function isAdLevel(lv){
-  if(lv<3)return false;
-  let cur=3;
-  const steps=[3,2,3,2];
-  let i=0;
-  while(cur<=lv){
-    if(cur===lv)return true;
-    cur+=steps[i%4];i++;
-  }
-  return false;
+  return lv>=3 && lv%3===0;
 }
 /* ══════════════════════════════════════════
    REKLAM SİSTEMİ (AdMob Placeholder)
@@ -3202,7 +3204,7 @@ function resumeGame(){
   S.rafId = requestAnimationFrame(loop);
   if(musicOn){ MUS.stop(); setTimeout(()=>MUS.start(), 200); }
   showToast('▶ Kaldığın yerden devam ediliyor…');
-  setTimeout(()=>checkDailyReward(), 800); /* Günlük ödül varsa göster */
+  setTimeout(()=>checkDailyReward(), 1000);
 }
 
 function checkContinueButton(){
@@ -3378,23 +3380,16 @@ function home(){saveGameState();stop();initUserScreen();show('s-user');setTimeou
 function backGame(){if(S.cfg)show('s-game');else show('s-user');}
 function pauseAndHome(){
   clearInterval(ambientInterval);
-  if(S.cfg && !S.dead){
-    if(!_paused){
-      _paused=true;
-      cancelAnimationFrame(S.rafId);
-      clearInterval(S.timerId);
-      MUS.stop();
-    }
-    saveGameState();
+  /* Pause state'i temizle */
+  if(_paused){
+    _paused=false;
+    const pi=document.getElementById('pause-icon');
+    if(pi)pi.textContent='⏸';
+    const ov=document.getElementById('pause-block-overlay');
+    if(ov)ov.style.display='none';
   }
-  _paused=false;
-  const pi=document.getElementById('pause-icon');
-  if(pi)pi.textContent='▶';
-  const ov=document.getElementById('pause-block-overlay');
-  if(ov)ov.style.display='none';
-  initUserScreen();
-  show('s-user');
-  setTimeout(startHomeAnim,100);
+  /* home() zaten: kaydet → durdur → ana ekran → devam et butonu aktif */
+  home();
 }
 
 function openInfo(){document.getElementById('info-overlay').style.display='flex';}
