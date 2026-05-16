@@ -9,7 +9,8 @@ import 'dart:async';
 import 'package:http/http.dart' as http;
 
 const String fbUrl = 'https://karpuz-oyunu-default-rtdb.europe-west1.firebasedatabase.app';
-const String _adUnitId = 'ca-app-pub-5226177276862447/9323975802';
+const String _interstitialAdUnitId = 'ca-app-pub-5226177276862447/9323975802';
+const String _bannerAdUnitId = 'ca-app-pub-5226177276862447/5141790853';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,12 +45,15 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   InterstitialAd? _interstitialAd;
   bool _isLoadingAd = false;
   Timer? _retryTimer;
+  BannerAd? _bannerAd;
+  bool _bannerAdLoaded = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _loadInterstitialAd();
+    _loadBannerAd();
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(Colors.transparent)
@@ -140,13 +144,31 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     }
   }
 
+  void _loadBannerAd() {
+    _bannerAd = BannerAd(
+      adUnitId: _bannerAdUnitId,
+      size: AdSize.banner,
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          setState(() => _bannerAdLoaded = true);
+        },
+        onAdFailedToLoad: (ad, err) {
+          ad.dispose();
+          _bannerAd = null;
+          // 10 saniye sonra tekrar dene
+          Timer(const Duration(seconds: 10), _loadBannerAd);
+        },
+      ),
+    )..load();
+  }
+
   void _loadInterstitialAd() {
     if (_isLoadingAd || _interstitialAd != null) return;
     _isLoadingAd = true;
     _retryTimer?.cancel();
-
     InterstitialAd.load(
-      adUnitId: _adUnitId,
+      adUnitId: _interstitialAdUnitId,
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (ad) {
@@ -174,7 +196,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         onAdFailedToLoad: (err) {
           _isLoadingAd = false;
           _interstitialAd = null;
-          // 5 saniye sonra tekrar dene
           _retryTimer = Timer(const Duration(seconds: 5), _loadInterstitialAd);
         },
       ),
@@ -204,9 +225,8 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         if(typeof stopHomeAnim==="function") stopHomeAnim();
       ''');
     } else if (state == AppLifecycleState.resumed) {
-      if (_interstitialAd == null && !_isLoadingAd) {
-        _loadInterstitialAd();
-      }
+      if (_interstitialAd == null && !_isLoadingAd) _loadInterstitialAd();
+      if (_bannerAd == null) _loadBannerAd();
       _controller.runJavaScript('''
         if(typeof musicOn!=="undefined" && musicOn &&
            typeof MUS!=="undefined" && MUS &&
@@ -221,6 +241,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   void dispose() {
     _retryTimer?.cancel();
     _interstitialAd?.dispose();
+    _bannerAd?.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -230,22 +251,34 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
-        child: Stack(
+        child: Column(
           children: [
-            WebViewWidget(controller: _controller),
-            if (!_webViewReady)
-              Container(
-                color: Colors.black,
-                child: const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('🍉', style: TextStyle(fontSize: 64)),
-                      SizedBox(height: 16),
-                      CircularProgressIndicator(color: Colors.green),
-                    ],
-                  ),
-                ),
+            Expanded(
+              child: Stack(
+                children: [
+                  WebViewWidget(controller: _controller),
+                  if (!_webViewReady)
+                    Container(
+                      color: Colors.black,
+                      child: const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text('🍉', style: TextStyle(fontSize: 64)),
+                            SizedBox(height: 16),
+                            CircularProgressIndicator(color: Colors.green),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            // Banner reklam — alt kısım
+            if (_bannerAdLoaded && _bannerAd != null)
+              SizedBox(
+                height: _bannerAd!.size.height.toDouble(),
+                child: AdWidget(ad: _bannerAd!),
               ),
           ],
         ),
