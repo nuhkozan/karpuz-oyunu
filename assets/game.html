@@ -100,6 +100,10 @@ body {
 
 canvas { display:block; cursor:crosshair; touch-action:none; border-radius:14px; border:3px solid rgba(100,255,120,.5); width:100% !important; }
 #c { animation:canvasGlow 4s linear infinite; }
+@keyframes dangerPulse{
+  0%,100%{transform:scale(1);opacity:1;}
+  50%{transform:scale(1.2);opacity:.7;}
+}
 @keyframes hedefPulse{
   0%,100%{transform:scale(1);text-shadow:0 0 10px rgba(255,200,50,.5);}
   50%{transform:scale(1.15);text-shadow:0 0 20px rgba(255,200,50,.9);}
@@ -238,6 +242,10 @@ window._fbReady=true;
 </head>
 <body>
 <div id="bg-anim" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;overflow:hidden"></div>
+<div id="danger-countdown" style="display:none;position:absolute;left:50%;transform:translateX(-50%);z-index:100;pointer-events:none;text-align:center">
+  <div id="danger-countdown-num" style="font-size:72px;font-weight:900;color:#ff2222;text-shadow:0 0 30px rgba(255,0,0,.8);animation:dangerPulse .8s ease-in-out infinite"></div>
+  <div style="font-size:12px;color:rgba(255,100,100,.9);letter-spacing:2px;margin-top:-8px">⚠️ ÇİZGİ HAREKET EDIYOR</div>
+</div>
 
 <!-- ══ GÖREV OVERLAY ══ -->
 <div class="mission-overlay" id="mis-overlay">
@@ -1500,9 +1508,9 @@ const WA={
       });
     }
     /* Dans/dans sesi */
-    snd(9,true);
+    if(sfxOn) snd(9,true);
     /* 2.5sn sonra patlama sesi */
-    setTimeout(()=>{ try{
+    setTimeout(()=>{ if(!sfxOn||!AC)return; try{
       const o=AC.createOscillator();const g=AC.createGain();
       o.connect(g);g.connect(AC.destination);
       o.type='sawtooth';
@@ -2226,6 +2234,11 @@ function beginLevel(){
   S.autoT=1.5;S.winPending=false;S.winFruit=null;WA.active=false;
   S._winBonus=0;S._winRank=0;S._winScore=null;S._extraUsed=false;
   S._narrowingWarned=false;
+  /* Hareketli tehlike çizgisi */
+  S.dangerLineY=cfg.ch*0.5;        /* Başlangıç: orta */
+  S.dangerLineDir=1;                /* 1=aşağı -1=yukarı */
+  S.dangerLineMoving=false;
+  S.dangerLineFruitTimer=0;         /* Meyve %50 üstünde kalma süresi */
   COMBO.reset(); SPARKS.length=0; PU.load(); PU.render();
 
   /* Canlı arka plan teması */
@@ -2312,11 +2325,44 @@ function tick(){
   const el=document.getElementById('h-mult');
   el.style.color=totalMult>1.5?'#44ffff':totalMult>1.0?'#44ff88':totalMult>0.5?'#f5a623':'#ff4466';
 
-  /* 30. saniyede alan daralma uyarısı */
-  if(S.timeElapsed===30 && !S._narrowingWarned){
-    S._narrowingWarned=true;
-    playNarrowingWarning();
+  /* 10. saniyede geri sayım başlat */
+  if(S.timeElapsed>=10 && S.timeElapsed<=12 && !S._narrowingWarned){
+    const num=13-S.timeElapsed; /* 3,2,1 */
+    showDangerCountdown(num);
+    playCountdownBeep(num);
+    if(S.timeElapsed===12) S._narrowingWarned=true;
   }
+  /* 13. saniyede çizgi hareket etmeye başlar */
+  if(S.timeElapsed===13){
+    S.dangerLineMoving=true;
+    hideDangerCountdown();
+  }
+}
+
+function showDangerCountdown(num){
+  const el=document.getElementById('danger-countdown');
+  const numEl=document.getElementById('danger-countdown-num');
+  if(!el||!numEl)return;
+  numEl.textContent=num;
+  const c=S.cfg;
+  el.style.display='block';
+  el.style.top=(c?c.dangerY-60:120)+'px';
+}
+function hideDangerCountdown(){
+  const el=document.getElementById('danger-countdown');
+  if(el)el.style.display='none';
+}
+function playCountdownBeep(num){
+  if(!sfxOn||!AC)return;
+  try{
+    const freq=num===1?880:num===2?660:440;
+    const o=AC.createOscillator();const g=AC.createGain();
+    o.connect(g);g.connect(AC.destination);
+    o.type='sine';o.frequency.value=freq;
+    g.gain.setValueAtTime(0.25,AC.currentTime);
+    g.gain.linearRampToValueAtTime(0,AC.currentTime+0.18);
+    o.start(AC.currentTime);o.stop(AC.currentTime+0.2);
+  }catch{}
 }
 
 function playNarrowingWarning(){
@@ -2333,7 +2379,8 @@ function playNarrowingWarning(){
   }
   /* Uyarı toast */
   showToast('⚠️ Alan daralıyor! Hızlan!');
-  /* Uyarı sesi */
+  /* Ses kapalıysa çalma */
+  if(!sfxOn||!AC)return;
   try{
     const o=AC.createOscillator();const g=AC.createGain();
     o.connect(g);g.connect(AC.destination);
@@ -2345,6 +2392,7 @@ function playNarrowingWarning(){
     o.start(AC.currentTime);o.stop(AC.currentTime+0.5);
     /* İkinci bip */
     setTimeout(()=>{
+      if(!sfxOn||!AC)return;
       try{
         const o2=AC.createOscillator();const g2=AC.createGain();
         o2.connect(g2);g2.connect(AC.destination);
@@ -2412,11 +2460,12 @@ function physics(dt){
   for(const f of S.fruits){
     if(f.merged)continue;
     f.vy+=c.gravity*dt;f.y+=f.vy*dt;f.age+=dt;
-    /* Zigzag: sinüs tabanlı yatay hareket */
-    if(f.age<2.2){
-      f.vx=Math.sin(f.age*f.zzFreq)*f.zzAmp;
+    /* Zigzag: küçük meyveler için kısa ve hafif, büyüklerde yok */
+    if(f.age<1.2 && f.r<40){
+      f.vx=Math.sin(f.age*f.zzFreq)*f.zzAmp*(1-f.age/1.2);
     }else{
-      f.vx*=0.92; /* yerleşince sönümle */
+      f.vx*=0.88; /* hızlı sönümle — donmayı önler */
+      if(Math.abs(f.vx)<0.5) f.vx=0;
     }
     f.x+=f.vx*dt;
     if(f.y+f.r>c.floor){f.y=c.floor-f.r;f.vy=-Math.abs(f.vy)*.33;f.vx*=.78;if(Math.abs(f.vy)<28)f.vy=0;}
@@ -2472,14 +2521,37 @@ function physics(dt){
       if(rv<0){const im=rv*.42;a.vx+=im*nx;a.vy+=im*ny;b.vx-=im*nx;b.vy-=im*ny;}
     }
   }
-  S.fruits=S.fruits.filter(f=>!f.merged); /* her zaman temizle */
+  S.fruits=S.fruits.filter(f=>!f.merged);
 
-  /* Danger check — kazanırken veya animasyon sırasında atla */
-  if(!S.winPending){
+  /* ── Hareketli tehlike çizgisi güncellemesi ── */
+  if(S.dangerLineMoving && !S.winPending){
+    const minY=S.cfg.ch*0.40;
+    const maxY=S.cfg.ch*0.60;
+    const spd=Math.min(80, 18+(S.lv-1)*1.2);
+    S.dangerLineY+=S.dangerLineDir*spd*dt;
+    if(S.dangerLineY>=maxY){S.dangerLineY=maxY;S.dangerLineDir=-1;}
+    if(S.dangerLineY<=minY){S.dangerLineY=minY;S.dangerLineDir=1;}
+
+    /* Meyve merkezi çizginin üstünde mi? (%50+ üstte) */
+    let anyOver=false;
+    for(const f of S.fruits){
+      if(f.merged||f.age<0.5)continue;
+      if(f.y<S.dangerLineY){anyOver=true;break;}
+    }
+    if(anyOver){
+      S.dangerLineFruitTimer+=dt;
+      if(S.dangerLineFruitTimer>=2.0){
+        killGame('🚨 Meyve sınırı aştı!');
+      }
+    }else{
+      S.dangerLineFruitTimer=0;
+    }
+  }
+
+  /* Klasik üst sınır kontrolü (çizgi hareket başlamadan önce) */
+  if(!S.dangerLineMoving && !S.winPending){
     let danger=false;
-    const _narrowEl=Math.max(0,S.timeElapsed-30);
-    const checkDY=S.cfg.dangerY+Math.min(S.cfg.ch*0.15,_narrowEl*0.28);
-    for(const f of S.fruits){if(!f.merged&&f.y-f.r<checkDY&&f.age>1.3){danger=true;break;}}
+    for(const f of S.fruits){if(!f.merged&&f.y-f.r<S.cfg.dangerY&&f.age>1.3){danger=true;break;}}
     if(danger){S.dangerT+=dt;if(S.dangerT>1.8)killGame('🚨 Alan taştı!');}
     else S.dangerT=Math.max(0,S.dangerT-dt*2.5);
   }
@@ -2549,26 +2621,37 @@ function render(){
     ctx.fillRect(0,0,W,H);
   }
 
-  /* ── Tehlike çizgisi — 30sn sonra her levelde yavaşça aşağı iner ── */
-  let dy=c.dangerY;
-  const narrowStart=30;
-  const narrowElapsed=Math.max(0, S.timeElapsed-narrowStart);
-  const maxShift=c.ch*0.15;
-  const shift=Math.min(maxShift, narrowElapsed*0.28);
-  dy=c.dangerY+shift;
+  /* ── Tehlike çizgisi — hareketli sistem ── */
+  const dy = S.dangerLineMoving ? S.dangerLineY : S.cfg.dangerY;
+  const isMoving = S.dangerLineMoving;
+  const fruitOver = S.dangerLineFruitTimer > 0;
 
-  /* Çizgi rengi: daralıyorsa kırmızı pulse, değilse normal */
-  const isNarrowing=shift>1;
-  const pulse=isNarrowing?0.5+Math.abs(Math.sin(Date.now()/300))*0.5:1;
-  const lineAlpha=isNarrowing?(0.6+pulse*0.4):(S.dangerT>0?0.9:0.5);
-  const lineWidth=isNarrowing?3:2;
-  ctx.strokeStyle=`rgba(255,${isNarrowing?30:80},${isNarrowing?30:100},${lineAlpha})`;
+  /* Çizgi rengi */
+  const pulse = isMoving ? 0.6+Math.abs(Math.sin(Date.now()/250))*0.4 : 1;
+  const lineAlpha = isMoving ? (fruitOver?1.0:0.6+pulse*0.3) : (S.dangerT>0?0.9:0.5);
+  const lineWidth = isMoving ? (fruitOver?4:3) : 2;
+  const lineR = isMoving ? (fruitOver?255:255) : 255;
+  const lineG = isMoving ? (fruitOver?0:60) : 80;
+  const lineB = isMoving ? (fruitOver?0:60) : 100;
+  ctx.strokeStyle=`rgba(${lineR},${lineG},${lineB},${lineAlpha})`;
   ctx.lineWidth=lineWidth;
   ctx.setLineDash([8,6]);
-  if(isNarrowing){ctx.shadowColor='rgba(255,0,0,.6)';ctx.shadowBlur=8;}
+  if(isMoving){ctx.shadowColor='rgba(255,0,0,.7)';ctx.shadowBlur=fruitOver?18:8;}
   ctx.beginPath();ctx.moveTo(0,dy);ctx.lineTo(W,dy);ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.shadowBlur=0;
+  ctx.setLineDash([]);ctx.shadowBlur=0;
+
+  /* Meyve aşım uyarısı — kalan süre göstergesi */
+  if(fruitOver && S.dangerLineFruitTimer>0.2){
+    const remaining=Math.max(0,2.0-S.dangerLineFruitTimer);
+    const barW=(remaining/2.0)*W;
+    ctx.fillStyle=`rgba(255,0,0,0.55)`;
+    ctx.fillRect(0,dy-5,barW,5);
+    ctx.font='bold 13px Segoe UI';
+    ctx.fillStyle='#ff2222';
+    ctx.textAlign='center';
+    ctx.shadowColor='transparent';ctx.shadowBlur=0;
+    ctx.fillText(`⚠️ ${remaining.toFixed(1)}sn`,W/2,dy-12);
+  }
 
   /* Duvarlar */
   ctx.fillStyle='rgba(0,0,0,.5)';
@@ -3100,7 +3183,7 @@ function adClick(){
   /* Gerçek reklamda: izleme URL'i + Google Play yönlendirmesi */
   alert('🎮 Uygulama mağazasına yönlendiriliyor...\n(Gerçek reklamda Google Play açılacak)');
 }
-function stop(){S.dead=true;cancelAnimationFrame(S.rafId);clearInterval(S.timerId);MUS.stop();}
+function stop(){S.dead=true;cancelAnimationFrame(S.rafId);clearInterval(S.timerId);MUS.stop();hideDangerCountdown();}
 
 /* ══════════════════════════════════════════
    OYUN DURUMU KAYDET / YÜKLE
