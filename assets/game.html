@@ -868,6 +868,18 @@ window._fbReady=true;
       <span class="pu-icon">⚡</span><span style="font-size:8px">2×PUAN</span>
       <span class="pu-cnt" id="pu-x2-cnt">0</span>
     </button>
+    <button class="pu-btn" id="pu-upgrade" onclick="usePower('upgrade')" title="Yükselt">
+      <span class="pu-icon">⬆️</span><span style="font-size:8px">YÜKSELT</span>
+      <span class="pu-cnt" id="pu-upgrade-cnt">0</span>
+    </button>
+    <button class="pu-btn" id="pu-storm" onclick="usePower('storm')" title="Fırtına">
+      <span class="pu-icon">🌪️</span><span style="font-size:8px">FIRTINA</span>
+      <span class="pu-cnt" id="pu-storm-cnt">0</span>
+    </button>
+    <button class="pu-btn" id="pu-luck" onclick="usePower('luck')" title="Şans">
+      <span class="pu-icon">🔮</span><span style="font-size:8px">ŞANS</span>
+      <span class="pu-cnt" id="pu-luck-cnt">0</span>
+    </button>
     <div class="store-btn" onclick="openStore()">💎<span>MAĞAZA</span></div>
     <div class="mission-btn" id="mis-btn" onclick="openMissions()">📋<span>GÖREV</span>
       <span id="mis-badge" style="background:#e94560;color:#fff;border-radius:6px;padding:1px 4px;font-size:8px;display:none">!</span>
@@ -1928,8 +1940,8 @@ class Fruit{
     this.r=FR[t][1];this.vx=0;this.vy=80;
     this.merged=false;this.age=0;
     /* Zigzag */
-    this.zzAmp=(18+Math.random()*28)*(Math.random()>.5?1:-1);
-    this.zzFreq=2.5+Math.random()*3.5;
+    this.zzAmp=(8+Math.random()*12)*(Math.random()>.5?1:-1);
+    this.zzFreq=2+Math.random()*2.5;
   }
 }
 
@@ -2173,9 +2185,12 @@ const BG_THEMES=[
 ];
 
 function setBgTheme(lv){
+  /* Düşük end cihazlarda animasyonu atla — siyah ekran önleme */
+  const isLowEnd=(navigator.hardwareConcurrency||4)<=4||(navigator.deviceMemory||4)<=2;
   const t=BG_THEMES[(lv-1)%BG_THEMES.length];
   const bg=document.getElementById('bg-anim');
   if(!bg)return;
+  if(isLowEnd){bg.innerHTML='';document.body.style.background=t.bg;return;}
   bg.innerHTML='';
   document.body.style.background=t.bg;
   const W=window.innerWidth, H=window.innerHeight;
@@ -2501,7 +2516,41 @@ CV.addEventListener('mousemove',e=>{if(!S.dead)S.dropX=clampX(e.clientX);});
 CV.addEventListener('click',    e=>{if(!S.dead&&!S.dropping)drop(clampX(e.clientX));});
 CV.addEventListener('touchstart',e=>{
   e.preventDefault();
-  if(!S.dead){S.dropX=clampX(e.touches[0].clientX);drop(S.dropX);}
+  if(S.dead) return;
+  const touchX=e.touches[0].clientX;
+  const rect=CV.getBoundingClientRect();
+  const scaleX=S.cfg.cw/rect.width;
+  const canvasX=(touchX-rect.left)*scaleX;
+  const touchY=e.touches[0].clientY;
+  const canvasY=(touchY-rect.top)*(S.cfg.ch/rect.height);
+
+  /* Yükselt modu aktifse — dokunulan meyveyi yükselt */
+  if(PU.upgradeMode){
+    let closest=null, minDist=9999;
+    for(const f of S.fruits){
+      if(f.merged)continue;
+      const d=Math.sqrt((f.x-canvasX)**2+(f.y-canvasY)**2);
+      if(d<f.r*2.5 && d<minDist){minDist=d;closest=f;}
+    }
+    if(closest && closest.t < FR.length-1){
+      /* Meyveyi bir üst seviyeye yükselt */
+      addSparks(closest.x,closest.y,FR[closest.t+1][5],closest.t+1);
+      closest.t++;
+      closest.r=FR[closest.t][1];
+      PU.stock.upgrade--; PU.upgradeMode=false;
+      PU.save(); PU.render();
+      showToast('⬆️ Meyve yükseltildi! '+FR[closest.t][0]);
+      if(navigator.vibrate) navigator.vibrate(60);
+    } else if(closest && closest.t >= FR.length-1){
+      showToast('⬆️ Bu meyve zaten en üst!');
+    } else {
+      showToast('⬆️ Meyveye daha yakın dokun!');
+    }
+    return;
+  }
+
+  S.dropX=clampX(touchX);
+  drop(S.dropX);
 },{passive:false});
 CV.addEventListener('touchmove',e=>{
   e.preventDefault();
@@ -2543,8 +2592,8 @@ function physics(dt){
     if(f.merged)continue;
     f.vy+=c.gravity*dt;f.y+=f.vy*dt;f.age+=dt;
     /* Zigzag: küçük meyveler için kısa ve hafif, büyüklerde yok */
-    if(f.age<0.7 && f.r<35){
-      f.vx=Math.sin(f.age*f.zzFreq)*f.zzAmp*(1-f.age/0.7);
+    if(f.age<0.4 && f.r<30){
+      f.vx=Math.sin(f.age*f.zzFreq)*f.zzAmp*(1-f.age/0.4);
     }else{
       f.vx*=0.88; /* hızlı sönümle — donmayı önler */
       if(Math.abs(f.vx)<0.5) f.vx=0;
@@ -2582,7 +2631,9 @@ function physics(dt){
         if(navigator.vibrate)navigator.vibrate(15);
         /* Görev ilerlemesi */
         missionProgress('m_merges',1);
+        missionProgress('m_merges2',1);
         missionProgress('m_score',pts);
+        missionProgress('m_score2',pts);
         snd(a.t+1,true);
         document.getElementById('h-sc').textContent=S.lvSc.toLocaleString();
         document.getElementById('h-tot').textContent=S.totSc.toLocaleString();
@@ -2592,7 +2643,7 @@ function physics(dt){
           S.dropping=true;
           S.winPending=true;
           S.winFruit=nf;
-          if(a.t+1===FR.length-1) missionProgress('m_watermelons',1);
+          /* karpuz görevi kaldırıldı */
           break outer;
         }
         continue outer;
@@ -2606,7 +2657,7 @@ function physics(dt){
   S.fruits=S.fruits.filter(f=>!f.merged);
 
   /* ── Hareketli tehlike çizgisi güncellemesi ── */
-  if(S.dangerLineMoving && !S.winPending){
+  if(S.dangerLineMoving){
     const minY=S.cfg.ch*0.40;
     const maxY=S.cfg.ch*0.60;
     const spd=Math.min(80, 18+(S.lv-1)*1.2);
@@ -2614,19 +2665,22 @@ function physics(dt){
     if(S.dangerLineY>=maxY){S.dangerLineY=maxY;S.dangerLineDir=-1;}
     if(S.dangerLineY<=minY){S.dangerLineY=minY;S.dangerLineDir=1;}
 
-    /* Meyve merkezi çizginin üstünde mi? (%50+ üstte) */
-    let anyOver=false;
-    for(const f of S.fruits){
-      if(f.merged||f.age<0.5)continue;
-      if(f.y<S.dangerLineY){anyOver=true;break;}
-    }
-    if(anyOver){
-      S.dangerLineFruitTimer+=dt;
-      if(S.dangerLineFruitTimer>=2.0){
-        killGame('🚨 Meyve sınırı aştı!');
+    if(!S.winPending){
+      /* Meyvenin %50'sinden fazlası çizginin üstündeyse = merkezi çizginin üstünde */
+      let anyOver=false;
+      for(const f of S.fruits){
+        if(f.merged||f.age<0.5)continue;
+        /* Merkez çizginin üstündeyse (y küçükse) → üstte */
+        if(f.y < S.dangerLineY){anyOver=true;break;}
       }
-    }else{
-      S.dangerLineFruitTimer=0;
+      if(anyOver){
+        S.dangerLineFruitTimer+=dt;
+        if(S.dangerLineFruitTimer>=2.0){
+          killGame('🚨 Meyve sınırı aştı!');
+        }
+      }else{
+        S.dangerLineFruitTimer=Math.max(0, S.dangerLineFruitTimer-dt*3);
+      }
     }
   }
 
@@ -2722,17 +2776,23 @@ function render(){
   ctx.beginPath();ctx.moveTo(0,dy);ctx.lineTo(W,dy);ctx.stroke();
   ctx.setLineDash([]);ctx.shadowBlur=0;
 
-  /* Meyve aşım uyarısı — kalan süre göstergesi */
-  if(fruitOver && S.dangerLineFruitTimer>0.2){
+  /* Meyve aşım uyarısı */
+  if(fruitOver && S.dangerLineFruitTimer>0.1){
     const remaining=Math.max(0,2.0-S.dangerLineFruitTimer);
-    const barW=(remaining/2.0)*W;
-    ctx.fillStyle=`rgba(255,0,0,0.55)`;
-    ctx.fillRect(0,dy-5,barW,5);
-    ctx.font='bold 13px Segoe UI';
-    ctx.fillStyle='#ff2222';
+    const pct=S.dangerLineFruitTimer/2.0;
+    /* Kırmızı overlay — tehlike hissiyatı */
+    ctx.fillStyle=`rgba(255,0,0,${Math.min(0.35,pct*0.35)})`;
+    ctx.fillRect(0,0,W,H);
+    /* Üst bar */
+    ctx.fillStyle='rgba(255,0,0,0.7)';
+    ctx.fillRect(0,0,W*(1-pct),8);
+    /* Büyük uyarı yazısı */
+    ctx.font='bold 22px Segoe UI';
+    ctx.fillStyle='#ffffff';
     ctx.textAlign='center';
-    ctx.shadowColor='transparent';ctx.shadowBlur=0;
-    ctx.fillText(`⚠️ ${remaining.toFixed(1)}sn`,W/2,dy-12);
+    ctx.shadowColor='#ff0000';ctx.shadowBlur=15;
+    ctx.fillText(`⚠️ ${remaining.toFixed(1)}sn`,W/2,dy-18);
+    ctx.shadowBlur=0;
   }
 
   /* Duvarlar */
@@ -2976,8 +3036,9 @@ function showBadgeToast(bd){
    POWER-UP SİSTEMİ
 ══════════════════════════════════════════ */
 const PU={
-  stock:{bomb:0,freeze:0,x2:0},
+  stock:{bomb:0,freeze:0,x2:0,upgrade:0,storm:0,luck:0},
   x2Active:false, x2Timer:0, freezeActive:false, freezeTimer:0,
+  upgradeMode:false,
   activePower:null,
 
   add(type,n=1){
@@ -2985,21 +3046,26 @@ const PU={
     this.save(); this.render();
   },
   save(){try{localStorage.setItem('suika_pu',JSON.stringify(this.stock));}catch(e){}},
-  load(){try{const d=JSON.parse(localStorage.getItem('suika_pu')||'{}');this.stock={bomb:d.bomb||0,freeze:d.freeze||0,x2:d.x2||0};}catch(e){}},
+  load(){try{
+    const d=JSON.parse(localStorage.getItem('suika_pu')||'{}');
+    this.stock={bomb:d.bomb||0,freeze:d.freeze||0,x2:d.x2||0,
+                upgrade:d.upgrade||0,storm:d.storm||0,luck:d.luck||0};
+  }catch(e){}},
   render(){
-    ['bomb','freeze','x2'].forEach(t=>{
+    ['bomb','freeze','x2','upgrade','storm','luck'].forEach(t=>{
       const cnt=this.stock[t]||0;
       const el=document.getElementById('pu-'+t);
       const cel=document.getElementById('pu-'+t+'-cnt');
-      if(el)el.disabled=cnt<=0&&!this.x2Active;
+      if(el) el.disabled=cnt<=0&&!(t==='x2'&&this.x2Active)&&!(t==='upgrade'&&this.upgradeMode);
       if(cel){cel.textContent=cnt;cel.style.background=cnt>0?'#e94560':'#555';}
     });
-    /* x2 zamanlayıcı */
     const x2el=document.getElementById('pu-x2');
     if(x2el){
       x2el.classList.toggle('active',this.x2Active);
       if(this.x2Active) document.getElementById('pu-x2-cnt').textContent=Math.ceil(this.x2Timer)+'s';
     }
+    const upEl=document.getElementById('pu-upgrade');
+    if(upEl) upEl.classList.toggle('active',this.upgradeMode);
   },
   update(dt){
     if(this.x2Active){ this.x2Timer-=dt; if(this.x2Timer<=0){this.x2Active=false; this.x2Timer=0;} }
@@ -3040,9 +3106,43 @@ function usePower(type){
     PU.stock.x2--; PU.save(); PU.render();
     showToast('⚡ 2× PUAN 10sn aktif!');
     if(navigator.vibrate)navigator.vibrate(50);
+  } else if(type==='upgrade'){
+    if(PU.stock.upgrade<=0){showToast('⬆️ Yükselt yok! Görevlerden kazan.');return;}
+    if(PU.upgradeMode){
+      /* İkinci tıklama — iptal */
+      PU.upgradeMode=false; PU.render();
+      showToast('⬆️ İptal edildi.');
+      return;
+    }
+    PU.upgradeMode=true; PU.render();
+    showToast('⬆️ Yükseltmek istediğin meyveye dokun!');
+  } else if(type==='storm'){
+    if(PU.stock.storm<=0){showToast('🌪️ Fırtına yok! Görevlerden kazan.');return;}
+    /* Tüm meyvelere rastgele yatay itme */
+    S.fruits.forEach(f=>{
+      if(!f.merged){
+        f.vx+=(Math.random()-0.5)*600;
+        f.vy-=Math.random()*200;
+      }
+    });
+    PU.stock.storm--; PU.save(); PU.render();
+    showToast('🌪️ FIRTINA! Meyveler karıştı!');
+    if(navigator.vibrate)navigator.vibrate([50,30,100,30,50]);
+    /* Ekran efekti */
+    const fl=document.createElement('div');
+    fl.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(100,180,255,.25);pointer-events:none;z-index:999;';
+    document.body.appendChild(fl);
+    setTimeout(()=>fl.remove(),300);
+  } else if(type==='luck'){
+    if(PU.stock.luck<=0){showToast('🔮 Şans yok! Görevlerden kazan.');return;}
+    /* Bir sonraki düşen meyve hedef meyve olsun */
+    S.curType=S.cfg.target;
+    updNxt();
+    PU.stock.luck--; PU.save(); PU.render();
+    showToast('🔮 ŞANS! Sıradaki meyve hedef meyven!');
+    if(navigator.vibrate)navigator.vibrate(80);
   }
 }
-
 let _toastTimer=null;
 function showToast(msg){
   const area=document.getElementById('game-toast-area');
@@ -3065,10 +3165,12 @@ function showToast(msg){
    GÜNLÜK GÖREVLER
 ══════════════════════════════════════════ */
 const MISSION_DEFS=[
-  {id:'m_watermelons', icon:'🍉', name:'3 Karpuz Yap',       target:3,  reward:{type:'bomb',n:1},   rewardTxt:'+1 💣'},
-  {id:'m_merges',      icon:'🔀', name:'50 Birleşim Yap',    target:50, reward:{type:'x2',n:1},     rewardTxt:'+1 ⚡'},
-  {id:'m_score',       icon:'🏆', name:'500 Puan Kazan',     target:500,reward:{type:'freeze',n:1}, rewardTxt:'+1 ❄️'},
-  {id:'m_levels',      icon:'⬆️', name:'3 Level Geç',        target:3,  reward:{type:'bomb',n:2},   rewardTxt:'+2 💣'},
+  {id:'m_merges',      icon:'🔀', name:'50 Birleşim Yap',    target:50,  reward:{type:'x2',n:1},     rewardTxt:'+1 ⚡'},
+  {id:'m_score',       icon:'🏆', name:'1000 Puan Kazan',   target:1000,reward:{type:'upgrade',n:1},rewardTxt:'+1 ⬆️'},
+  {id:'m_levels',      icon:'⬆️', name:'3 Level Geç',        target:3,   reward:{type:'freeze',n:1}, rewardTxt:'+1 ❄️'},
+  {id:'m_levels2',     icon:'🚀', name:'5 Level Geç',        target:5,   reward:{type:'storm',n:1},  rewardTxt:'+1 🌪️'},
+  {id:'m_merges2',     icon:'⚡', name:'100 Birleşim Yap',   target:100, reward:{type:'luck',n:1},   rewardTxt:'+1 🔮'},
+  {id:'m_score2',      icon:'💎', name:'5000 Puan Kazan',   target:5000,reward:{type:'bomb',n:1},   rewardTxt:'+1 💣'},
 ];
 
 function getMissionState(){
@@ -3353,6 +3455,13 @@ function resumeGame(){
 
   resizeCanvas(cfg.cw, cfg.ch);
 
+  /* Hedef meyveyi getLevelTarget'dan yeniden hesapla — eski save uyumu */
+  cfg.target = getLevelTarget(st.lv);
+  const _hEl=document.getElementById('h-hedef');
+  if(_hEl) _hEl.textContent=FR[cfg.target][0];
+  const _hHud=document.getElementById('h-hedef-hud');
+  if(_hHud) _hHud.textContent=FR[cfg.target][0];
+
   document.getElementById('h-lv').textContent = S.lv;
   document.getElementById('h-sc').textContent = S.lvSc.toLocaleString();
   document.getElementById('h-tot').textContent = S.totSc.toLocaleString();
@@ -3464,9 +3573,17 @@ async function winLevel(){
   if(isNewRecord) showToast('🏆 YENİ REKOR! '+S.totSc.toLocaleString()+' puan!');
 
   /* Level ödülü ver */
-  const rewardTypes=[{type:'bomb',emoji:'💣',name:'Bomba'},{type:'freeze',emoji:'❄️',name:'Dondur'},{type:'x2',emoji:'⚡',name:'2× Puan'}];
-  const ri=rewardTypes[(S.lv-1)%3];
-  const rAmt=(S.lv%10===0)?2:1;
+  const rewardTypes=[
+    {type:'bomb',   emoji:'💣',name:'Bomba'},
+    {type:'freeze', emoji:'❄️',name:'Dondur'},
+    {type:'x2',    emoji:'⚡',name:'2× Puan'},
+    {type:'upgrade',emoji:'⬆️',name:'Yükselt'},
+    {type:'storm',  emoji:'🌪️',name:'Fırtına'},
+    {type:'luck',   emoji:'🔮',name:'Şans'},
+  ];
+  const ri=rewardTypes[(S.lv-1)%6];
+  /* Nadir ödül — her 10 levelda 1 ekstra, normal levelda sadece 1 */
+  const rAmt=S.lv%10===0?2:1;
   PU.add(ri.type,rAmt);
   const rvEl=document.getElementById('lv-reward');
   const rvTxt=document.getElementById('lv-reward-txt');
@@ -3481,6 +3598,7 @@ async function winLevel(){
   S.lv = nextLvNum;
   checkBadgeUnlock(prevLv, S.lv);
   missionProgress('m_levels',1);
+  missionProgress('m_levels2',1);
   clearSavedGame();
   /* Hemen yeni level state'i kaydet — araya çıkılırsa devam etsin */
   try{saveGameState();}catch(e){}
@@ -3654,16 +3772,16 @@ function tutPrev(){if(tutStep>0){tutStep--;updateTutStep();}}
    GÜNLÜK ÖDÜL
 ══════════════════════════════════════════ */
 const DAILY_REWARDS=[
-  /* Gün 1 — Hoş geldin bonusu */ [{type:'bomb',n:2},{type:'freeze',n:1}],
-  /* Gün 2 */                      [{type:'freeze',n:1}],
-  /* Gün 3 */                      [{type:'x2',n:1}],
-  /* Gün 4 */                      [{type:'bomb',n:1},{type:'freeze',n:1}],
-  /* Gün 5 — Hafta ortası özel */  [{type:'x2',n:2},{type:'bomb',n:1}],
-  /* Gün 6 */                      [{type:'bomb',n:2}],
-  /* Gün 7 — Haftalık özel */      [{type:'bomb',n:2},{type:'freeze',n:2},{type:'x2',n:1}],
-  /* Gün 8 */                      [{type:'freeze',n:1}],
-  /* Gün 9 */                      [{type:'x2',n:1},{type:'bomb',n:1}],
-  /* Gün 10 — Mega bonus */        [{type:'bomb',n:3},{type:'freeze',n:2},{type:'x2',n:2}],
+  /* Gün 1  */ [{type:'bomb',n:1}],
+  /* Gün 2  */ [{type:'freeze',n:1}],
+  /* Gün 3  */ [{type:'x2',n:1}],
+  /* Gün 4  */ [{type:'upgrade',n:1}],
+  /* Gün 5 ⭐*/ [{type:'storm',n:1},{type:'freeze',n:1}],
+  /* Gün 6  */ [{type:'luck',n:1}],
+  /* Gün 7 ⭐*/ [{type:'bomb',n:1},{type:'upgrade',n:1}],
+  /* Gün 8  */ [{type:'x2',n:1}],
+  /* Gün 9  */ [{type:'storm',n:1}],
+  /* Gün 10👑*/ [{type:'bomb',n:1},{type:'luck',n:1},{type:'upgrade',n:1}],
 ];
 const SPECIAL_DAYS=[1,5,7,10];
 function checkDailyReward(){
