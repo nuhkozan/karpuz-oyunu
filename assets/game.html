@@ -413,9 +413,15 @@ window._fbReady=true;
   </div>
 </div>
 <!-- Ses butonları - barın hemen altında -->
-<div style="width:100%;max-width:440px;display:flex;justify-content:flex-end;gap:6px;padding:4px 8px;background:rgba(0,0,0,.2);position:sticky;top:46px;z-index:99;">
-  <button id="mus-btn" onclick="toggleMusic()" title="Müzik" style="background:rgba(0,0,0,.45);border:1.5px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 10px;font-size:14px;cursor:pointer;color:#fff;display:flex;align-items:center;gap:4px;">🎵 <span style="font-size:10px">MÜZİK</span></button>
-  <button id="sfx-btn" onclick="toggleSfx()" title="Ses" style="background:rgba(0,0,0,.45);border:1.5px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 10px;font-size:14px;cursor:pointer;color:#fff;display:flex;align-items:center;gap:4px;">🔊 <span style="font-size:10px">SES</span></button>
+<div style="width:100%;max-width:440px;display:flex;justify-content:space-between;align-items:center;gap:6px;padding:4px 8px;background:rgba(0,0,0,.2);position:sticky;top:46px;z-index:99;">
+  <div style="display:flex;gap:6px;">
+    <div class="store-btn" id="top-store-btn" onclick="openStore()" style="padding:4px 10px;font-size:13px;border-radius:20px;border:1.5px solid rgba(255,255,255,.2);background:rgba(0,0,0,.45);color:#fff;display:flex;align-items:center;gap:4px;cursor:pointer;">💎 <span style="font-size:10px">MAĞAZA</span></div>
+    <div id="top-mis-btn" onclick="openMissions()" style="padding:4px 10px;font-size:13px;border-radius:20px;border:1.5px solid rgba(255,255,255,.2);background:rgba(0,0,0,.45);color:#fff;display:flex;align-items:center;gap:4px;cursor:pointer;">📋 <span style="font-size:10px">GÖREV</span><span id="mis-badge" style="background:#e94560;color:#fff;border-radius:6px;padding:1px 4px;font-size:8px;display:none">!</span></div>
+  </div>
+  <div style="display:flex;gap:6px;">
+    <button id="mus-btn" onclick="toggleMusic()" title="Müzik" style="background:rgba(0,0,0,.45);border:1.5px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 10px;font-size:14px;cursor:pointer;color:#fff;display:flex;align-items:center;gap:4px;">🎵 <span style="font-size:10px">MÜZİK</span></button>
+    <button id="sfx-btn" onclick="toggleSfx()" title="Ses" style="background:rgba(0,0,0,.45);border:1.5px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 10px;font-size:14px;cursor:pointer;color:#fff;display:flex;align-items:center;gap:4px;">🔊 <span style="font-size:10px">SES</span></button>
+  </div>
 </div>
 
 <!-- Müzik toggle -->
@@ -855,7 +861,7 @@ window._fbReady=true;
   <div class="autodrop-wrap"><div class="autodrop-fill" id="adf" style="width:100%"></div></div>
   <!-- Toast alanı -->
   <div id="game-toast-area" style="width:100%;min-height:22px;text-align:center;margin:2px 0;font-size:12px;font-weight:700;color:#f5a623;opacity:0;transition:opacity .3s;"></div>
-  <div style="display:flex;gap:5px;align-items:center;margin-bottom:4px;width:100%">
+  <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;width:100%;justify-content:center;flex-wrap:wrap;">
     <button class="pu-btn" id="pu-bomb"   onclick="usePower('bomb')"   title="Bomba">
       <span class="pu-icon">💣</span><span style="font-size:8px">BOMBA</span>
       <span class="pu-cnt" id="pu-bomb-cnt">0</span>
@@ -880,14 +886,11 @@ window._fbReady=true;
       <span class="pu-icon">🔮</span><span style="font-size:8px">ŞANS</span>
       <span class="pu-cnt" id="pu-luck-cnt">0</span>
     </button>
-    <div class="store-btn" onclick="openStore()">💎<span>MAĞAZA</span></div>
-    <div class="mission-btn" id="mis-btn" onclick="openMissions()">📋<span>GÖREV</span>
-      <span id="mis-badge" style="background:#e94560;color:#fff;border-radius:6px;padding:1px 4px;font-size:8px;display:none">!</span>
-    </div>
-    <button class="pu-btn" id="pause-btn" onclick="togglePause()" title="Durdur/Devam" style="max-width:52px;background:rgba(0,0,0,.55);border-color:rgba(255,255,255,.25)">
+    <div style="flex:1;min-width:8px"></div>
+    <button class="pu-btn" id="pause-btn" onclick="togglePause()" title="Durdur/Devam" style="min-width:44px;background:rgba(0,0,0,.55);border-color:rgba(255,255,255,.25)">
       <span class="pu-icon" id="pause-icon">⏸</span>
     </button>
-    <button class="pu-btn" onclick="pauseAndHome()" title="Ana Sayfa" style="max-width:52px;background:rgba(0,0,0,.55);border-color:rgba(255,255,255,.25)">
+    <button class="pu-btn" onclick="pauseAndHome()" title="Ana Sayfa" style="min-width:44px;background:rgba(0,0,0,.55);border-color:rgba(255,255,255,.25)">
       <span class="pu-icon">🏠</span>
     </button>
   </div>
