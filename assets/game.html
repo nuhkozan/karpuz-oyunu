@@ -3121,28 +3121,28 @@ function usePower(type){
     showToast('⬆️ Yükseltmek istediğin meyveye dokun!');
   } else if(type==='storm'){
     if(PU.stock.storm<=0){showToast('🌪️ Fırtına yok! Görevlerden kazan.');return;}
-    /* Tüm meyvelere rastgele yatay itme */
+    /* Güçlü rastgele itme — gerçekten karıştırsın */
     S.fruits.forEach(f=>{
       if(!f.merged){
-        f.vx+=(Math.random()-0.5)*600;
-        f.vy-=Math.random()*200;
+        f.vx+=(Math.random()-0.5)*2400;
+        f.vy-=Math.random()*800+200;
       }
     });
     PU.stock.storm--; PU.save(); PU.render();
     showToast('🌪️ FIRTINA! Meyveler karıştı!');
-    if(navigator.vibrate)navigator.vibrate([50,30,100,30,50]);
-    /* Ekran efekti */
+    if(navigator.vibrate)navigator.vibrate([80,30,150,30,80]);
     const fl=document.createElement('div');
-    fl.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(100,180,255,.25);pointer-events:none;z-index:999;';
+    fl.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(100,180,255,.3);pointer-events:none;z-index:999;';
     document.body.appendChild(fl);
-    setTimeout(()=>fl.remove(),300);
+    setTimeout(()=>fl.remove(),400);
   } else if(type==='luck'){
     if(PU.stock.luck<=0){showToast('🔮 Şans yok! Görevlerden kazan.');return;}
-    /* Bir sonraki düşen meyve hedef meyve olsun */
+    /* Sıradaki 2 meyveyi hedef meyve yap — birleştirince level geçer */
     S.curType=S.cfg.target;
+    S.nxtType=S.cfg.target;
     updNxt();
     PU.stock.luck--; PU.save(); PU.render();
-    showToast('🔮 ŞANS! Sıradaki meyve hedef meyven!');
+    showToast('🔮 ŞANS! Sıradaki 2 meyve hedef meyven — birleştir!');
     if(navigator.vibrate)navigator.vibrate(80);
   }
 }
