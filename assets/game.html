@@ -2674,30 +2674,36 @@ function physics(dt){
     if(S.dangerLineY<=minY){S.dangerLineY=minY;S.dangerLineDir=1;}
 
     if(!S.winPending){
-      /* Meyvenin %50'sinden fazlası çizginin üstündeyse = merkezi çizginin üstünde */
+      /* Meyvenin %80'i çizginin üstündeyse → tehlike (f.y + f.r*0.6 < dangerLineY) */
       let anyOver=false;
       for(const f of S.fruits){
         if(f.merged||f.age<0.5)continue;
-        /* Merkez çizginin üstündeyse (y küçükse) → üstte */
-        if(f.y < S.dangerLineY){anyOver=true;break;}
+        if(f.y + f.r*0.6 < S.dangerLineY){anyOver=true;break;}
       }
       if(anyOver){
         S.dangerLineFruitTimer+=dt;
-        if(S.dangerLineFruitTimer>=2.0){
-          killGame('🚨 Meyve sınırı aştı!');
-        }
-      }else{
-        S.dangerLineFruitTimer=Math.max(0, S.dangerLineFruitTimer-dt*3);
+        if(S.dangerLineFruitTimer>=3.0) killGame('🚨 Meyve sınırı aştı!');
+      } else {
+        S.dangerLineFruitTimer=0; /* anında sıfırla */
       }
     }
   }
 
   /* Klasik üst sınır kontrolü (çizgi hareket başlamadan önce) */
   if(!S.dangerLineMoving && !S.winPending){
+    const dangerLineY=S.cfg.dangerY;
     let danger=false;
-    for(const f of S.fruits){if(!f.merged&&(f.y-f.r)<S.cfg.ch*0.20&&f.age>1.3){danger=true;break;}}
-    if(danger){S.dangerT+=dt;if(S.dangerT>1.8)killGame('🚨 Alan taştı!');}
-    else S.dangerT=Math.max(0,S.dangerT-dt*2.5);
+    for(const f of S.fruits){
+      if(f.merged||f.age<1.3)continue;
+      /* Meyvenin %80'i çizginin üstündeyse → tehlike */
+      if(f.y + f.r*0.6 < dangerLineY){danger=true;break;}
+    }
+    if(danger){
+      S.dangerT+=dt;
+      if(S.dangerT>3.0) killGame('🚨 Alan taştı!');
+    } else {
+      S.dangerT=0; /* anında sıfırla */
+    }
   }
 }
 
