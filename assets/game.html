@@ -894,7 +894,6 @@ window._fbReady=true;
       <span class="pu-icon">🏠</span>
     </button>
   </div>
-
 </div>
 
 <!-- ③ LEVEL COMPLETE -->
@@ -1295,7 +1294,6 @@ function mulberry32(a){
 
 /* ══════════════════════════════════════════
    RENDER  — meyveler belirgin daire + emoji
-}
 
 /* ══════════════════════════════════════════
    AUDIO
@@ -1915,8 +1913,8 @@ class Fruit{
     this.r=FR[t][1];this.vx=0;this.vy=80;
     this.merged=false;this.age=0;
     /* Zigzag */
-    this.zzAmp=(8+Math.random()*12)*(Math.random()>.5?1:-1);
-    this.zzFreq=2+Math.random()*2.5;
+    this.zzAmp=(1+Math.random()*2)*(Math.random()>.5?1:-1);
+    this.zzFreq=1+Math.random()*1;
   }
 }
 
@@ -2091,25 +2089,25 @@ const BG_THEMES=[
   { /* 0 - Bambu Ormanı */
     bg:'linear-gradient(160deg,#0a1a08 0%,#152e10 50%,#0a1a08 100%)',
     els:[
-      {e:'🎋',cnt:8,pos:'bottom',sz:[50,80],anim:'bgSway',dur:[2,4],side:true},
+      {e:'🎋',cnt:4,pos:'bottom',sz:[50,80],anim:'bgSway',dur:[2,4],side:true},
       {e:'🐼',cnt:2,pos:'bottom',sz:[30,40],anim:'bgSway',dur:[3,5],side:true},
-      {e:'🌿',cnt:10,pos:'mid',sz:[16,26],anim:'bgSway',dur:[2,3],side:false},
+      {e:'🌿',cnt:5,pos:'mid',sz:[16,26],anim:'bgSway',dur:[2,3],side:false},
     ]
   },
   { /* 1 - Orman */
     bg:'linear-gradient(160deg,#0a1f06 0%,#153010 50%,#0d1f08 100%)',
     els:[
       {e:'🌳',cnt:6,pos:'bottom',sz:[40,70],anim:'bgSway',dur:[3,5],side:true},
-      {e:'🌿',cnt:8,pos:'bottom',sz:[20,35],anim:'bgSway',dur:[2,4],side:false},
-      {e:'🍃',cnt:12,pos:'top',sz:[14,24],anim:'bgFall',dur:[4,8],side:false},
+      {e:'🌿',cnt:4,pos:'bottom',sz:[20,35],anim:'bgSway',dur:[2,4],side:false},
+      {e:'🍃',cnt:6,pos:'top',sz:[14,24],anim:'bgFall',dur:[4,8],side:false},
       {e:'🦋',cnt:4,pos:'mid',sz:[18,28],anim:'bgDrift',dur:[8,14],side:false},
     ]
   },
   { /* 2 - Sonbahar */
     bg:'linear-gradient(160deg,#2e1000 0%,#5a2a00 50%,#3a1500 100%)',
     els:[
-      {e:'🍂',cnt:14,pos:'top',sz:[14,26],anim:'bgFall',dur:[3,7],side:false},
-      {e:'🍁',cnt:10,pos:'top',sz:[16,28],anim:'bgFall',dur:[4,9],side:false},
+      {e:'🍂',cnt:7,pos:'top',sz:[14,26],anim:'bgFall',dur:[3,7],side:false},
+      {e:'🍁',cnt:5,pos:'top',sz:[16,28],anim:'bgFall',dur:[4,9],side:false},
       {e:'🌾',cnt:6,pos:'bottom',sz:[30,50],anim:'bgSway',dur:[2,4],side:true},
     ]
   },
@@ -2119,14 +2117,14 @@ const BG_THEMES=[
       {e:'🌊',cnt:5,pos:'bottom',sz:[40,70],anim:'bgWave',dur:[2,4],side:false},
       {e:'🐠',cnt:5,pos:'mid',sz:[20,32],anim:'bgDrift',dur:[6,12],side:false},
       {e:'🐡',cnt:3,pos:'mid',sz:[18,28],anim:'bgDrift',dur:[8,15],side:false},
-      {e:'🫧',cnt:10,pos:'bottom',sz:[12,20],anim:'bgFloat',dur:[3,7],side:false},
+      {e:'🫧',cnt:5,pos:'bottom',sz:[12,20],anim:'bgFloat',dur:[3,7],side:false},
     ]
   },
   { /* 4 - Gece Ormanı */
     bg:'linear-gradient(160deg,#050810 0%,#0a1020 50%,#050810 100%)',
     els:[
-      {e:'⭐',cnt:16,pos:'top',sz:[10,18],anim:'bgPulse',dur:[1,3],side:false},
-      {e:'✨',cnt:8,pos:'mid',sz:[14,22],anim:'bgPulse',dur:[1,2],side:false},
+      {e:'⭐',cnt:4,pos:'top',sz:[10,18],anim:'bgPulse',dur:[1,3],side:false},
+      {e:'✨',cnt:4,pos:'mid',sz:[14,22],anim:'bgPulse',dur:[1,2],side:false},
       {e:'🌙',cnt:1,pos:'top',sz:[40,40],anim:'bgPulse',dur:[4,4],side:false},
       {e:'🦗',cnt:4,pos:'bottom',sz:[16,22],anim:'bgSway',dur:[1,2],side:true},
     ]
@@ -2142,16 +2140,16 @@ const BG_THEMES=[
   { /* 6 - Mistik */
     bg:'linear-gradient(160deg,#0e0020 0%,#1a0040 50%,#0a0018 100%)',
     els:[
-      {e:'💫',cnt:10,pos:'mid',sz:[16,28],anim:'bgFloat',dur:[3,7],side:false},
+      {e:'💫',cnt:5,pos:'mid',sz:[16,28],anim:'bgFloat',dur:[3,7],side:false},
       {e:'🔮',cnt:4,pos:'mid',sz:[20,32],anim:'bgPulse',dur:[2,4],side:false},
-      {e:'✨',cnt:12,pos:'top',sz:[10,18],anim:'bgPulse',dur:[1,3],side:false},
+      {e:'✨',cnt:6,pos:'top',sz:[10,18],anim:'bgPulse',dur:[1,3],side:false},
       {e:'🌌',cnt:2,pos:'bottom',sz:[50,70],anim:'bgWave',dur:[6,8],side:false},
     ]
   },
   { /* 7 - Buz & Kar */
     bg:'linear-gradient(160deg,#001018 0%,#002040 50%,#001018 100%)',
     els:[
-      {e:'❄️',cnt:16,pos:'top',sz:[12,22],anim:'bgSnow',dur:[4,9],side:false},
+      {e:'❄️',cnt:4,pos:'top',sz:[12,22],anim:'bgSnow',dur:[4,9],side:false},
       {e:'🌨️',cnt:6,pos:'top',sz:[20,32],anim:'bgSnow',dur:[5,10],side:false},
       {e:'⛄',cnt:2,pos:'bottom',sz:[32,42],anim:'bgSway',dur:[4,6],side:true},
       {e:'🧊',cnt:5,pos:'bottom',sz:[16,24],anim:'bgPulse',dur:[2,4],side:false},
@@ -2487,8 +2485,17 @@ function clampX(cx){
   const pad=FR[S.curType][1]+3;
   return Math.max(S.cfg.wL+pad,Math.min(S.cfg.wR-pad,cx-r.left));
 }
+
+/* ── Göreceli dokunma kontrolü (Galaxy Mix stili) ── */
+let _touchStartX=null;
+let _touchStartDropX=null;
+let _touchMoved=false;
+const TOUCH_MOVE_THRESHOLD=8;   /* px — titremede yanlış drop olmasın */
+const TOUCH_SENSITIVITY=1.25;   /* 1.25x — küçük hareketle geniş alan */
+
 CV.addEventListener('mousemove',e=>{if(!S.dead)S.dropX=clampX(e.clientX);});
 CV.addEventListener('click',    e=>{if(!S.dead&&!S.dropping)drop(clampX(e.clientX));});
+
 CV.addEventListener('touchstart',e=>{
   e.preventDefault();
   if(S.dead) return;
@@ -2508,7 +2515,6 @@ CV.addEventListener('touchstart',e=>{
       if(d<f.r*2.5 && d<minDist){minDist=d;closest=f;}
     }
     if(closest && closest.t < FR.length-1){
-      /* Meyveyi bir üst seviyeye yükselt */
       addSparks(closest.x,closest.y,FR[closest.t+1][5],closest.t+1);
       closest.t++;
       closest.r=FR[closest.t][1];
@@ -2524,13 +2530,33 @@ CV.addEventListener('touchstart',e=>{
     return;
   }
 
-  S.dropX=clampX(touchX);
-  drop(S.dropX);
+  _touchStartX=touchX;
+  _touchStartDropX=S.dropX;
+  _touchMoved=false;
 },{passive:false});
+
 CV.addEventListener('touchmove',e=>{
   e.preventDefault();
-  if(!S.dead)S.dropX=clampX(e.touches[0].clientX);
+  if(S.dead||!_touchStartX) return;
+  const rect=CV.getBoundingClientRect();
+  const scaleX=S.cfg.cw/rect.width;
+  const dx=(e.touches[0].clientX-_touchStartX)*scaleX*TOUCH_SENSITIVITY;
+  if(Math.abs(dx)>TOUCH_MOVE_THRESHOLD) _touchMoved=true;
+  const pad=FR[S.curType][1]+3;
+  S.dropX=Math.max(S.cfg.wL+pad, Math.min(S.cfg.wR-pad, _touchStartDropX+dx));
 },{passive:false});
+
+CV.addEventListener('touchend',e=>{
+  e.preventDefault();
+  if(S.dead) return;
+  /* Tap da sürükleme de — her ikisinde de meyveyi düşür */
+  if(!S.dropping) drop(S.dropX);
+  _touchStartX=null; _touchStartDropX=null; _touchMoved=false;
+},{passive:false});
+
+CV.addEventListener('touchcancel',()=>{
+  _touchStartX=null; _touchStartDropX=null; _touchMoved=false;
+});
 
 function drop(x){
   if(S.dropping||S.dead)return;
@@ -2633,7 +2659,7 @@ function physics(dt){
 
   /* ── Hareketli tehlike çizgisi güncellemesi ── */
   if(S.dangerLineMoving){
-    const minY=S.cfg.ch*0.40;
+    const minY=S.cfg.ch*0.35;
     const maxY=S.cfg.ch*0.60;
     const spd=Math.min(80, 18+(S.lv-1)*1.2);
     S.dangerLineY+=S.dangerLineDir*spd*dt;
@@ -2737,17 +2763,18 @@ function render(){
   const isMoving = S.dangerLineMoving;
   const fruitOver = S.dangerLineFruitTimer > 0;
 
-  /* Çizgi rengi */
-  const pulse = isMoving ? 0.6+Math.abs(Math.sin(Date.now()/250))*0.4 : 1;
-  const lineAlpha = isMoving ? (fruitOver?1.0:0.6+pulse*0.3) : (S.dangerT>0?0.9:0.5);
-  const lineWidth = isMoving ? (fruitOver?4:3) : 2;
-  const lineR = isMoving ? (fruitOver?255:255) : 255;
-  const lineG = isMoving ? (fruitOver?0:60) : 80;
-  const lineB = isMoving ? (fruitOver?0:60) : 100;
+  /* Çizgi rengi — net ve canlı */
+  const pulse = isMoving ? 0.7+Math.abs(Math.sin(Date.now()/250))*0.3 : 1;
+  const lineAlpha = isMoving ? (fruitOver?1.0:0.75+pulse*0.25) : (S.dangerT>0?1.0:0.85);
+  const lineWidth = isMoving ? (fruitOver?5:4) : 3;
+  const lineR = 255;
+  const lineG = isMoving ? (fruitOver?0:30) : 30;
+  const lineB = isMoving ? (fruitOver?0:30) : 30;
   ctx.strokeStyle=`rgba(${lineR},${lineG},${lineB},${lineAlpha})`;
   ctx.lineWidth=lineWidth;
-  ctx.setLineDash([8,6]);
-  if(isMoving){ctx.shadowColor='rgba(255,0,0,.7)';ctx.shadowBlur=fruitOver?18:8;}
+  ctx.setLineDash([10,5]);
+  ctx.shadowColor='rgba(255,0,0,.9)';
+  ctx.shadowBlur=isMoving?(fruitOver?20:10):8;
   ctx.beginPath();ctx.moveTo(0,dy);ctx.lineTo(W,dy);ctx.stroke();
   ctx.setLineDash([]);ctx.shadowBlur=0;
 
@@ -2811,7 +2838,7 @@ function render(){
 function loop(ts){
   if(S.dead||_paused)return;
   if(!S.lastTs)S.lastTs=ts;
-  const dt=Math.min((ts-S.lastTs)/1000,.042);
+  const dt=Math.min((ts-S.lastTs)/1000,.033); /* max 33ms = 30fps floor */
   S.lastTs=ts;
 
   /* ── 1. WA animasyonu aktifse sadece onu çalıştır ── */
@@ -2885,59 +2912,55 @@ function showComboPop(x,y,cnt,pts){
 const SPARKS=[];
 const MERGE_RINGS=[];
 function addSparks(x,y,col,ft){
-  const count=15+Math.floor((ft||0)*1.5);
-  const sz=3+(ft||0)*0.5;
+  /* Eski cihazlar için spark sayısı sınırlı */
+  const count=Math.min(10, 8+Math.floor((ft||0)*0.8));
+  const sz=3+(ft||0)*0.4;
   for(let i=0;i<count;i++){
     const a=Math.random()*Math.PI*2;
-    const s=80+Math.random()*220;
-    SPARKS.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-90,life:0.8+Math.random()*0.4,maxLife:1.2,col:col||'#ffffff',sz:sz+Math.random()*3});
+    const s=80+Math.random()*180;
+    SPARKS.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-80,life:0.7+Math.random()*0.3,maxLife:1.0,col:col||'#ffffff',sz:sz+Math.random()*2});
   }
-  /* Şok dalgası halkası */
-  MERGE_RINGS.push({x,y,r:6,maxR:45+(ft||0)*4,life:1,col:col||'#ffffff'});
-  /* Büyük meyvelerde ekstra renk patlaması */
+  MERGE_RINGS.push({x,y,r:6,maxR:40+(ft||0)*3,life:1,col:col||'#ffffff'});
   if((ft||0)>=5){
-    const extra=['#ff4466','#ff8800','#44ff88','#ffff00','#44ccff','#ff44ff'];
-    for(let i=0;i<10;i++){
-      const a=(i/10)*Math.PI*2;
-      SPARKS.push({x,y,vx:Math.cos(a)*180,vy:Math.sin(a)*180-60,life:1.0,maxLife:1.0,col:extra[i%extra.length],sz:5+Math.random()*4});
+    const extra=['#ff4466','#ff8800','#44ff88','#ffff00'];
+    for(let i=0;i<6;i++){
+      const a=(i/6)*Math.PI*2;
+      SPARKS.push({x,y,vx:Math.cos(a)*150,vy:Math.sin(a)*150-50,life:0.8,maxLife:0.8,col:extra[i%extra.length],sz:4+Math.random()*3});
     }
-    /* İkinci halka */
-    MERGE_RINGS.push({x,y,r:6,maxR:70+(ft||0)*5,life:0.8,col:'#ffffff'});
   }
 }
 function updateSparks(dt){
   for(let i=SPARKS.length-1;i>=0;i--){
     const p=SPARKS[i];
     p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=280*dt;p.vx*=0.97;
-    p.life-=dt*1.4;
+    p.life-=dt*1.6;
     if(p.life<=0)SPARKS.splice(i,1);
   }
   for(let i=MERGE_RINGS.length-1;i>=0;i--){
     const r=MERGE_RINGS[i];
     r.r+=(r.maxR-r.r)*dt*9;
-    r.life-=dt*2.2;
+    r.life-=dt*2.5;
     if(r.life<=0)MERGE_RINGS.splice(i,1);
   }
 }
 function drawSparks(){
+  /* Halkalar — shadow sadece bir kez set et */
+  ctx.lineWidth=2.5;
   for(const r of MERGE_RINGS){
-    ctx.save();
-    ctx.globalAlpha=Math.max(0,r.life)*0.75;
+    ctx.globalAlpha=Math.max(0,r.life)*0.7;
     ctx.strokeStyle=r.col;
-    ctx.lineWidth=3;
-    ctx.shadowColor=r.col;ctx.shadowBlur=18;
+    ctx.shadowColor=r.col;ctx.shadowBlur=10;
     ctx.beginPath();ctx.arc(r.x,r.y,r.r,0,Math.PI*2);ctx.stroke();
-    ctx.restore();
   }
+  ctx.shadowBlur=0;
+  /* Spark'lar — save/restore yok, shadowBlur=0 */
   for(const p of SPARKS){
     const alpha=Math.max(0,p.life/(p.maxLife||1));
-    ctx.save();
     ctx.globalAlpha=alpha;
-    ctx.shadowColor=p.col;ctx.shadowBlur=12;
     ctx.fillStyle=p.col;
     ctx.beginPath();ctx.arc(p.x,p.y,p.sz||3,0,Math.PI*2);ctx.fill();
-    ctx.restore();
   }
+  ctx.globalAlpha=1;
 }
 
 /* ══════════════════════════════════════════
@@ -3058,8 +3081,8 @@ function usePower(type){
     sorted.forEach(f=>{
       f.merged=true;
       /* Büyük patlama efekti */
-      for(let i=0;i<20;i++) addSparks(f.x,f.y,'#ff6600');
-      for(let i=0;i<10;i++) addSparks(f.x,f.y,'#ffff00');
+      for(let i=0;i<10;i++) addSparks(f.x,f.y,'#ff6600');
+      for(let i=0;i<5;i++) addSparks(f.x,f.y,'#ffff00');
     });
     S.fruits=S.fruits.filter(f=>!f.merged);
     PU.stock.bomb--; PU.save(); PU.render();
@@ -3232,7 +3255,6 @@ function useExtraLife(){
 }
 
 function showRewardedAd(onRewarded){
-  /* Flutter rewarded video kanalı */
   try{
     if(typeof FlutterRewardedAd!=='undefined'){
       window._rewardedDone=function(){
@@ -3243,8 +3265,7 @@ function showRewardedAd(onRewarded){
       return;
     }
   }catch(e){}
-  /* Web/preview için sahte reklam */
-  showFakeAdOverlay(onRewarded);
+  showAd(onRewarded);
 }
 function elSkip(){
   document.getElementById('el-overlay').style.display='none';
@@ -3511,8 +3532,6 @@ function togglePause(){
   }
 }
 
-
-
 async function winLevel(){
   if(S.dead)return; stop();
   S.totSc = S._winScore ?? S.totSc;
@@ -3764,8 +3783,8 @@ function checkDailyReward(){
   const streak=((data.streak||0)%10)+1;
   const rewards=DAILY_REWARDS[(streak-1)%DAILY_REWARDS.length];
   const isSpecial=SPECIAL_DAYS.includes(streak);
-  const icons={bomb:'💣',freeze:'❄️',x2:'⚡'};
-  const names={bomb:'Bomba',freeze:'Dondur',x2:'2× Puan'};
+  const icons={bomb:'💣',freeze:'❄️',x2:'⚡',upgrade:'⬆️',storm:'🌪️',luck:'🔮'};
+  const names={bomb:'Bomba',freeze:'Dondur',x2:'2× Puan',upgrade:'Yükselt',storm:'Fırtına',luck:'Şans'};
 
   /* Ödül listesi */
   const rwEl=document.getElementById('daily-rewards');
@@ -3812,7 +3831,7 @@ function claimDailyReward(){
   rewards.forEach(r=>PU.add(r.type,r.n));
   document.getElementById('daily-overlay').style.display='none';
   if(rewards.length){
-    const names={bomb:'💣 Bomba',freeze:'❄️ Dondur',x2:'⚡ 2× Puan'};
+    const names={bomb:'💣 Bomba',freeze:'❄️ Dondur',x2:'⚡ 2× Puan',upgrade:'⬆️ Yükselt',storm:'🌪️ Fırtına',luck:'🔮 Şans'};
     showToast('🎁 Ödül: '+rewards.map(r=>`${r.n}× ${names[r.type]}`).join(', '));
   }
 }
