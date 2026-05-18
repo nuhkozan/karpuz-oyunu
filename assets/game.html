@@ -2678,7 +2678,8 @@ function physics(dt){
       let anyOver=false;
       for(const f of S.fruits){
         if(f.merged||f.age<0.5)continue;
-        if(f.y + f.r*0.6 < S.dangerLineY){anyOver=true;break;}
+        /* Meyvenin %33'ü çizginin üstündeyse → tehlike */
+        if(f.y - f.r*0.34 < S.dangerLineY){anyOver=true;break;}
       }
       if(anyOver){
         S.dangerLineFruitTimer+=dt;
@@ -2695,8 +2696,8 @@ function physics(dt){
     let danger=false;
     for(const f of S.fruits){
       if(f.merged||f.age<1.3)continue;
-      /* Meyvenin %80'i çizginin üstündeyse → tehlike */
-      if(f.y + f.r*0.6 < dangerLineY){danger=true;break;}
+      /* Meyvenin %33'ü çizginin üstündeyse → tehlike */
+      if(f.y - f.r*0.34 < dangerLineY){danger=true;break;}
     }
     if(danger){
       S.dangerT+=dt;
@@ -3067,7 +3068,15 @@ const PU={
       const cnt=this.stock[t]||0;
       const el=document.getElementById('pu-'+t);
       const cel=document.getElementById('pu-'+t+'-cnt');
-      if(el) el.disabled=cnt<=0&&!(t==='x2'&&this.x2Active)&&!(t==='upgrade'&&this.upgradeMode);
+      /* Dondur aktifse sadece freeze butonu aktif, diğerleri pasif */
+      if(this.freezeActive && t!=='freeze'){
+        if(el){el.disabled=true;el.style.opacity='0.35';}
+      } else {
+        if(el){
+          el.disabled=cnt<=0&&!(t==='x2'&&this.x2Active)&&!(t==='upgrade'&&this.upgradeMode);
+          el.style.opacity='';
+        }
+      }
       if(cel){cel.textContent=cnt;cel.style.background=cnt>0?'#e94560':'#555';}
     });
     const x2el=document.getElementById('pu-x2');
@@ -3080,7 +3089,13 @@ const PU={
   },
   update(dt){
     if(this.x2Active){ this.x2Timer-=dt; if(this.x2Timer<=0){this.x2Active=false; this.x2Timer=0;} }
-    if(this.freezeActive){ this.freezeTimer-=dt; if(this.freezeTimer<=0){this.freezeActive=false; this.freezeTimer=0;} }
+    if(this.freezeActive){
+      this.freezeTimer-=dt;
+      if(this.freezeTimer<=0){
+        this.freezeActive=false; this.freezeTimer=0;
+        this.render(); /* butonları tekrar aktif et */
+      }
+    }
     this.render();
   },
   multiplier(){ return this.x2Active?2:1; }
@@ -3148,10 +3163,9 @@ function usePower(type){
     /* Hedeften bir önceki meyveyi ver — iki tane birleşince level geçer */
     const luckType=Math.max(0, S.cfg.target-1);
     S.curType=luckType;
-    S.nxtType=luckType;
     updNxt();
     PU.stock.luck--; PU.save(); PU.render();
-    showToast('🔮 ŞANS! Sıradaki 2 meyve '+FR[luckType][0]+' — birleştir!');
+    showToast('🔮 ŞANS! Sıradaki meyve '+FR[luckType][0]+' — birleştir!');
     if(navigator.vibrate)navigator.vibrate(80);
   }
 }
