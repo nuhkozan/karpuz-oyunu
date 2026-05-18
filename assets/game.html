@@ -2522,6 +2522,13 @@ CV.addEventListener('touchstart',e=>{
       PU.save(); PU.render();
       showToast('⬆️ Meyve yükseltildi! '+FR[closest.t][0]);
       if(navigator.vibrate) navigator.vibrate(60);
+      /* Hedef meyveye ulaşıldıysa level bitir */
+      if(closest.t===S.cfg.target){
+        clearInterval(S.timerId);
+        S.dropping=true;
+        S.winPending=true;
+        S.winFruit=closest;
+      }
     } else if(closest && closest.t >= FR.length-1){
       showToast('⬆️ Bu meyve zaten en üst!');
     } else {
@@ -2688,7 +2695,7 @@ function physics(dt){
   /* Klasik üst sınır kontrolü (çizgi hareket başlamadan önce) */
   if(!S.dangerLineMoving && !S.winPending){
     let danger=false;
-    for(const f of S.fruits){if(!f.merged&&f.y-f.r<S.cfg.dangerY&&f.age>1.3){danger=true;break;}}
+    for(const f of S.fruits){if(!f.merged&&(f.y-f.r)<S.cfg.ch*0.20&&f.age>1.3){danger=true;break;}}
     if(danger){S.dangerT+=dt;if(S.dangerT>1.8)killGame('🚨 Alan taştı!');}
     else S.dangerT=Math.max(0,S.dangerT-dt*2.5);
   }
@@ -3132,12 +3139,13 @@ function usePower(type){
     setTimeout(()=>fl.remove(),400);
   } else if(type==='luck'){
     if(PU.stock.luck<=0){showToast('🔮 Şans yok! Görevlerden kazan.');return;}
-    /* Sıradaki 2 meyveyi hedef meyve yap — birleştirince level geçer */
-    S.curType=S.cfg.target;
-    S.nxtType=S.cfg.target;
+    /* Hedeften bir önceki meyveyi ver — iki tane birleşince level geçer */
+    const luckType=Math.max(0, S.cfg.target-1);
+    S.curType=luckType;
+    S.nxtType=luckType;
     updNxt();
     PU.stock.luck--; PU.save(); PU.render();
-    showToast('🔮 ŞANS! Sıradaki 2 meyve hedef meyven — birleştir!');
+    showToast('🔮 ŞANS! Sıradaki 2 meyve '+FR[luckType][0]+' — birleştir!');
     if(navigator.vibrate)navigator.vibrate(80);
   }
 }
