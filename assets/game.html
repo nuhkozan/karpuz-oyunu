@@ -1903,7 +1903,7 @@ const S={
   cfg:null,
   timerId:null,rafId:null,
   lastTs:null,dead:false,dangerT:0,
-  autoT:1.5,
+  autoT:3.0,
   winPending:false,winFruit:null,
 };
 
@@ -2233,7 +2233,7 @@ function beginLevel(){
   const cfg=lvlCfg(S.lv);
   S.cfg=cfg;S.lvSc=0;S.timeElapsed=0;
   S.dropping=false;S.fruits=[];S.dead=false;S.dangerT=0;S.lastTs=null;
-  S.autoT=1.5;S.winPending=false;S.winFruit=null;WA.active=false;
+  S.autoT=3.0;S.winPending=false;S.winFruit=null;WA.active=false;
   S._winBonus=0;S._winRank=0;S._winScore=null;S._extraUsed=false;
   S._narrowingWarned=false;
   /* Hareketli tehlike çizgisi */
@@ -2568,7 +2568,7 @@ CV.addEventListener('touchcancel',()=>{
 function drop(x){
   if(S.dropping||S.dead)return;
   S.dropping=true;
-  S.autoT=1.5; /* reset auto-drop timer */
+  S.autoT=3.0; /* reset auto-drop timer */
   const f=new Fruit(x,S.cfg.dangerY-FR[S.curType][1]-4,S.curType);
   f.vy=180;
   S.fruits.push(f);
@@ -2589,9 +2589,9 @@ function physics(dt){
   /* Auto-drop countdown */
   if(!S.dropping){
     S.autoT-=dt;
-    const pct=Math.max(0,S.autoT/1.5)*100;
+    const pct=Math.max(0,S.autoT/3.0)*100;
     document.getElementById('adf').style.width=pct+'%';
-    if(S.autoT<=0){ drop(S.dropX); S.autoT=1.5; }
+    if(S.autoT<=0){ drop(S.dropX); S.autoT=3.0; }
   }else{
     document.getElementById('adf').style.width='100%';
   }
@@ -3451,7 +3451,7 @@ function resumeGame(){
   S.dead = false;
   S.dangerT = 0;
   S.dropping = false;
-  S.autoT = 1.5;
+  S.autoT = 3.0;
   S.winPending = false;
   S.winFruit = null;
   S._extraUsed = false;
