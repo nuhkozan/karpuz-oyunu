@@ -10,7 +10,8 @@ import 'package:http/http.dart' as http;
 
 const String fbUrl = 'https://karpuz-oyunu-default-rtdb.europe-west1.firebasedatabase.app';
 const String _interstitialAdUnitId = 'ca-app-pub-5226177276862447/9323975802';
-const String _bannerAdUnitId = 'ca-app-pub-5226177276862447/5141790853';
+const String _bannerAdUnitId      = 'ca-app-pub-5226177276862447/5141790853';
+const String _rewardedAdUnitId    = 'ca-app-pub-5226177276862447/7990249812';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,11 +43,19 @@ class GameScreen extends StatefulWidget {
 class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   late final WebViewController _controller;
   bool _webViewReady = false;
+
+  // Interstitial
   InterstitialAd? _interstitialAd;
   bool _isLoadingAd = false;
   Timer? _retryTimer;
+
+  // Banner
   BannerAd? _bannerAd;
   bool _bannerAdLoaded = false;
+
+  // Rewarded
+  RewardedAd? _rewardedAd;
+  bool _isLoadingRewarded = false;
 
   @override
   void initState() {
@@ -54,22 +63,34 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _loadInterstitialAd();
     _loadBannerAd();
+    _loadRewardedAd();
+
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(Colors.transparent)
+
+      // â”€â”€ Ä°nterstitial â”€â”€
       ..addJavaScriptChannel('FlutterAd',
           onMessageReceived: (JavaScriptMessage msg) {
         if (msg.message == 'show') _showInterstitialAd();
       })
+
+      // â”€â”€ Rewarded â”€â”€
+      ..addJavaScriptChannel('FlutterRewardedAd',
+          onMessageReceived: (JavaScriptMessage msg) {
+        if (msg.message == 'show') _showRewardedAd();
+      })
+
+      // â”€â”€ Firebase Fetch â”€â”€
       ..addJavaScriptChannel('FlutterFetch',
           onMessageReceived: (JavaScriptMessage msg) async {
         Map<String, dynamic> data;
         try { data = jsonDecode(msg.message) as Map<String, dynamic>; }
         catch (e) { return; }
-        final id = data['id'] as String? ?? '';
-        final url = data['url'] as String? ?? '';
+        final id     = data['id']     as String? ?? '';
+        final url    = data['url']    as String? ?? '';
         final method = (data['method'] as String?) ?? 'GET';
-        final body = data['body'] as String?;
+        final body   = data['body']   as String?;
         try {
           http.Response response;
           final headers = {'Content-Type': 'application/json'};
@@ -88,14 +109,16 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
               'try{window._ftCb("$id",0,null)}catch(e){}');
         }
       })
+
+      // â”€â”€ Register â”€â”€
       ..addJavaScriptChannel('FlutterRegister',
           onMessageReceived: (JavaScriptMessage msg) async {
         Map<String, dynamic> data;
         try { data = jsonDecode(msg.message) as Map<String, dynamic>; }
         catch (e) { return; }
-        final id = data['id'] as String? ?? '';
+        final id   = data['id']   as String? ?? '';
         final name = data['name'] as String? ?? '';
-        final key = name.replaceAll(RegExp(r'[.#\$\[\]/]'), '_');
+        final key  = name.replaceAll(RegExp(r'[.#\$\[\]/]'), '_');
         try {
           final results = await Future.wait([
             http.get(Uri.parse('$fbUrl/users/$key.json'))
@@ -104,10 +127,10 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                 .timeout(const Duration(seconds: 10)),
           ]);
           final usersData = jsonDecode(results[0].body);
-          final lbData = jsonDecode(results[1].body);
+          final lbData    = jsonDecode(results[1].body);
           final taken =
               (usersData != null && usersData is Map && usersData['name'] != null) ||
-              (lbData != null && lbData is Map && lbData['name'] != null);
+              (lbData    != null && lbData    is Map && lbData['name']    != null);
           if (!taken) {
             await http.put(
               Uri.parse('$fbUrl/users/$key.json'),
@@ -122,12 +145,15 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
               'try{window._regCb("$id",null)}catch(e){}');
         }
       })
+
+      // â”€â”€ WhatsApp Share â”€â”€
       ..addJavaScriptChannel('FlutterShare',
           onMessageReceived: (JavaScriptMessage msg) async {
         final text = Uri.encodeComponent(msg.message);
-        final uri = Uri.parse('whatsapp://send?text=$text');
+        final uri  = Uri.parse('whatsapp://send?text=$text');
         if (await canLaunchUrl(uri)) await launchUrl(uri);
       })
+
       ..setNavigationDelegate(NavigationDelegate(
         onPageFinished: (url) {
           setState(() => _webViewReady = true);
@@ -138,12 +164,14 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         },
       ))
       ..loadFlutterAsset('assets/game.html');
+
     if (_controller.platform is AndroidWebViewController) {
       (_controller.platform as AndroidWebViewController)
           .setMediaPlaybackRequiresUserGesture(false);
     }
   }
 
+  // â”€â”€â”€ Banner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   void _loadBannerAd() {
     _bannerAd = BannerAd(
       adUnitId: _bannerAdUnitId,
@@ -160,6 +188,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     )..load();
   }
 
+  // â”€â”€â”€ Interstitial â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   void _loadInterstitialAd() {
     if (_isLoadingAd || _interstitialAd != null) return;
     _isLoadingAd = true;
@@ -209,6 +238,60 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     }
   }
 
+  // â”€â”€â”€ Rewarded â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  void _loadRewardedAd() {
+    if (_isLoadingRewarded || _rewardedAd != null) return;
+    _isLoadingRewarded = true;
+    RewardedAd.load(
+      adUnitId: _rewardedAdUnitId,
+      request: const AdRequest(),
+      rewardedAdLoadCallback: RewardedAdLoadCallback(
+        onAdLoaded: (ad) {
+          _isLoadingRewarded = false;
+          _rewardedAd = ad;
+        },
+        onAdFailedToLoad: (err) {
+          _isLoadingRewarded = false;
+          _rewardedAd = null;
+          Timer(const Duration(seconds: 10), _loadRewardedAd);
+        },
+      ),
+    );
+  }
+
+  void _showRewardedAd() {
+    if (_rewardedAd != null) {
+      _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
+        onAdDismissedFullScreenContent: (ad) {
+          ad.dispose();
+          _rewardedAd = null;
+          _loadRewardedAd();
+        },
+        onAdFailedToShowFullScreenContent: (ad, err) {
+          ad.dispose();
+          _rewardedAd = null;
+          _loadRewardedAd();
+          // Reklam gÃ¶sterilemedi â€” yine de Ã¶dÃ¼l ver
+          _controller.runJavaScript(
+            'try{if(typeof window._rewardedDone==="function")window._rewardedDone();}catch(e){}');
+        },
+      );
+      _rewardedAd!.show(
+        onUserEarnedReward: (ad, reward) {
+          // KullanÄ±cÄ± reklamÄ± izledi â†’ HTML'e bildir
+          _controller.runJavaScript(
+            'try{if(typeof window._rewardedDone==="function")window._rewardedDone();}catch(e){}');
+        },
+      );
+    } else {
+      // Reklam hazÄ±r deÄŸil â€” sahte reklam gÃ¶ster
+      _loadRewardedAd();
+      _controller.runJavaScript(
+        'try{if(typeof window.showFallbackAd==="function")window.showFallbackAd(true);}catch(e){try{if(typeof window._rewardedDone==="function")window._rewardedDone();}catch(e2){}}');
+    }
+  }
+
+  // â”€â”€â”€ Lifecycle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Future<void> _saveAndGoHome() async {
     await _controller.runJavaScript('''
       try{
@@ -232,6 +315,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     } else if (state == AppLifecycleState.resumed) {
       if (_interstitialAd == null && !_isLoadingAd) _loadInterstitialAd();
       if (_bannerAd == null) _loadBannerAd();
+      if (_rewardedAd == null && !_isLoadingRewarded) _loadRewardedAd();
       _controller.runJavaScript('''
         if(typeof musicOn!=="undefined" && musicOn &&
            typeof MUS!=="undefined" && MUS &&
@@ -247,6 +331,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     _retryTimer?.cancel();
     _interstitialAd?.dispose();
     _bannerAd?.dispose();
+    _rewardedAd?.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -257,7 +342,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
-        // Geri tuşu: kaydet, sonra uygulamayı minimize et
         await _saveAndGoHome();
         await SystemNavigator.pop();
       },
@@ -277,7 +361,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text('🍉', style: TextStyle(fontSize: 64)),
+                              Text('ğŸ‰', style: TextStyle(fontSize: 64)),
                               SizedBox(height: 16),
                               CircularProgressIndicator(color: Colors.green),
                             ],
