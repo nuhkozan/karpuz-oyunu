@@ -304,12 +304,14 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.inactive) {
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached) {
       _controller.runJavaScript('''
         try{
           if(typeof saveGameState==="function") saveGameState();
-          if(typeof MUS!=="undefined"&&MUS) MUS.stop();
+          if(typeof MUS!=="undefined"&&MUS){ MUS.stop(); MUS.muted=true; }
           if(typeof ambientInterval!=="undefined") clearInterval(ambientInterval);
+          if(typeof AC!=="undefined"&&AC&&AC.state!=="closed") AC.suspend();
         }catch(e){}
       ''');
     } else if (state == AppLifecycleState.resumed) {
