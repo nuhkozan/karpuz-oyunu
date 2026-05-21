@@ -52,6 +52,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   // Banner
   BannerAd? _bannerAd;
   bool _bannerAdLoaded = false;
+  bool _bannerVisible = false; // baÅŸlangÄ±Ã§ta gizli
 
   // Rewarded
   RewardedAd? _rewardedAd;
@@ -68,6 +69,14 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(Colors.transparent)
+
+      // â”€â”€ Banner gÃ¶ster/gizle â”€â”€
+      ..addJavaScriptChannel('FlutterBanner',
+          onMessageReceived: (JavaScriptMessage msg) {
+        setState(() {
+          _bannerVisible = msg.message == 'show';
+        });
+      })
 
       // â”€â”€ Ä°nterstitial â”€â”€
       ..addJavaScriptChannel('FlutterAd',
@@ -352,11 +361,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         body: SafeArea(
           child: Column(
             children: [
-              if (_bannerAdLoaded && _bannerAd != null)
-                SizedBox(
-                  height: _bannerAd!.size.height.toDouble(),
-                  child: AdWidget(ad: _bannerAd!),
-                ),
               Expanded(
                 child: Stack(
                   children: [
@@ -378,6 +382,11 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                   ],
                 ),
               ),
+              if (_bannerAdLoaded && _bannerAd != null && _bannerVisible)
+                SizedBox(
+                  height: _bannerAd!.size.height.toDouble(),
+                  child: AdWidget(ad: _bannerAd!),
+                ),
             ],
           ),
         ),
