@@ -352,6 +352,11 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         body: SafeArea(
           child: Column(
             children: [
+              if (_bannerAdLoaded && _bannerAd != null)
+                SizedBox(
+                  height: _bannerAd!.size.height.toDouble(),
+                  child: AdWidget(ad: _bannerAd!),
+                ),
               Expanded(
                 child: Stack(
                   children: [
@@ -373,11 +378,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                   ],
                 ),
               ),
-              if (_bannerAdLoaded && _bannerAd != null)
-                SizedBox(
-                  height: _bannerAd!.size.height.toDouble(),
-                  child: AdWidget(ad: _bannerAd!),
-                ),
             ],
           ),
         ),
