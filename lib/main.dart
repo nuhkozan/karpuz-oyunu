@@ -73,9 +73,12 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       // â”€â”€ Banner gÃ¶ster/gizle â”€â”€
       ..addJavaScriptChannel('FlutterBanner',
           onMessageReceived: (JavaScriptMessage msg) {
-        setState(() {
-          _bannerVisible = msg.message == 'show';
-        });
+        final show = msg.message == 'show';
+        if (_bannerVisible != show) {
+          setState(() {
+            _bannerVisible = show;
+          });
+        }
       })
 
       // â”€â”€ Ä°nterstitial â”€â”€
