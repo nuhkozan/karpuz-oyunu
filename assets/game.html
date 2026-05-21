@@ -3552,11 +3552,13 @@ function togglePause(){
     clearInterval(S.timerId);
     MUS.stop();
     saveGameState();
+    try{FlutterBanner&&FlutterBanner.postMessage('show');}catch(e){}
   } else {
     S.lastTs=null;
     S.timerId=setInterval(tick,1000);
     if(musicOn)MUS.start();
     S.rafId=requestAnimationFrame(loop);
+    try{FlutterBanner&&FlutterBanner.postMessage('hide');}catch(e){}
   }
 }
 
@@ -3635,6 +3637,7 @@ async function winLevel(){
 async function killGame(rsn){
   if(S.dead)return; stop();
   if(navigator.vibrate)navigator.vibrate([100,50,200]);
+  try{FlutterBanner&&FlutterBanner.postMessage('show');}catch(e){}
   const rank=await submitLB(S.user,S.totSc,S.lv);
 
   /* Ekran kırmızı flaş */
