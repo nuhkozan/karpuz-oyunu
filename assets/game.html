@@ -3449,6 +3449,7 @@ function resumeGame(){
   const st = loadGameState();
   if(!st) return;
   ensureAC();
+  try{FlutterBanner&&FlutterBanner.postMessage('hide');}catch(e){}
   _paused = false;
   const _pi = document.getElementById('pause-icon');
   if(_pi) _pi.textContent = '⏸';
@@ -3691,6 +3692,7 @@ function home(){saveGameState();stop();initUserScreen();show('s-user');setTimeou
 function backGame(){if(S.cfg)show('s-game');else show('s-user');}
 function pauseAndHome(){
   clearInterval(ambientInterval);
+  try{FlutterBanner&&FlutterBanner.postMessage('hide');}catch(e){}
   /* Pause state'i temizle */
   if(_paused){
     _paused=false;
