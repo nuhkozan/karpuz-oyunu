@@ -43,6 +43,7 @@ class GameScreen extends StatefulWidget {
 class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   late final WebViewController _controller;
   bool _webViewReady = false;
+  Timer? _loadTimeoutTimer;
 
   // Interstitial
   InterstitialAd? _interstitialAd;
@@ -168,6 +169,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
       ..setNavigationDelegate(NavigationDelegate(
         onPageFinished: (url) {
+          _loadTimeoutTimer?.cancel();
           setState(() => _webViewReady = true);
           if (_controller.platform is AndroidWebViewController) {
             (_controller.platform as AndroidWebViewController)
@@ -176,6 +178,13 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         },
       ))
       ..loadFlutterAsset('assets/game.html');
+
+    // Huawei gibi cihazlarda sayfa yÃ¼klenmezse 10sn sonra yeniden dene
+    _loadTimeoutTimer = Timer(const Duration(seconds: 10), () {
+      if (!_webViewReady) {
+        _controller.loadFlutterAsset('assets/game.html');
+      }
+    });
 
     if (_controller.platform is AndroidWebViewController) {
       (_controller.platform as AndroidWebViewController)
@@ -343,6 +352,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   @override
   void dispose() {
     _retryTimer?.cancel();
+    _loadTimeoutTimer?.cancel();
     _interstitialAd?.dispose();
     _bannerAd?.dispose();
     _rewardedAd?.dispose();
