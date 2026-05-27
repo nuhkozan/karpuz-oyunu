@@ -4,6 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/foundation.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'dart:convert';
@@ -17,6 +18,8 @@ const String _rewardedAdUnitId    = 'ca-app-pub-5226177276862447/7990249812';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Huawei/Xiaomi touch sorunu iÃ§in SurfaceView modu
+  WebViewPlatform.instance = AndroidWebViewPlatform();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   await MobileAds.instance.initialize();
@@ -174,8 +177,10 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
           _loadTimeoutTimer?.cancel();
           setState(() => _webViewReady = true);
           if (_controller.platform is AndroidWebViewController) {
-            (_controller.platform as AndroidWebViewController)
-                .setMediaPlaybackRequiresUserGesture(false);
+            final androidController = _controller.platform as AndroidWebViewController;
+            androidController.setMediaPlaybackRequiresUserGesture(false);
+            // SurfaceView: Huawei/Xiaomi touch sorunu iÃ§in
+            androidController.setDisplayWithHardwareAcceleration(true);
           }
         },
       ))
