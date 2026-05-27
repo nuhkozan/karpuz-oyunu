@@ -18,8 +18,6 @@ const String _rewardedAdUnitId    = 'ca-app-pub-5226177276862447/7990249812';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Huawei/Xiaomi touch sorunu iÃ§in SurfaceView modu
-  WebViewPlatform.instance = AndroidWebViewPlatform();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   await MobileAds.instance.initialize();
@@ -179,8 +177,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
           if (_controller.platform is AndroidWebViewController) {
             final androidController = _controller.platform as AndroidWebViewController;
             androidController.setMediaPlaybackRequiresUserGesture(false);
-            // SurfaceView: Huawei/Xiaomi touch sorunu iÃ§in
-            androidController.setDisplayWithHardwareAcceleration(true);
           }
         },
       ))
