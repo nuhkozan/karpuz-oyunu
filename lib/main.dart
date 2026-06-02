@@ -6,7 +6,6 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:in_app_review/in_app_review.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'package:http/http.dart' as http;
@@ -63,9 +62,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   RewardedAd? _rewardedAd;
   bool _isLoadingRewarded = false;
 
-  // In-App Review
-  final InAppReview _inAppReview = InAppReview.instance;
-
   @override
   void initState() {
     super.initState();
@@ -74,7 +70,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     _loadBannerAd();
     _loadRewardedAd();
 
-    // Her 20 dakikada bir otomatik interstitial reklam
+    // Her 30 dakikada bir otomatik interstitial reklam
     _periodicAdTimer = Timer.periodic(const Duration(minutes: 30), (timer) {
       if (!mounted) { timer.cancel(); return; }
       _showInterstitialAd();
@@ -105,13 +101,18 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         if (msg.message == 'show') _showRewardedAd();
       })
 
-      // -- Google Play Yorum (Level 8) --
+      // -- Google Play Yorum (Level 8) - url_launcher ile --
       ..addJavaScriptChannel('FlutterReview',
           onMessageReceived: (JavaScriptMessage msg) async {
         if (msg.message == 'show') {
           try {
-            if (await _inAppReview.isAvailable()) {
-              await _inAppReview.requestReview();
+            final uri = Uri.parse('market://details?id=com.nuhkozan.karpuz');
+            if (await canLaunchUrl(uri)) {
+              await launchUrl(uri);
+            } else {
+              final webUri = Uri.parse(
+                'https://play.google.com/store/apps/details?id=com.nuhkozan.karpuz');
+              await launchUrl(webUri);
             }
           } catch (e) {}
         }
@@ -202,7 +203,6 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       ))
       ..loadFlutterAsset('assets/game.html');
 
-    // Huawei gibi cihazlarda sayfa yuklenmezse 10sn sonra yeniden dene
     _loadTimeoutTimer = Timer(const Duration(seconds: 10), () {
       if (!_webViewReady) {
         _controller.loadFlutterAsset('assets/game.html');
