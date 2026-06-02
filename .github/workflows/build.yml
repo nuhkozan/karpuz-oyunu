@@ -16,6 +16,7 @@ jobs:
         with:
           flutter-version: '3.29.0'
           channel: 'stable'
+          cache: false
       - name: Setup
         run: |
           flutter create --org com.nuhkozan --project-name karpuz tmp_project
@@ -69,7 +70,7 @@ jobs:
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/keystore.jks
       - name: Flutter pub get
         run: |
-          flutter pub cache repair
+          rm -rf .dart_tool
           flutter pub get
       - name: Build Release APK (Amazon)
         env:
