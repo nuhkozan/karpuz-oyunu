@@ -3617,6 +3617,10 @@ async function winLevel(){
   setTimeout(()=>showChallengeStatus(),500);
 
   const prevLv=S.lv;
+  /* Level 8 tamamlandıysa Google Play yorum ekranı */
+  if(prevLv === 8){
+    try{ FlutterReview.postMessage('show'); }catch(e){}
+  }
   S.lv = nextLvNum;
   checkBadgeUnlock(prevLv, S.lv);
   missionProgress('m_levels',1);
