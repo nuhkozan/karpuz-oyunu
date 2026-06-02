@@ -68,7 +68,9 @@ jobs:
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/keystore.jks
       - name: Flutter pub get
-        run: flutter pub get
+        run: |
+          flutter pub cache repair
+          flutter pub get
       - name: Build Release APK (Amazon)
         env:
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
