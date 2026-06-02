@@ -4,7 +4,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/foundation.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
-import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'dart:convert';
@@ -56,7 +55,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   // Banner
   BannerAd? _bannerAd;
   bool _bannerAdLoaded = false;
-  bool _bannerVisible = false; // baÅŸlangÄ±Ã§ta gizli
+  bool _bannerVisible = false;
 
   // Rewarded
   RewardedAd? _rewardedAd;
@@ -72,9 +71,9 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(Colors.transparent)
+      ..setBackgroundColor(Colors.black) // Huawei touch fix: transparent yerine black
 
-      // â”€â”€ Banner gÃ¶ster/gizle â”€â”€
+      // ── Banner göster/gizle ──
       ..addJavaScriptChannel('FlutterBanner',
           onMessageReceived: (JavaScriptMessage msg) {
         final show = msg.message == 'show';
@@ -85,19 +84,19 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         }
       })
 
-      // â”€â”€ Ä°nterstitial â”€â”€
+      // ── İnterstitial ──
       ..addJavaScriptChannel('FlutterAd',
           onMessageReceived: (JavaScriptMessage msg) {
         if (msg.message == 'show') _showInterstitialAd();
       })
 
-      // â”€â”€ Rewarded â”€â”€
+      // ── Rewarded ──
       ..addJavaScriptChannel('FlutterRewardedAd',
           onMessageReceived: (JavaScriptMessage msg) {
         if (msg.message == 'show') _showRewardedAd();
       })
 
-      // â”€â”€ Firebase Fetch â”€â”€
+      // ── Firebase Fetch ──
       ..addJavaScriptChannel('FlutterFetch',
           onMessageReceived: (JavaScriptMessage msg) async {
         Map<String, dynamic> data;
@@ -126,7 +125,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         }
       })
 
-      // â”€â”€ Register â”€â”€
+      // ── Register ──
       ..addJavaScriptChannel('FlutterRegister',
           onMessageReceived: (JavaScriptMessage msg) async {
         Map<String, dynamic> data;
@@ -162,7 +161,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         }
       })
 
-      // â”€â”€ WhatsApp Share â”€â”€
+      // ── WhatsApp Share ──
       ..addJavaScriptChannel('FlutterShare',
           onMessageReceived: (JavaScriptMessage msg) async {
         final text = Uri.encodeComponent(msg.message);
@@ -182,7 +181,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       ))
       ..loadFlutterAsset('assets/game.html');
 
-    // Huawei gibi cihazlarda sayfa yÃ¼klenmezse 10sn sonra yeniden dene
+    // Huawei gibi cihazlarda sayfa yüklenmezse 10sn sonra yeniden dene
     _loadTimeoutTimer = Timer(const Duration(seconds: 10), () {
       if (!_webViewReady) {
         _controller.loadFlutterAsset('assets/game.html');
@@ -195,7 +194,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     }
   }
 
-  // â”€â”€â”€ Banner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Banner ───────────────────────────────────────────────
   void _loadBannerAd() {
     _bannerAd = BannerAd(
       adUnitId: _bannerAdUnitId,
@@ -212,7 +211,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     )..load();
   }
 
-  // â”€â”€â”€ Interstitial â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Interstitial ─────────────────────────────────────────
   void _loadInterstitialAd() {
     if (_isLoadingAd || _interstitialAd != null) return;
     _isLoadingAd = true;
@@ -262,7 +261,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     }
   }
 
-  // â”€â”€â”€ Rewarded â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Rewarded ─────────────────────────────────────────────
   void _loadRewardedAd() {
     if (_isLoadingRewarded || _rewardedAd != null) return;
     _isLoadingRewarded = true;
@@ -295,27 +294,24 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
           ad.dispose();
           _rewardedAd = null;
           _loadRewardedAd();
-          // Reklam gÃ¶sterilemedi â€” yine de Ã¶dÃ¼l ver
           _controller.runJavaScript(
             'try{if(typeof window._rewardedDone==="function")window._rewardedDone();}catch(e){}');
         },
       );
       _rewardedAd!.show(
         onUserEarnedReward: (ad, reward) {
-          // KullanÄ±cÄ± reklamÄ± izledi â†’ HTML'e bildir
           _controller.runJavaScript(
             'try{if(typeof window._rewardedDone==="function")window._rewardedDone();}catch(e){}');
         },
       );
     } else {
-      // Reklam hazÄ±r deÄŸil â€” sahte reklam gÃ¶ster
       _loadRewardedAd();
       _controller.runJavaScript(
         'try{if(typeof window.showFallbackAd==="function")window.showFallbackAd(true);}catch(e){try{if(typeof window._rewardedDone==="function")window._rewardedDone();}catch(e2){}}');
     }
   }
 
-  // â”€â”€â”€ Lifecycle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Lifecycle ────────────────────────────────────────────
   Future<void> _saveAndGoHome() async {
     await _controller.runJavaScript('''
       try{
@@ -395,7 +391,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text('ğŸ‰', style: TextStyle(fontSize: 64)),
+                              Text('🍉', style: TextStyle(fontSize: 64)),
                               SizedBox(height: 16),
                               CircularProgressIndicator(color: Colors.green),
                             ],
