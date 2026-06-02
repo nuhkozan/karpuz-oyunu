@@ -6,6 +6,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:in_app_review/in_app_review.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'package:http/http.dart' as http;
@@ -46,6 +47,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   late final WebViewController _controller;
   bool _webViewReady = false;
   Timer? _loadTimeoutTimer;
+  Timer? _periodicAdTimer;
 
   // Interstitial
   InterstitialAd? _interstitialAd;
@@ -61,6 +63,9 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   RewardedAd? _rewardedAd;
   bool _isLoadingRewarded = false;
 
+  // In-App Review
+  final InAppReview _inAppReview = InAppReview.instance;
+
   @override
   void initState() {
     super.initState();
@@ -69,34 +74,50 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     _loadBannerAd();
     _loadRewardedAd();
 
+    // Her 20 dakikada bir otomatik interstitial reklam
+    _periodicAdTimer = Timer.periodic(const Duration(minutes: 30), (timer) {
+      if (!mounted) { timer.cancel(); return; }
+      _showInterstitialAd();
+    });
+
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(Colors.black) // Huawei touch fix: transparent yerine black
+      ..setBackgroundColor(Colors.black) // Huawei touch fix
 
-      // ── Banner göster/gizle ──
+      // -- Banner goster/gizle --
       ..addJavaScriptChannel('FlutterBanner',
           onMessageReceived: (JavaScriptMessage msg) {
         final show = msg.message == 'show';
         if (_bannerVisible != show) {
-          setState(() {
-            _bannerVisible = show;
-          });
+          setState(() { _bannerVisible = show; });
         }
       })
 
-      // ── İnterstitial ──
+      // -- Interstitial --
       ..addJavaScriptChannel('FlutterAd',
           onMessageReceived: (JavaScriptMessage msg) {
         if (msg.message == 'show') _showInterstitialAd();
       })
 
-      // ── Rewarded ──
+      // -- Rewarded --
       ..addJavaScriptChannel('FlutterRewardedAd',
           onMessageReceived: (JavaScriptMessage msg) {
         if (msg.message == 'show') _showRewardedAd();
       })
 
-      // ── Firebase Fetch ──
+      // -- Google Play Yorum (Level 8) --
+      ..addJavaScriptChannel('FlutterReview',
+          onMessageReceived: (JavaScriptMessage msg) async {
+        if (msg.message == 'show') {
+          try {
+            if (await _inAppReview.isAvailable()) {
+              await _inAppReview.requestReview();
+            }
+          } catch (e) {}
+        }
+      })
+
+      // -- Firebase Fetch --
       ..addJavaScriptChannel('FlutterFetch',
           onMessageReceived: (JavaScriptMessage msg) async {
         Map<String, dynamic> data;
@@ -125,7 +146,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         }
       })
 
-      // ── Register ──
+      // -- Register --
       ..addJavaScriptChannel('FlutterRegister',
           onMessageReceived: (JavaScriptMessage msg) async {
         Map<String, dynamic> data;
@@ -161,7 +182,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         }
       })
 
-      // ── WhatsApp Share ──
+      // -- WhatsApp Share --
       ..addJavaScriptChannel('FlutterShare',
           onMessageReceived: (JavaScriptMessage msg) async {
         final text = Uri.encodeComponent(msg.message);
@@ -181,7 +202,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       ))
       ..loadFlutterAsset('assets/game.html');
 
-    // Huawei gibi cihazlarda sayfa yüklenmezse 10sn sonra yeniden dene
+    // Huawei gibi cihazlarda sayfa yuklenmezse 10sn sonra yeniden dene
     _loadTimeoutTimer = Timer(const Duration(seconds: 10), () {
       if (!_webViewReady) {
         _controller.loadFlutterAsset('assets/game.html');
@@ -194,7 +215,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     }
   }
 
-  // ─── Banner ───────────────────────────────────────────────
+  // --- Banner ---
   void _loadBannerAd() {
     _bannerAd = BannerAd(
       adUnitId: _bannerAdUnitId,
@@ -211,7 +232,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     )..load();
   }
 
-  // ─── Interstitial ─────────────────────────────────────────
+  // --- Interstitial ---
   void _loadInterstitialAd() {
     if (_isLoadingAd || _interstitialAd != null) return;
     _isLoadingAd = true;
@@ -261,7 +282,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     }
   }
 
-  // ─── Rewarded ─────────────────────────────────────────────
+  // --- Rewarded ---
   void _loadRewardedAd() {
     if (_isLoadingRewarded || _rewardedAd != null) return;
     _isLoadingRewarded = true;
@@ -311,7 +332,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     }
   }
 
-  // ─── Lifecycle ────────────────────────────────────────────
+  // --- Lifecycle ---
   Future<void> _saveAndGoHome() async {
     await _controller.runJavaScript('''
       try{
@@ -352,6 +373,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   void dispose() {
     _retryTimer?.cancel();
     _loadTimeoutTimer?.cancel();
+    _periodicAdTimer?.cancel();
     _interstitialAd?.dispose();
     _bannerAd?.dispose();
     _rewardedAd?.dispose();
