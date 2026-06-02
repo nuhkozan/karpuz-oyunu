@@ -2226,6 +2226,12 @@ function animateTargetIntro(emoji){
 }
 
 function beginLevel(){
+  /* Level 8 başlarken yorum iste */
+  if(S.lv === 8){
+    setTimeout(()=>{
+      try{ FlutterReview.postMessage('show'); }catch(e){}
+    }, 1500);
+  }
   ensureAC();
   _paused=false;
   const pauseIcon=document.getElementById('pause-icon');
@@ -3617,8 +3623,6 @@ async function winLevel(){
   setTimeout(()=>showChallengeStatus(),500);
 
   const prevLv=S.lv;
-  /* Level 8 tamamlandıysa yıldız diyaloğu göster */
-  if(prevLv === 8){ setTimeout(()=>showRatingDialog(), 500); }
   S.lv = nextLvNum;
   checkBadgeUnlock(prevLv, S.lv);
   missionProgress('m_levels',1);
@@ -4145,49 +4149,6 @@ document.addEventListener('visibilitychange',()=>{
 window.addEventListener('pagehide',()=>{
   try{if(S.cfg&&!S.dead)saveGameState();}catch(e){}
 });
-
-/* ══ RATING DIALOG ══ */
-function showRatingDialog(){
-  const el=document.getElementById('rating-overlay');
-  if(el) el.style.display='flex';
-}
-function closeRatingDialog(){
-  const el=document.getElementById('rating-overlay');
-  if(el) el.style.display='none';
-}
-function ratingStarClick(n){
-  /* Seçilen yıldızları renklendir */
-  for(let i=1;i<=5;i++){
-    const s=document.getElementById('rstar-'+i);
-    if(s) s.style.color = i<=n ? '#f5a623' : 'rgba(255,255,255,.3)';
-  }
-  /* 0.4sn sonra işlem yap */
-  setTimeout(()=>{
-    closeRatingDialog();
-    if(n>=4){
-      /* 4-5 yıldız → Play Store aç */
-      try{ FlutterReview.postMessage('show'); }catch(e){}
-    }
-    /* 1-3 yıldız → sessizce kapat, mağazaya gönderme */
-  }, 400);
-}
 </script>
-
-<!-- ══ RATING DIALOG ══ -->
-<div id="rating-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);z-index:700;flex-direction:column;align-items:center;justify-content:center;font-family:'Segoe UI',Arial;color:#fff;text-align:center;padding:20px">
-  <div style="background:linear-gradient(160deg,#1a1a2e,#16213e);border-radius:24px;padding:28px 24px;width:90%;max-width:300px;box-shadow:0 8px 40px rgba(0,0,0,.6);border:1.5px solid rgba(255,255,255,.1)">
-    <div style="font-size:52px;margin-bottom:8px">⭐</div>
-    <div style="font-size:20px;font-weight:900;color:#f5a623;margin-bottom:6px">Oyunu beğendin mi?</div>
-    <div style="font-size:13px;color:rgba(255,255,255,.55);margin-bottom:20px;line-height:1.5">Bize puan ver, gelişmemize<br>yardımcı ol! 🍉</div>
-    <div style="display:flex;justify-content:center;gap:10px;margin-bottom:22px">
-      <span id="rstar-1" onclick="ratingStarClick(1)" style="font-size:38px;cursor:pointer;color:rgba(255,255,255,.3);transition:color .2s">★</span>
-      <span id="rstar-2" onclick="ratingStarClick(2)" style="font-size:38px;cursor:pointer;color:rgba(255,255,255,.3);transition:color .2s">★</span>
-      <span id="rstar-3" onclick="ratingStarClick(3)" style="font-size:38px;cursor:pointer;color:rgba(255,255,255,.3);transition:color .2s">★</span>
-      <span id="rstar-4" onclick="ratingStarClick(4)" style="font-size:38px;cursor:pointer;color:rgba(255,255,255,.3);transition:color .2s">★</span>
-      <span id="rstar-5" onclick="ratingStarClick(5)" style="font-size:38px;cursor:pointer;color:rgba(255,255,255,.3);transition:color .2s">★</span>
-    </div>
-    <button onclick="closeRatingDialog()" style="background:transparent;border:1.5px solid rgba(255,255,255,.2);color:rgba(255,255,255,.5);border-radius:16px;padding:10px 28px;font-size:13px;cursor:pointer;font-family:'Segoe UI',Arial">Şimdi Değil</button>
-  </div>
-</div>
 </body>
 </html>
