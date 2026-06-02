@@ -107,7 +107,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         if (msg.message == 'show') {
           try {
             final uri = Uri.parse(
-              'https://play.google.com/store/apps/details?id=com.nuhkozan.karpuz');
+              'https://play.google.com/store/apps/details?id=com.nuhkozan.karpuz&showAllReviews=true&reviewId=0');
             await launchUrl(uri, mode: LaunchMode.externalApplication);
           } catch (e) {}
         }
