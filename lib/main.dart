@@ -413,7 +413,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text('🍉', style: TextStyle(fontSize: 64)),
+                              Text('ğŸ‰', style: TextStyle(fontSize: 64)),
                               SizedBox(height: 16),
                               CircularProgressIndicator(color: Colors.green),
                             ],
