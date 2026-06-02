@@ -6,6 +6,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:in_app_review/in_app_review.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'package:http/http.dart' as http;
@@ -62,6 +63,9 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   RewardedAd? _rewardedAd;
   bool _isLoadingRewarded = false;
 
+  // In-App Review
+  final InAppReview _inAppReview = InAppReview.instance;
+
   @override
   void initState() {
     super.initState();
@@ -78,7 +82,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
 
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(Colors.black) // Huawei touch fix
+      ..setBackgroundColor(Colors.black)
 
       // -- Banner goster/gizle --
       ..addJavaScriptChannel('FlutterBanner',
@@ -101,14 +105,14 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         if (msg.message == 'show') _showRewardedAd();
       })
 
-      // -- Play Store Yorum (HTML dialog'dan 4-5 yÄ±ldÄ±z sonrasÄ±) --
+      // -- In-App Review (Level 8 basinda) --
       ..addJavaScriptChannel('FlutterReview',
           onMessageReceived: (JavaScriptMessage msg) async {
         if (msg.message == 'show') {
           try {
-            final uri = Uri.parse(
-              'https://play.google.com/store/apps/details?id=com.nuhkozan.karpuz&showAllReviews=true&reviewId=0');
-            await launchUrl(uri, mode: LaunchMode.externalApplication);
+            if (await _inAppReview.isAvailable()) {
+              await _inAppReview.requestReview();
+            }
           } catch (e) {}
         }
       })
