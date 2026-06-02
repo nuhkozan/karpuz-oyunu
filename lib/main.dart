@@ -101,19 +101,14 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         if (msg.message == 'show') _showRewardedAd();
       })
 
-      // -- Google Play Yorum (Level 8) - url_launcher ile --
+      // -- Play Store Yorum (HTML dialog'dan 4-5 yÄ±ldÄ±z sonrasÄ±) --
       ..addJavaScriptChannel('FlutterReview',
           onMessageReceived: (JavaScriptMessage msg) async {
         if (msg.message == 'show') {
           try {
-            final uri = Uri.parse('market://details?id=com.nuhkozan.karpuz');
-            if (await canLaunchUrl(uri)) {
-              await launchUrl(uri);
-            } else {
-              final webUri = Uri.parse(
-                'https://play.google.com/store/apps/details?id=com.nuhkozan.karpuz');
-              await launchUrl(webUri);
-            }
+            final uri = Uri.parse(
+              'https://play.google.com/store/apps/details?id=com.nuhkozan.karpuz');
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
           } catch (e) {}
         }
       })
