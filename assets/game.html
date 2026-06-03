@@ -295,6 +295,9 @@ const LANGS = {
     'rank_here':'#%r. Sıradasın','level_starting':'LEVEL %n BAŞLIYOR…',
     'all_done':'TÜM LEVELLAR TAMAMLANDI! 👑','rank_anim_title':'Şampiyonlar Ligi',
     'rank_up':'⬆ %d sıra yükseldin! 🚀','rank_same':'📍 Sıran değişmedi','rank_down':'⬇ %d sıra geriledi',
+    'level_skip':'yap → Level geç!',
+    'mission_done':'📋 Görev tamamlandı: %name → %reward',
+    'pts':'puan',
     'pu_bomb':'Bomba','pu_freeze':'Dondur','pu_x2':'2× Puan','pu_upgrade':'Yükselt','pu_storm':'Fırtına','pu_luck':'Şans',
     'lbl_paused':'DURAKLATILDI','lbl_tap_resume':'Ekrana bas ve devam et',
     'btn_resume':'▶ Devam Et','btn_pause_home':'🏠 Ana Sayfa',
@@ -318,6 +321,9 @@ const LANGS = {
     'rank_here':'#%r Ranked','level_starting':'LEVEL %n STARTING…',
     'all_done':'ALL LEVELS DONE! 👑','rank_anim_title':'Champions League',
     'rank_up':'⬆ %d ranks up! 🚀','rank_same':'📍 Rank unchanged','rank_down':'⬇ Down %d ranks',
+    'level_skip':'to go → Skip level!',
+    'mission_done':'📋 Mission done: %name → %reward',
+    'pts':'pts',
     'pu_bomb':'Bomb','pu_freeze':'Freeze','pu_x2':'2× Pts','pu_upgrade':'Upgrade','pu_storm':'Storm','pu_luck':'Luck',
     'lbl_paused':'PAUSED','lbl_tap_resume':'Tap screen to resume',
     'btn_resume':'▶ Resume','btn_pause_home':'🏠 Home',
@@ -2447,7 +2453,7 @@ function updNxt(){
 function updProg(){
   document.getElementById('prog-f').style.width='0%';
   const tgt=S.cfg?FR[S.cfg.target][0]:'🍉';
-  document.getElementById('prog-txt').textContent=tgt+' yap → Level geç!';
+  document.getElementById('prog-txt').textContent=tgt+' '+T('level_skip');
 }
 
 function tick(){
@@ -3352,7 +3358,7 @@ function missionProgress(id,val){
   const def=MISSION_DEFS.find(m=>m.id===id);
   if(def && ms.progress[id]>=def.target && !ms.claimed[id]){
     document.getElementById('mis-badge').style.display='inline';
-    showToast('📋 Görev tamamlandı: '+def.name+' → '+def.rewardTxt);
+    showToast(T('mission_done',{name:def.name,reward:def.rewardTxt}));
   }
 }
 
@@ -3711,7 +3717,7 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
   const me=entries.find(e=>e.name===playerName)||{name:playerName,score:0};
 
   const makeRow=(rank,entry,isMe)=>{
-    if(!entry)return'<div class="ra-row ra-empty"></div>';
+    if(!entry) return `<div class="ra-row ra-empty" style="opacity:.3;border:1.5px dashed rgba(255,255,255,.2)"><span class="ra-rank-num">#${rank}</span><span class="ra-name-txt" style="color:rgba(255,255,255,.3)">—</span><span class="ra-score-txt">—</span></div>`;
     const medal=rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':`#${rank}`;
     return`<div class="ra-row${isMe?' ra-me':''}">
       <span class="ra-rank-num">${medal}</span>
@@ -3796,10 +3802,8 @@ async function winLevel(){
   if(S.dead)return; stop();
   S.totSc = S._winScore ?? S.totSc;
 
-  /* Eski sırayı kaydet (güncelleme öncesi) */
-  const oldLB=getLB();
-  const oldIdx=oldLB.findIndex(e=>e.name===S.user);
-  const oldRank=oldIdx>=0?oldIdx+1:0;
+  /* Eski sıra: bir önceki leveldeki Firebase sırası */
+  const oldRank = S._lastFBRank || 0;
 
   /* Yeni sıra + tüm liste */
   const lbResult = S._winRank
@@ -3807,6 +3811,7 @@ async function winLevel(){
     : await submitLBFull(S.user,S.totSc,S.lv);
   const rank = lbResult.rank;
   const lbEntries = lbResult.entries;
+  S._lastFBRank = rank; /* Bir sonraki levelda karşılaştırma için sakla */
   const nextLvNum = S.lv + 1;
 
   /* Yeni rekor kontrolü */
@@ -3821,7 +3826,7 @@ async function winLevel(){
   const lvFruit=document.getElementById('lv-fruit');
   if(lvFruit){ lvFruit.textContent=tgtEmoji; lvFruit.style.animation='none'; requestAnimationFrame(()=>{lvFruit.style.animation='fruitPop .5s ease';}); }
   document.getElementById('lv-done').textContent  = `LEVEL ${S.lv} ✓`;
-  document.getElementById('lv-score').textContent = S.totSc.toLocaleString() + ' puan';
+  document.getElementById('lv-score').textContent = S.totSc.toLocaleString() + ' ' + T('pts');
   document.getElementById('lv-rank').textContent  = T('rank_here',{r:rank});
   document.getElementById('lv-next').textContent  = nextLvNum<=99?T('level_starting',{n:nextLvNum}):T('all_done');
   document.getElementById('lv-bar').style.width   = '0%';
