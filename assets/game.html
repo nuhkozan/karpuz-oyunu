@@ -233,11 +233,127 @@ canvas { display:block; cursor:crosshair; touch-action:none; border-radius:14px;
 .lb-name   { flex:1; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .lb-score  { font-weight:800; color:#f5a623; }
 .lb-lv     { font-size:10px; color:rgba(255,255,255,.35); margin-left:3px; }
+
+/* ══ RANK ANİMASYON ══ */
+.ra-row {
+  display:flex; align-items:center; gap:10px;
+  padding:11px 16px; border-radius:14px;
+  margin:4px 0; font-size:14px;
+  background:rgba(255,255,255,.06);
+  transition:all .4s ease;
+}
+.ra-row.ra-me {
+  background:rgba(245,166,35,.22);
+  border:1.5px solid rgba(245,166,35,.5);
+  transform:scale(1.04);
+}
+.ra-row.ra-empty { height:44px; background:rgba(255,255,255,.02); }
+.ra-rank-num { width:36px; font-weight:900; font-size:13px; color:rgba(255,255,255,.5); text-align:center; }
+.ra-row.ra-me .ra-rank-num { color:#f5a623; }
+.ra-name-txt { flex:1; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ra-row.ra-me .ra-name-txt { color:#fff; }
+.ra-score-txt { font-size:12px; color:rgba(255,255,255,.45); font-weight:700; }
+.ra-row.ra-me .ra-score-txt { color:#f5a623; }
+@keyframes raFlyUp {
+  0%   { transform:scale(1.04) translateY(0); box-shadow:0 0 0 rgba(245,166,35,0); }
+  30%  { transform:scale(1.08) translateY(-8px); box-shadow:0 8px 30px rgba(245,166,35,.4); }
+  70%  { transform:scale(1.1) translateY(-20px); box-shadow:0 12px 40px rgba(245,166,35,.6); }
+  100% { transform:scale(1.04) translateY(-40px); opacity:0; }
+}
+@keyframes raFadeIn {
+  0%   { opacity:0; transform:scale(1.04) translateY(20px); }
+  100% { opacity:1; transform:scale(1.04) translateY(0); }
+}
+@keyframes raPulse {
+  0%,100% { box-shadow:0 0 0 0 rgba(245,166,35,0); }
+  50% { box-shadow:0 0 0 8px rgba(245,166,35,.25); }
+}
 </style>
 <!-- Firebase REST API - SDK yerine fetch kullanıyoruz, Flutter WebView uyumlu -->
 <script>
 const FB_URL='https://karpuz-oyunu-default-rtdb.europe-west1.firebasedatabase.app';
 window._fbReady=true;
+
+/* ══ DİL SİSTEMİ — erken init ══ */
+const LANGS = {
+  tr: {
+    'brand_sub':'Meyveleri birleştir · Sonsuz level · Şampiyona!',
+    'welcome_lbl':'HOŞ GELDİN','btn_new_game':'🎮 YENİ OYUN',
+    'btn_continue':'▶ Kaldığın Yerden Devam Et',
+    'btn_new_user':'✏️ Yeni Kullanıcı Adı Oluştur',
+    'u_new_lbl':'YENİ KULLANICI ADI','name_ph':'Adını gir...',
+    'btn_save_play':'KAYDET & OYNA 🚀','btn_back':'← Geri Dön',
+    'btn_lb':'🏆 Şampiyonlar Ligi','btn_info':'📖 Rehber',
+    'lbl_store':'MAĞAZA','lbl_mission':'GÖREV','lbl_music':'MÜZİK','lbl_sound':'SES',
+    'lbl_score':'PUAN','lbl_total':'TOPLAM','lbl_time':'SÜRE','lbl_mult':'ÇARPAN','lbl_target':'HEDEF',
+    'lbl_next':'Sıradaki:','lbl_bomb':'BOMBA','lbl_freeze':'DONDUR','lbl_x2':'2×PUAN',
+    'lbl_upgrade':'YÜKSELT','lbl_storm':'FIRTINA','lbl_luck':'ŞANS',
+    'lbl_completed':'TAMAMLANDI','lbl_new_record':'🏆 YENİ REKOR!','lbl_reward':'LEVEL ÖDÜLÜ',
+    'over_title':'OYUN BİTTİ','lbl_total_score':'TOPLAM PUAN',
+    'btn_lb_over':'🏆 Tablo','btn_retry':'🔄 Tekrar','btn_home_over':'🏠 Ana Sayfa',
+    'lbl_invite':'Arkadaşını Davet Et','lbl_challenge':'⚔️ Meydan Oku',
+    'rank_here':'#%r. Sıradasın','level_starting':'LEVEL %n BAŞLIYOR…',
+    'all_done':'TÜM LEVELLAR TAMAMLANDI! 👑','rank_anim_title':'Şampiyonlar Ligi',
+    'rank_up':'⬆ %d sıra yükseldin! 🚀',
+    'pu_bomb':'Bomba','pu_freeze':'Dondur','pu_x2':'2× Puan','pu_upgrade':'Yükselt','pu_storm':'Fırtına','pu_luck':'Şans',
+  },
+  en: {
+    'brand_sub':'Merge fruits · Endless levels · Championship!',
+    'welcome_lbl':'WELCOME BACK','btn_new_game':'🎮 NEW GAME',
+    'btn_continue':'▶ Continue Where You Left Off',
+    'btn_new_user':'✏️ Create New Username',
+    'u_new_lbl':'NEW USERNAME','name_ph':'Enter your name...',
+    'btn_save_play':'SAVE & PLAY 🚀','btn_back':'← Go Back',
+    'btn_lb':'🏆 Champions League','btn_info':'📖 Guide',
+    'lbl_store':'SHOP','lbl_mission':'MISSION','lbl_music':'MUSIC','lbl_sound':'SOUND',
+    'lbl_score':'SCORE','lbl_total':'TOTAL','lbl_time':'TIME','lbl_mult':'MULT','lbl_target':'TARGET',
+    'lbl_next':'Next:','lbl_bomb':'BOMB','lbl_freeze':'FREEZE','lbl_x2':'2×PTS',
+    'lbl_upgrade':'UPGRADE','lbl_storm':'STORM','lbl_luck':'LUCK',
+    'lbl_completed':'COMPLETED','lbl_new_record':'🏆 NEW RECORD!','lbl_reward':'LEVEL REWARD',
+    'over_title':'GAME OVER','lbl_total_score':'TOTAL SCORE',
+    'btn_lb_over':'🏆 Board','btn_retry':'🔄 Retry','btn_home_over':'🏠 Home',
+    'lbl_invite':'Invite a Friend','lbl_challenge':'⚔️ Challenge',
+    'rank_here':'#%r Ranked','level_starting':'LEVEL %n STARTING…',
+    'all_done':'ALL LEVELS DONE! 👑','rank_anim_title':'Champions League',
+    'rank_up':'⬆ %d ranks up! 🚀',
+    'pu_bomb':'Bomb','pu_freeze':'Freeze','pu_x2':'2× Pts','pu_upgrade':'Upgrade','pu_storm':'Storm','pu_luck':'Luck',
+  }
+};
+
+var _lang = localStorage.getItem('karpuz_lang') || 'tr';
+
+function T(key, vars){
+  let s = (LANGS[_lang]||LANGS.tr)[key] || (LANGS.tr[key]||key);
+  if(vars) Object.keys(vars).forEach(k=>s=s.replace('%'+k,vars[k]));
+  return s;
+}
+
+function setLang(lang){
+  _lang = lang;
+  try{ localStorage.setItem('karpuz_lang', lang); }catch(e){}
+  const tr=document.getElementById('lang-tr'), en=document.getElementById('lang-en');
+  if(tr){ tr.style.background=lang==='tr'?'rgba(245,166,35,.25)':'rgba(255,255,255,.06)'; tr.style.color=lang==='tr'?'#f5a623':'rgba(255,255,255,.5)'; tr.style.borderColor=lang==='tr'?'rgba(255,255,255,.35)':'rgba(255,255,255,.15)'; }
+  if(en){ en.style.background=lang==='en'?'rgba(245,166,35,.25)':'rgba(255,255,255,.06)'; en.style.color=lang==='en'?'#f5a623':'rgba(255,255,255,.5)'; en.style.borderColor=lang==='en'?'rgba(255,255,255,.35)':'rgba(255,255,255,.15)'; }
+  const set=(id,key)=>{const el=document.getElementById(id);if(el)el.textContent=T(key);};
+  const ph=(id,key)=>{const el=document.getElementById(id);if(el)el.placeholder=T(key);};
+  set('brand-sub','brand_sub'); set('welcome-lbl','welcome_lbl');
+  set('btn-new-game','btn_new_game'); set('btn-continue','btn_continue');
+  set('btn-new-user','btn_new_user'); set('u-new-lbl','u_new_lbl');
+  ph('uname','name_ph'); set('btn-save-play','btn_save_play');
+  set('btn-back','btn_back'); set('btn-lb','btn_lb'); set('btn-info','btn_info');
+  set('lbl-store','lbl_store'); set('lbl-mission','lbl_mission');
+  set('lbl-music','lbl_music'); set('lbl-sound','lbl_sound');
+  set('lbl-score','lbl_score'); set('lbl-total','lbl_total');
+  set('lbl-time','lbl_time'); set('lbl-mult','lbl_mult'); set('lbl-target','lbl_target');
+  set('lbl-next','lbl_next'); set('lbl-bomb','lbl_bomb'); set('lbl-freeze','lbl_freeze');
+  set('lbl-x2','lbl_x2'); set('lbl-upgrade','lbl_upgrade');
+  set('lbl-storm','lbl_storm'); set('lbl-luck','lbl_luck');
+  set('lbl-completed','lbl_completed'); set('lv-newrecord','lbl_new_record');
+  set('lbl-reward','lbl_reward'); set('over-title','over_title');
+  set('lbl-total-score','lbl_total_score'); set('btn-lb-over','btn_lb_over');
+  set('btn-retry','btn_retry'); set('btn-home-over','btn_home_over');
+  set('lbl-invite','lbl_invite'); set('lbl-challenge','lbl_challenge');
+}
 </script>
 </head>
 <body>
@@ -359,7 +475,7 @@ window._fbReady=true;
   font-family:'Segoe UI',Arial,sans-serif; color:#fff; text-align:center;
   animation:lvIn .3s ease;">
   <div id="lv-fruit" style="font-size:72px;margin-bottom:4px;animation:fruitPop .5s ease">🍉</div>
-  <div style="font-size:13px;letter-spacing:3px;color:rgba(255,255,255,.5);margin-bottom:2px">TAMAMLANDI</div>
+  <div style="font-size:13px;letter-spacing:3px;color:rgba(255,255,255,.5);margin-bottom:2px" id="lbl-completed">TAMAMLANDI</div>
   <div style="font-size:34px;font-weight:900;letter-spacing:2px" id="lv-done">LEVEL 1</div>
   <div id="lv-newrecord" style="display:none;background:linear-gradient(90deg,#f5a623,#e94560);border-radius:20px;padding:4px 16px;font-size:12px;font-weight:800;margin:6px 0">🏆 YENİ REKOR!</div>
   <div style="width:180px;height:2px;background:linear-gradient(90deg,#e94560,#f5a623);margin:10px auto;border-radius:2px"></div>
@@ -368,7 +484,7 @@ window._fbReady=true;
   <div style="margin-top:6px;font-size:11px;color:rgba(255,255,255,.4)" id="lv-stats"></div>
   <div style="margin-top:10px;font-size:13px;color:rgba(255,255,255,.4);letter-spacing:1px" id="lv-next">LEVEL 2 BAŞLIYOR…</div>
   <div id="lv-reward" style="margin-top:10px;background:linear-gradient(90deg,rgba(69,160,73,.35),rgba(245,166,35,.35));border:1.5px solid rgba(255,255,255,.25);border-radius:16px;padding:8px 22px;display:none">
-    <div style="font-size:9px;letter-spacing:2px;opacity:.6;margin-bottom:2px">LEVEL ÖDÜLÜ</div>
+    <div style="font-size:9px;letter-spacing:2px;opacity:.6;margin-bottom:2px" id="lbl-reward">LEVEL ÖDÜLÜ</div>
     <div id="lv-reward-txt" style="font-size:22px;font-weight:900">💣 +1 Bomba</div>
   </div>
   <div style="margin-top:12px;width:160px;height:3px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden">
@@ -405,22 +521,22 @@ window._fbReady=true;
 <!-- WhatsApp bar — her zaman üstte -->
 <div id="wa-bar" style="width:100%;max-width:440px;display:flex;align-items:stretch;position:sticky;top:0;z-index:100;box-shadow:0 3px 16px rgba(0,0,0,.35);height:46px;">
   <div onclick="shareWA()" style="flex:1;background:linear-gradient(90deg,#25D366,#128C7E);display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:13px;font-weight:800;color:#fff;letter-spacing:.3px;">
-    <span>📲</span> Arkadaşını Davet Et
+    <span>📲</span> <span id="lbl-invite">Arkadaşını Davet Et</span>
   </div>
   <div style="width:1px;background:rgba(255,255,255,.25)"></div>
   <div onclick="openChallenge()" style="flex:1;background:#1a237e;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:13px;font-weight:800;color:#fff;letter-spacing:.3px;">
-    ⚔️ Meydan Oku
+    <span id="lbl-challenge">⚔️ Meydan Oku</span>
   </div>
 </div>
 <!-- Ses butonları - barın hemen altında -->
 <div style="width:100%;max-width:440px;display:flex;justify-content:space-between;align-items:center;gap:6px;padding:4px 8px;background:rgba(0,0,0,.2);position:sticky;top:46px;z-index:99;">
   <div style="display:flex;gap:6px;">
-    <div class="store-btn" id="top-store-btn" onclick="openStore()" style="padding:4px 10px;font-size:13px;border-radius:20px;border:1.5px solid rgba(255,255,255,.2);background:rgba(0,0,0,.45);color:#fff;display:flex;align-items:center;gap:4px;cursor:pointer;">💎 <span style="font-size:10px">MAĞAZA</span></div>
-    <div id="top-mis-btn" onclick="openMissions()" style="padding:4px 10px;font-size:13px;border-radius:20px;border:1.5px solid rgba(255,255,255,.2);background:rgba(0,0,0,.45);color:#fff;display:flex;align-items:center;gap:4px;cursor:pointer;">📋 <span style="font-size:10px">GÖREV</span><span id="mis-badge" style="background:#e94560;color:#fff;border-radius:6px;padding:1px 4px;font-size:8px;display:none">!</span></div>
+    <div class="store-btn" id="top-store-btn" onclick="openStore()" style="padding:4px 10px;font-size:13px;border-radius:20px;border:1.5px solid rgba(255,255,255,.2);background:rgba(0,0,0,.45);color:#fff;display:flex;align-items:center;gap:4px;cursor:pointer;">💎 <span style="font-size:10px" id="lbl-store">MAĞAZA</span></div>
+    <div id="top-mis-btn" onclick="openMissions()" style="padding:4px 10px;font-size:13px;border-radius:20px;border:1.5px solid rgba(255,255,255,.2);background:rgba(0,0,0,.45);color:#fff;display:flex;align-items:center;gap:4px;cursor:pointer;">📋 <span style="font-size:10px" id="lbl-mission">GÖREV</span><span id="mis-badge" style="background:#e94560;color:#fff;border-radius:6px;padding:1px 4px;font-size:8px;display:none">!</span></div>
   </div>
   <div style="display:flex;gap:6px;">
-    <button id="mus-btn" onclick="toggleMusic()" title="Müzik" style="background:rgba(0,0,0,.45);border:1.5px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 10px;font-size:14px;cursor:pointer;color:#fff;display:flex;align-items:center;gap:4px;">🎵 <span style="font-size:10px">MÜZİK</span></button>
-    <button id="sfx-btn" onclick="toggleSfx()" title="Ses" style="background:rgba(0,0,0,.45);border:1.5px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 10px;font-size:14px;cursor:pointer;color:#fff;display:flex;align-items:center;gap:4px;">🔊 <span style="font-size:10px">SES</span></button>
+    <button id="mus-btn" onclick="toggleMusic()" title="Müzik" style="background:rgba(0,0,0,.45);border:1.5px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 10px;font-size:14px;cursor:pointer;color:#fff;display:flex;align-items:center;gap:4px;">🎵 <span style="font-size:10px" id="lbl-music">MÜZİK</span></button>
+    <button id="sfx-btn" onclick="toggleSfx()" title="Ses" style="background:rgba(0,0,0,.45);border:1.5px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 10px;font-size:14px;cursor:pointer;color:#fff;display:flex;align-items:center;gap:4px;">🔊 <span style="font-size:10px" id="lbl-sound">SES</span></button>
   </div>
 </div>
 
@@ -435,40 +551,46 @@ window._fbReady=true;
   <div style="position:relative;z-index:1;width:100%;display:flex;flex-direction:column;align-items:center;padding-bottom:20px">
   <div class="brand">🍉</div>
   <div class="brand-name">KARPUZ</div>
-  <div class="brand-sub">Meyveleri birleştir · Sonsuz level · Şampiyona!</div>
+  <div class="brand-sub" id="brand-sub">Meyveleri birleştir · Sonsuz level · Şampiyona!</div>
 
   <!-- MOD A: Dönen kullanıcı -->
   <div id="u-return" style="display:none;width:100%;text-align:center">
-    <div style="font-size:13px;color:rgba(255,255,255,.5);letter-spacing:2px;margin-bottom:6px">HOŞ GELDİN</div>
+    <div style="font-size:13px;color:rgba(255,255,255,.5);letter-spacing:2px;margin-bottom:6px" id="welcome-lbl">HOŞ GELDİN</div>
     <div id="u-welcome" style="font-size:26px;font-weight:900;color:#f5a623;margin-bottom:18px">—</div>
-    <button class="btn-main" style="width:220px" onclick="continueUser()">🎮 YENİ OYUN</button>
+    <button class="btn-main" style="width:260px;max-width:90vw" id="btn-new-game" onclick="continueUser()">🎮 YENİ OYUN</button>
     <div id="u-continue-wrap" style="margin-top:10px;display:none">
-      <button class="btn-main" style="width:220px;background:linear-gradient(90deg,#22aa66,#1a7a4a);font-size:15px" onclick="resumeGame()">▶ Kaldığın Yerden Devam Et</button>
+      <button class="btn-main" style="width:260px;max-width:90vw;background:linear-gradient(90deg,#22aa66,#1a7a4a);font-size:15px" id="btn-continue" onclick="resumeGame()">▶ Kaldığın Yerden Devam Et</button>
       <div id="u-continue-info" style="font-size:11px;color:rgba(255,255,255,.4);margin-top:5px"></div>
     </div>
     <div style="margin-top:12px">
-      <button class="btn-out" style="font-size:12px;padding:8px 18px" onclick="showNewUser()">
+      <button class="btn-out" style="font-size:12px;padding:8px 18px" id="btn-new-user" onclick="showNewUser()">
         ✏️ Yeni Kullanıcı Adı Oluştur
       </button>
     </div>
   </div>
 
   <!-- MOD B: Yeni kullanıcı -->
-  <div id="u-new" style="display:none;width:100%;text-align:center">
+  <div id="u-new" style="display:none;width:100%;text-align:center;flex-direction:column;align-items:center">
     <div class="input-lbl" id="u-new-lbl">YENİ KULLANICI ADI</div>
     <input id="uname" class="txt-in" type="text" maxlength="14" placeholder="Adını gir...">
     <div id="uname-err" style="color:#ff6688;font-size:12px;margin-bottom:8px;min-height:18px;font-weight:700"></div>
-    <button class="btn-main" style="width:220px" onclick="registerUser()">KAYDET & OYNA 🚀</button>
+    <button class="btn-main" style="width:260px;max-width:90vw" id="btn-save-play" onclick="registerUser()">KAYDET & OYNA 🚀</button>
     <div style="margin-top:10px" id="u-back-wrap" style="display:none">
-      <button class="btn-out" style="font-size:12px;padding:8px 18px" onclick="showReturn()">
+      <button class="btn-out" style="font-size:12px;padding:8px 18px" id="btn-back" onclick="showReturn()">
         ← Geri Dön
       </button>
     </div>
   </div>
 
-  <div style="margin-top:18px;display:flex;gap:8px;justify-content:center">
-    <button class="btn-out" onclick="openLB()">🏆 Şampiyonlar Ligi</button>
-    <button class="btn-out" onclick="openInfo()">📖 Rehber</button>
+  <div style="margin-top:18px;display:flex;flex-direction:column;align-items:center;gap:8px;width:100%;max-width:320px">
+    <div style="display:flex;gap:8px;justify-content:center;width:100%">
+      <button class="btn-out" id="btn-lb" onclick="openLB()" style="flex:1;padding:11px 8px">🏆 Şampiyonlar Ligi</button>
+      <button class="btn-out" id="btn-info" onclick="openInfo()" style="flex:1;padding:11px 8px">📖 Rehber</button>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:center">
+      <button id="lang-tr" onclick="setLang('tr')" style="padding:5px 18px;border-radius:16px;border:1.5px solid rgba(255,255,255,.35);background:rgba(245,166,35,.25);color:#f5a623;font-size:12px;font-weight:800;cursor:pointer;letter-spacing:.5px">🇹🇷 TR</button>
+      <button id="lang-en" onclick="setLang('en')" style="padding:5px 18px;border-radius:16px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);font-size:12px;font-weight:800;cursor:pointer;letter-spacing:.5px">🇬🇧 EN</button>
+    </div>
   </div>
   </div>
 </div>
@@ -838,14 +960,14 @@ window._fbReady=true;
     <div class="prog-bg"><div class="prog-fill" id="prog-f" style="width:0%"></div></div>
   </div>
   <div class="hud">
-    <div class="hud-box"><div class="hud-lbl">PUAN</div><div class="hud-val" id="h-sc">0</div></div>
-    <div class="hud-box"><div class="hud-lbl">TOPLAM</div><div class="hud-val" id="h-tot">0</div></div>
-    <div class="hud-box" id="tbox"><div class="hud-lbl">SÜRE</div><div class="hud-val" id="h-tm">0</div></div>
-    <div class="hud-box" style="background:rgba(34,170,68,.18)"><div class="hud-lbl">ÇARPAN</div><div class="hud-val" id="h-mult">×1.00</div></div>
-    <div class="hud-box" style="background:rgba(255,80,80,.15);border:1.5px solid rgba(255,80,80,.3)"><div class="hud-lbl">HEDEF</div><div class="hud-val" style="font-size:20px" id="h-hedef-hud">🍉</div></div>
+    <div class="hud-box"><div class="hud-lbl" id="lbl-score">PUAN</div><div class="hud-val" id="h-sc">0</div></div>
+    <div class="hud-box"><div class="hud-lbl" id="lbl-total">TOPLAM</div><div class="hud-val" id="h-tot">0</div></div>
+    <div class="hud-box" id="tbox"><div class="hud-lbl" id="lbl-time">SÜRE</div><div class="hud-val" id="h-tm">0</div></div>
+    <div class="hud-box" style="background:rgba(34,170,68,.18)"><div class="hud-lbl" id="lbl-mult">ÇARPAN</div><div class="hud-val" id="h-mult">×1.00</div></div>
+    <div class="hud-box" style="background:rgba(255,80,80,.15);border:1.5px solid rgba(255,80,80,.3)"><div class="hud-lbl" id="lbl-target">HEDEF</div><div class="hud-val" style="font-size:20px" id="h-hedef-hud">🍉</div></div>
   </div>
   <div class="next-row">
-    <span style="font-size:11px">Sıradaki:</span>
+    <span style="font-size:11px" id="lbl-next">Sıradaki:</span>
     <span id="nxt" class="next-fruit-big">🍒</span>
     <span id="nxt2" style="font-size:18px;opacity:.6">🍒</span>
     <span id="nxt3" style="font-size:14px;opacity:.35">🍒</span>
@@ -863,27 +985,27 @@ window._fbReady=true;
   <div id="game-toast-area" style="width:100%;min-height:22px;text-align:center;margin:2px 0;font-size:12px;font-weight:700;color:#f5a623;opacity:0;transition:opacity .3s;"></div>
   <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;width:100%;justify-content:center;flex-wrap:wrap;">
     <button class="pu-btn" id="pu-bomb"   onclick="usePower('bomb')"   title="Bomba">
-      <span class="pu-icon">💣</span><span style="font-size:8px">BOMBA</span>
+      <span class="pu-icon">💣</span><span style="font-size:8px" id="lbl-bomb">BOMBA</span>
       <span class="pu-cnt" id="pu-bomb-cnt">0</span>
     </button>
     <button class="pu-btn" id="pu-freeze" onclick="usePower('freeze')" title="Dondurucu">
-      <span class="pu-icon">❄️</span><span style="font-size:8px">DONDUR</span>
+      <span class="pu-icon">❄️</span><span style="font-size:8px" id="lbl-freeze">DONDUR</span>
       <span class="pu-cnt" id="pu-freeze-cnt">0</span>
     </button>
     <button class="pu-btn" id="pu-x2"    onclick="usePower('x2')"    title="2× Puan">
-      <span class="pu-icon">⚡</span><span style="font-size:8px">2×PUAN</span>
+      <span class="pu-icon">⚡</span><span style="font-size:8px" id="lbl-x2">2×PUAN</span>
       <span class="pu-cnt" id="pu-x2-cnt">0</span>
     </button>
     <button class="pu-btn" id="pu-upgrade" onclick="usePower('upgrade')" title="Yükselt">
-      <span class="pu-icon">⬆️</span><span style="font-size:8px">YÜKSELT</span>
+      <span class="pu-icon">⬆️</span><span style="font-size:8px" id="lbl-upgrade">YÜKSELT</span>
       <span class="pu-cnt" id="pu-upgrade-cnt">0</span>
     </button>
     <button class="pu-btn" id="pu-storm" onclick="usePower('storm')" title="Fırtına">
-      <span class="pu-icon">🌪️</span><span style="font-size:8px">FIRTINA</span>
+      <span class="pu-icon">🌪️</span><span style="font-size:8px" id="lbl-storm">FIRTINA</span>
       <span class="pu-cnt" id="pu-storm-cnt">0</span>
     </button>
     <button class="pu-btn" id="pu-luck" onclick="usePower('luck')" title="Şans">
-      <span class="pu-icon">🔮</span><span style="font-size:8px">ŞANS</span>
+      <span class="pu-icon">🔮</span><span style="font-size:8px" id="lbl-luck">ŞANS</span>
       <span class="pu-cnt" id="pu-luck-cnt">0</span>
     </button>
     <div style="flex:1;min-width:8px"></div>
@@ -930,20 +1052,20 @@ window._fbReady=true;
 <div id="s-over" class="screen">
   <div class="r-card">
     <div class="r-emoji" id="ov-emoji">💥</div>
-    <div class="r-title">OYUN BİTTİ</div>
+    <div class="r-title" id="over-title">OYUN BİTTİ</div>
     <div class="r-sub" id="ov-rsn">Alan taştı!</div>
     <div id="ov-close" style="font-size:13px;color:#f5a623;margin-bottom:10px;font-weight:700"></div>
     <div class="stat-row">
       <div class="stat-box"><div class="stat-v" id="ov-lv">1</div><div class="stat-l">LEVEL</div></div>
-      <div class="stat-box"><div class="stat-v" id="ov-sc">0</div><div class="stat-l">TOPLAM PUAN</div></div>
+      <div class="stat-box"><div class="stat-v" id="ov-sc">0</div><div class="stat-l" id="lbl-total-score">TOPLAM PUAN</div></div>
     </div>
     <div class="rank-badge" id="ov-rank">🎖 #3 Sırada!</div>
   </div>
   <div class="btn-row">
-    <button class="btn-out" onclick="openLB()">🏆 Tablo</button>
-    <button class="btn-main" onclick="retry()">🔄 Tekrar</button>
+    <button class="btn-out" onclick="openLB()" id="btn-lb-over">🏆 Tablo</button>
+    <button class="btn-main" id="btn-retry" onclick="retry()">🔄 Tekrar</button>
   </div>
-  <button class="btn-out" style="margin-top:10px;width:200px" onclick="home()">🏠 Ana Sayfa</button>
+  <button class="btn-out" style="margin-top:10px;width:200px" id="btn-home-over" onclick="home()">🏠 Ana Sayfa</button>
 </div>
 
 <!-- ⑤ LEADERBOARD -->
@@ -1758,7 +1880,7 @@ function flutterFetch(url, method='GET', body=null){
   });
 }
 
-async function submitLB(name,score,lv){
+async function submitLBFull(name,score,lv){
   /* Lokal fallback */
   const lb=getLB();
   const i=lb.findIndex(e=>e.name===name);
@@ -1783,11 +1905,16 @@ async function submitLB(name,score,lv){
       const all=Object.values(data).filter(e=>e&&e.score!=null);
       all.sort((a,b)=>b.score-a.score);
       const rank=all.findIndex(e=>e.name===name)+1;
-      return rank>0?rank:localRank;
+      return {rank:rank>0?rank:localRank, entries:all};
     }
   }catch(e){}
 
-  return localRank;
+  return {rank:localRank, entries:lb};
+}
+
+async function submitLB(name,score,lv){
+  const r=await submitLBFull(name,score,lv);
+  return r.rank;
 }
 
 async function renderLB(me){
@@ -1965,10 +2092,11 @@ function isNameTaken(name){
 }
 
 function initUserScreen(){
+  setLang(_lang); /* Kaydedilen dili uygula */
   const saved=localStorage.getItem(UKEY);
   if(saved){
     document.getElementById('u-welcome').textContent=saved;
-    document.getElementById('u-return').style.display='block';
+    document.getElementById('u-return').style.cssText='display:flex;flex-direction:column;align-items:center;width:100%;text-align:center';
     document.getElementById('u-new').style.display='none';
     checkContinueButton();
     /* Günün ilk girişi — hangi buton basılırsa basılsın */
@@ -1979,14 +2107,14 @@ function initUserScreen(){
 }
 
 function showReturn(){
-  document.getElementById('u-return').style.display='block';
+  document.getElementById('u-return').style.cssText='display:flex;flex-direction:column;align-items:center;width:100%;text-align:center';
   document.getElementById('u-new').style.display='none';
 }
 
 function showNewUser(showBack){
   if(showBack===undefined)showBack=true;
   document.getElementById('u-return').style.display='none';
-  document.getElementById('u-new').style.display='block';
+  document.getElementById('u-new').style.cssText='display:flex;flex-direction:column;align-items:center;width:100%;text-align:center';
   document.getElementById('u-new-lbl').textContent=showBack?'YENİ KULLANICI ADI':'KULLANICI ADI';
   const bw=document.getElementById('u-back-wrap');
   if(bw)bw.style.display=showBack?'block':'none';
@@ -2226,12 +2354,6 @@ function animateTargetIntro(emoji){
 }
 
 function beginLevel(){
-  /* Level 8 başlarken yorum iste */
-  if(S.lv === 8){
-    setTimeout(()=>{
-      try{ FlutterReview.postMessage('show'); }catch(e){}
-    }, 1500);
-  }
   ensureAC();
   _paused=false;
   const pauseIcon=document.getElementById('pause-icon');
@@ -3569,10 +3691,109 @@ function togglePause(){
   }
 }
 
+async function showRankAnim(oldRank, newRank, entries, playerName){
+  if(!entries||entries.length<1)return;
+  if(oldRank<=0||newRank<=0||oldRank<=newRank)return;
+  const diff=oldRank-newRank;
+  const overlay=document.getElementById('rank-anim-overlay');
+  const list=document.getElementById('rank-anim-list');
+  const counter=document.getElementById('rank-anim-counter');
+  const msg=document.getElementById('rank-anim-msg');
+  if(!overlay||!list||!counter||!msg)return;
+
+  const getEntry=(rank)=>rank>=1&&rank<=entries.length?entries[rank-1]:null;
+  const me=entries.find(e=>e.name===playerName)||{name:playerName,score:0};
+
+  const makeRow=(rank,entry,isMe)=>{
+    if(!entry)return'<div class="ra-row ra-empty"></div>';
+    const medal=rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':`#${rank}`;
+    return`<div class="ra-row${isMe?' ra-me':''}">
+      <span class="ra-rank-num">${medal}</span>
+      <span class="ra-name-txt">${entry.name}</span>
+      <span class="ra-score-txt">${(entry.score||0).toLocaleString()}</span>
+    </div>`;
+  };
+
+  /* Overlay aç */
+  overlay.style.opacity='0';
+  overlay.style.display='flex';
+  msg.style.opacity='0';
+  msg.textContent='';
+  setTimeout(()=>{overlay.style.opacity='1';},20);
+
+  /* Faz 1 — eski pozisyon */
+  counter.textContent=`#${oldRank}`;
+  list.style.opacity='1';
+  list.innerHTML=[
+    makeRow(oldRank-1,getEntry(oldRank-1),false),
+    makeRow(oldRank,me,true),
+    makeRow(oldRank+1,getEntry(oldRank+1),false),
+  ].join('');
+
+  await new Promise(r=>setTimeout(r,1000));
+
+  /* Faz 2 — sayaç animasyonu (eski → yeni sıra) */
+  const meRow=list.querySelector('.ra-me');
+  if(meRow)meRow.style.animation='raFlyUp .8s ease forwards';
+
+  const dur=Math.min(1400,diff*60+500);
+  const t0=performance.now();
+  await new Promise(resolve=>{
+    const tick=(now)=>{
+      const p=Math.min((now-t0)/dur,1);
+      const ease=1-Math.pow(1-p,3);
+      counter.textContent=`#${Math.round(oldRank-(oldRank-newRank)*ease)}`;
+      if(p<1)requestAnimationFrame(tick);
+      else resolve();
+    };
+    requestAnimationFrame(tick);
+  });
+
+  /* Faz 3 — yeni pozisyon */
+  list.style.transition='opacity .25s';
+  list.style.opacity='0';
+  await new Promise(r=>setTimeout(r,250));
+
+  counter.textContent=`#${newRank}`;
+  list.innerHTML=[
+    makeRow(newRank-1,getEntry(newRank-1),false),
+    makeRow(newRank,me,true),
+    makeRow(newRank+1,getEntry(newRank+1),false),
+  ].join('');
+  const newMe=list.querySelector('.ra-me');
+  if(newMe)newMe.style.animation='raFadeIn .5s ease forwards, raPulse 1s ease .5s infinite';
+  list.style.opacity='1';
+
+  await new Promise(r=>setTimeout(r,400));
+
+  /* Faz 4 — mesaj */
+  msg.textContent=T('rank_up',{d:diff});
+  msg.style.opacity='1';
+
+  await new Promise(r=>setTimeout(r,1600));
+
+  /* Kapat */
+  overlay.style.opacity='0';
+  await new Promise(r=>setTimeout(r,300));
+  overlay.style.display='none';
+  msg.style.opacity='0';
+}
+
 async function winLevel(){
   if(S.dead)return; stop();
   S.totSc = S._winScore ?? S.totSc;
-  const rank = S._winRank || await submitLB(S.user,S.totSc,S.lv);
+
+  /* Eski sırayı kaydet (güncelleme öncesi) */
+  const oldLB=getLB();
+  const oldIdx=oldLB.findIndex(e=>e.name===S.user);
+  const oldRank=oldIdx>=0?oldIdx+1:0;
+
+  /* Yeni sıra + tüm liste */
+  const lbResult = S._winRank
+    ? {rank:S._winRank, entries:getLB()}
+    : await submitLBFull(S.user,S.totSc,S.lv);
+  const rank = lbResult.rank;
+  const lbEntries = lbResult.entries;
   const nextLvNum = S.lv + 1;
 
   /* Yeni rekor kontrolü */
@@ -3588,8 +3809,8 @@ async function winLevel(){
   if(lvFruit){ lvFruit.textContent=tgtEmoji; lvFruit.style.animation='none'; requestAnimationFrame(()=>{lvFruit.style.animation='fruitPop .5s ease';}); }
   document.getElementById('lv-done').textContent  = `LEVEL ${S.lv} ✓`;
   document.getElementById('lv-score').textContent = S.totSc.toLocaleString() + ' puan';
-  document.getElementById('lv-rank').textContent  = `🏆 #${rank}. Sıradasın`;
-  document.getElementById('lv-next').textContent  = nextLvNum<=99?`LEVEL ${nextLvNum} BAŞLIYOR…`:'TÜM LEVELLAR TAMAMLANDI! 👑';
+  document.getElementById('lv-rank').textContent  = T('rank_here',{r:rank});
+  document.getElementById('lv-next').textContent  = nextLvNum<=99?T('level_starting',{n:nextLvNum}):T('all_done');
   document.getElementById('lv-bar').style.width   = '0%';
   const nrEl=document.getElementById('lv-newrecord');
   if(nrEl) nrEl.style.display=isNewRecord?'block':'none';
@@ -3597,6 +3818,11 @@ async function winLevel(){
   if(statsEl) statsEl.textContent=`${S.timeElapsed}s'de tamamlandı · ${S.lvSc.toLocaleString()} level puanı`;
   ov.style.display = 'flex';
   requestAnimationFrame(()=>{ document.getElementById('lv-bar').style.width='100%'; });
+
+  /* Sıralama animasyonu — 1sn sonra başlat */
+  if(S.user && oldRank>0 && rank>0 && oldRank>rank){
+    setTimeout(()=>showRankAnim(oldRank,rank,lbEntries,S.user), 900);
+  }
 
   if(isNewRecord) showToast('🏆 YENİ REKOR! '+S.totSc.toLocaleString()+' puan!');
 
@@ -4146,9 +4372,18 @@ document.addEventListener('visibilitychange',()=>{
     }catch(e){}
   }
 });
+
 window.addEventListener('pagehide',()=>{
   try{if(S.cfg&&!S.dead)saveGameState();}catch(e){}
 });
 </script>
+
+<!-- ══ RANK ANİMASYON OVERLAY ══ -->
+<div id="rank-anim-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.92);z-index:600;flex-direction:column;align-items:center;justify-content:center;font-family:'Segoe UI',Arial;color:#fff;text-align:center;padding:20px;transition:opacity .3s">
+  <div style="font-size:11px;letter-spacing:3px;color:rgba(255,255,255,.4);margin-bottom:8px;text-transform:uppercase">Şampiyonlar Ligi</div>
+  <div id="rank-anim-counter" style="font-size:52px;font-weight:900;color:#f5a623;margin-bottom:12px;transition:all .1s;text-shadow:0 0 30px rgba(245,166,35,.5)">#—</div>
+  <div id="rank-anim-list" style="width:92%;max-width:310px"></div>
+  <div id="rank-anim-msg" style="margin-top:18px;font-size:20px;font-weight:900;color:#44ff88;opacity:0;transition:opacity .4s;text-shadow:0 0 20px rgba(68,255,136,.4)"></div>
+</div>
 </body>
 </html>
