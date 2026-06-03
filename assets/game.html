@@ -3746,13 +3746,28 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
 
   /* Faz 2 — sayaç animasyonu: sadece iyileşme varsa animasyon, yoksa direkt yeni sıra */
   if(diff>0){
-    const dur=Math.min(1400,diff*60+500);
+    const dur=Math.min(1800, diff*80+600);
     const t0=performance.now();
+    let lastRowUpdate=-1;
     await new Promise(resolve=>{
       const tick=(now)=>{
         const p=Math.min((now-t0)/dur,1);
         const ease=1-Math.pow(1-p,3);
-        counter.textContent=`#${Math.round(oldRank-(oldRank-newRank)*ease)}`;
+        const val=Math.round(oldRank-(oldRank-newRank)*ease);
+        counter.textContent=`#${val}`;
+        /* Her 120ms'de bir satırları güncelle — uçuyor hissi */
+        if(val!==lastRowUpdate){
+          lastRowUpdate=val;
+          list.style.opacity='1';
+          list.innerHTML=[
+            makeRow(val-1, getEntry(val-1), false),
+            makeRow(val, me, true),
+            makeRow(val+1, getEntry(val+1), false),
+          ].join('');
+          /* Geçiş sırasındaki ME satırını hafif vurgula */
+          const mR=list.querySelector('.ra-me');
+          if(mR&&val!==newRank) mR.style.boxShadow='0 0 18px rgba(245,166,35,.5)';
+        }
         if(p<1)requestAnimationFrame(tick);
         else resolve();
       };
@@ -3765,9 +3780,14 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
 
   /* Faz 3 — yeni pozisyon */
   if(diff>0){
+    /* Son konuma gelince ME satırını bir kez pulse yap */
     const meRow=list.querySelector('.ra-me');
-    if(meRow)meRow.style.animation='raFlyUp .6s ease forwards';
-    await new Promise(r=>setTimeout(r,300));
+    if(meRow){
+      meRow.style.animation='none';
+      meRow.style.boxShadow='';
+      requestAnimationFrame(()=>{ meRow.style.animation='raPulse 0.6s ease 2'; });
+    }
+    await new Promise(r=>setTimeout(r,200));
   }
   list.style.transition='opacity .25s';
   list.style.opacity='0';
