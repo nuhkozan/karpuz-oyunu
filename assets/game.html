@@ -3738,24 +3738,31 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
 
   await new Promise(r=>setTimeout(r,1000));
 
-  /* Faz 2 — sayaç animasyonu (eski → yeni sıra) */
-  const meRow=list.querySelector('.ra-me');
-  if(meRow)meRow.style.animation='raFlyUp .8s ease forwards';
-
-  const dur=Math.min(1400,diff*60+500);
-  const t0=performance.now();
-  await new Promise(resolve=>{
-    const tick=(now)=>{
-      const p=Math.min((now-t0)/dur,1);
-      const ease=1-Math.pow(1-p,3);
-      counter.textContent=`#${Math.round(oldRank-(oldRank-newRank)*ease)}`;
-      if(p<1)requestAnimationFrame(tick);
-      else resolve();
-    };
-    requestAnimationFrame(tick);
-  });
+  /* Faz 2 — sayaç animasyonu: sadece iyileşme varsa animasyon, yoksa direkt yeni sıra */
+  if(diff>0){
+    const dur=Math.min(1400,diff*60+500);
+    const t0=performance.now();
+    await new Promise(resolve=>{
+      const tick=(now)=>{
+        const p=Math.min((now-t0)/dur,1);
+        const ease=1-Math.pow(1-p,3);
+        counter.textContent=`#${Math.round(oldRank-(oldRank-newRank)*ease)}`;
+        if(p<1)requestAnimationFrame(tick);
+        else resolve();
+      };
+      requestAnimationFrame(tick);
+    });
+  } else {
+    counter.textContent=`#${newRank}`;
+    await new Promise(r=>setTimeout(r,500));
+  }
 
   /* Faz 3 — yeni pozisyon */
+  if(diff>0){
+    const meRow=list.querySelector('.ra-me');
+    if(meRow)meRow.style.animation='raFlyUp .6s ease forwards';
+    await new Promise(r=>setTimeout(r,300));
+  }
   list.style.transition='opacity .25s';
   list.style.opacity='0';
   await new Promise(r=>setTimeout(r,250));
