@@ -294,8 +294,10 @@ const LANGS = {
     'lbl_invite':'Arkadaşını Davet Et','lbl_challenge':'⚔️ Meydan Oku',
     'rank_here':'#%r. Sıradasın','level_starting':'LEVEL %n BAŞLIYOR…',
     'all_done':'TÜM LEVELLAR TAMAMLANDI! 👑','rank_anim_title':'Şampiyonlar Ligi',
-    'rank_up':'⬆ %d sıra yükseldin! 🚀',
+    'rank_up':'⬆ %d sıra yükseldin! 🚀','rank_same':'📍 Sıran değişmedi','rank_down':'⬇ %d sıra geriledi',
     'pu_bomb':'Bomba','pu_freeze':'Dondur','pu_x2':'2× Puan','pu_upgrade':'Yükselt','pu_storm':'Fırtına','pu_luck':'Şans',
+    'lbl_paused':'DURAKLATILDI','lbl_tap_resume':'Ekrana bas ve devam et',
+    'btn_resume':'▶ Devam Et','btn_pause_home':'🏠 Ana Sayfa',
   },
   en: {
     'brand_sub':'Merge fruits · Endless levels · Championship!',
@@ -315,8 +317,10 @@ const LANGS = {
     'lbl_invite':'Invite a Friend','lbl_challenge':'⚔️ Challenge',
     'rank_here':'#%r Ranked','level_starting':'LEVEL %n STARTING…',
     'all_done':'ALL LEVELS DONE! 👑','rank_anim_title':'Champions League',
-    'rank_up':'⬆ %d ranks up! 🚀',
+    'rank_up':'⬆ %d ranks up! 🚀','rank_same':'📍 Rank unchanged','rank_down':'⬇ Down %d ranks',
     'pu_bomb':'Bomb','pu_freeze':'Freeze','pu_x2':'2× Pts','pu_upgrade':'Upgrade','pu_storm':'Storm','pu_luck':'Luck',
+    'lbl_paused':'PAUSED','lbl_tap_resume':'Tap screen to resume',
+    'btn_resume':'▶ Resume','btn_pause_home':'🏠 Home',
   }
 };
 
@@ -353,6 +357,8 @@ function setLang(lang){
   set('lbl-total-score','lbl_total_score'); set('btn-lb-over','btn_lb_over');
   set('btn-retry','btn_retry'); set('btn-home-over','btn_home_over');
   set('lbl-invite','lbl_invite'); set('lbl-challenge','lbl_challenge');
+  set('lbl-paused','lbl_paused'); set('lbl-tap-resume','lbl_tap_resume');
+  set('btn-resume','btn_resume'); set('btn-pause-home','btn_pause_home');
 }
 </script>
 </head>
@@ -1040,11 +1046,11 @@ function setLang(lang){
 <!-- Pause touch blocker -->
 <div id="pause-block-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:150;background:rgba(0,0,0,.6);flex-direction:column;align-items:center;justify-content:center;cursor:pointer;" onclick="togglePause()">
   <div style="font-size:60px;margin-bottom:12px">⏸</div>
-  <div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:6px">DURAKLATILDI</div>
-  <div style="font-size:13px;color:rgba(255,255,255,.5);margin-bottom:24px">Ekrana bas ve devam et</div>
+  <div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:6px" id="lbl-paused">DURAKLATILDI</div>
+  <div style="font-size:13px;color:rgba(255,255,255,.5);margin-bottom:24px" id="lbl-tap-resume">Ekrana bas ve devam et</div>
   <div style="display:flex;gap:16px">
-    <button onclick="event.stopPropagation();togglePause()" style="padding:14px 28px;border-radius:20px;border:none;background:linear-gradient(90deg,#e94560,#f5a623);color:#fff;font-size:16px;font-weight:800;cursor:pointer;">▶ Devam Et</button>
-    <button onclick="event.stopPropagation();pauseAndHome()" style="padding:14px 28px;border-radius:20px;border:2px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;font-size:16px;font-weight:800;cursor:pointer;">🏠 Ana Sayfa</button>
+    <button id="btn-resume" onclick="event.stopPropagation();togglePause()" style="padding:14px 28px;border-radius:20px;border:none;background:linear-gradient(90deg,#e94560,#f5a623);color:#fff;font-size:16px;font-weight:800;cursor:pointer;">▶ Devam Et</button>
+    <button id="btn-pause-home" onclick="event.stopPropagation();pauseAndHome()" style="padding:14px 28px;border-radius:20px;border:2px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;font-size:16px;font-weight:800;cursor:pointer;">🏠 Ana Sayfa</button>
   </div>
 </div>
 
@@ -2705,7 +2711,7 @@ function drop(x){
     if(S.dead)return;
     S.dropping=false;
     S.curType=S.nxtType;S.nxtType=S.nxt2Type;S.nxt2Type=S.nxt3Type;S.nxt3Type=rndDrop();updNxt();
-  },320);
+  },200);
 }
 
 /* ══════════════════════════════════════════
@@ -3693,8 +3699,8 @@ function togglePause(){
 
 async function showRankAnim(oldRank, newRank, entries, playerName){
   if(!entries||entries.length<1)return;
-  if(oldRank<=0||newRank<=0||oldRank<=newRank)return;
-  const diff=oldRank-newRank;
+  if(newRank<=0)return;
+  const diff=oldRank>0?(oldRank-newRank):0;
   const overlay=document.getElementById('rank-anim-overlay');
   const list=document.getElementById('rank-anim-list');
   const counter=document.getElementById('rank-anim-counter');
@@ -3721,13 +3727,13 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
   msg.textContent='';
   setTimeout(()=>{overlay.style.opacity='1';},20);
 
-  /* Faz 1 — eski pozisyon */
-  counter.textContent=`#${oldRank}`;
+  /* Faz 1 — eski pozisyon (varsa) veya direkt yeni */
+  counter.textContent=`#${oldRank>0?oldRank:newRank}`;
   list.style.opacity='1';
   list.innerHTML=[
-    makeRow(oldRank-1,getEntry(oldRank-1),false),
-    makeRow(oldRank,me,true),
-    makeRow(oldRank+1,getEntry(oldRank+1),false),
+    makeRow(oldRank>0?oldRank-1:newRank-1, getEntry(oldRank>0?oldRank-1:newRank-1),false),
+    makeRow(oldRank>0?oldRank:newRank, me, true),
+    makeRow(oldRank>0?oldRank+1:newRank+1, getEntry(oldRank>0?oldRank+1:newRank+1),false),
   ].join('');
 
   await new Promise(r=>setTimeout(r,1000));
@@ -3767,7 +3773,7 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
   await new Promise(r=>setTimeout(r,400));
 
   /* Faz 4 — mesaj */
-  msg.textContent=T('rank_up',{d:diff});
+  msg.textContent = diff>0 ? T('rank_up',{d:diff}) : (diff<0 ? T('rank_down',{d:Math.abs(diff)}) : T('rank_same'));
   msg.style.opacity='1';
 
   await new Promise(r=>setTimeout(r,1600));
@@ -3820,7 +3826,7 @@ async function winLevel(){
   requestAnimationFrame(()=>{ document.getElementById('lv-bar').style.width='100%'; });
 
   /* Sıralama animasyonu — 1sn sonra başlat */
-  if(S.user && oldRank>0 && rank>0 && oldRank>rank){
+  if(S.user && rank>0 && lbEntries.length>0){
     setTimeout(()=>showRankAnim(oldRank,rank,lbEntries,S.user), 900);
   }
 
