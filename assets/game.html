@@ -3746,36 +3746,56 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
 
   /* Faz 2 — sayaç animasyonu: sadece iyileşme varsa animasyon, yoksa direkt yeni sıra */
   if(diff>0){
-    const dur=Math.min(1800, diff*80+600);
-    const t0=performance.now();
-    let lastRowUpdate=-1;
+    /* Geçiş animasyonu — 5 satırlı görünüm: 2 üst (blur), ME, 2 alt (blur) */
+    const dur = Math.min(2800, diff*120+800);
+    const t0 = performance.now();
+
+    /* Satır oluşturucu — ME dışındakiler bulanık */
+    const makeScrollRow = (rank, entry, isMe, opacity=1, blur=0) => {
+      const name  = entry ? entry.name : '—';
+      const score = entry ? (entry.score||0).toLocaleString() : '—';
+      const medal = rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':`#${rank}`;
+      const style = isMe
+        ? ''
+        : `opacity:${opacity};filter:blur(${blur}px);transform:scale(${0.94+opacity*0.06})`;
+      return `<div class="ra-row${isMe?' ra-me':''}" style="${style};transition:all .12s ease">
+        <span class="ra-rank-num">${medal}</span>
+        <span class="ra-name-txt">${name}</span>
+        <span class="ra-score-txt">${isMe?score:''}</span>
+      </div>`;
+    };
+
+    /* Animasyon — her kare satırları güncelle */
+    let lastVal = -1;
     await new Promise(resolve=>{
-      const tick=(now)=>{
-        const p=Math.min((now-t0)/dur,1);
-        const ease=1-Math.pow(1-p,3);
-        const val=Math.round(oldRank-(oldRank-newRank)*ease);
-        counter.textContent=`#${val}`;
-        /* Her 120ms'de bir satırları güncelle — uçuyor hissi */
-        if(val!==lastRowUpdate){
-          lastRowUpdate=val;
-          list.style.opacity='1';
-          list.innerHTML=[
-            makeRow(val-1, getEntry(val-1), false),
-            makeRow(val, me, true),
-            makeRow(val+1, getEntry(val+1), false),
+      const tick = (now) => {
+        const p    = Math.min((now-t0)/dur, 1);
+        const ease = 1 - Math.pow(1-p, 2.5);
+        const val  = Math.round(oldRank - (oldRank-newRank)*ease);
+        counter.textContent = `#${val}`;
+
+        if(val !== lastVal){
+          lastVal = val;
+          /* Varış noktasına yakınlık: 1=tam başlangıç, 0=varış */
+          const progress = (oldRank-val) / Math.max(diff,1);
+          /* 2 üst, ME, 2 alt — yukarıdakiler daha soluk */
+          list.innerHTML = [
+            makeScrollRow(val-2, getEntry(val-2), false, 0.25, 3),
+            makeScrollRow(val-1, getEntry(val-1), false, 0.55, 1.5),
+            makeScrollRow(val,   me,               true),
+            makeScrollRow(val+1, getEntry(val+1), false, 0.55, 1.5),
+            makeScrollRow(val+2, getEntry(val+2), false, 0.25, 3),
           ].join('');
-          /* Geçiş sırasındaki ME satırını hafif vurgula */
-          const mR=list.querySelector('.ra-me');
-          if(mR&&val!==newRank) mR.style.boxShadow='0 0 18px rgba(245,166,35,.5)';
         }
-        if(p<1)requestAnimationFrame(tick);
+        if(p<1) requestAnimationFrame(tick);
         else resolve();
       };
       requestAnimationFrame(tick);
     });
+
   } else {
-    counter.textContent=`#${newRank}`;
-    await new Promise(r=>setTimeout(r,500));
+    counter.textContent = `#${newRank}`;
+    await new Promise(r=>setTimeout(r,400));
   }
 
   /* Faz 3 — yeni pozisyon */
@@ -3789,18 +3809,20 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
     }
     await new Promise(r=>setTimeout(r,200));
   }
-  list.style.transition='opacity .25s';
+  list.style.transition='opacity .2s';
   list.style.opacity='0';
-  await new Promise(r=>setTimeout(r,250));
+  await new Promise(r=>setTimeout(r,200));
 
   counter.textContent=`#${newRank}`;
   list.innerHTML=[
-    makeRow(newRank-1,getEntry(newRank-1),false),
-    makeRow(newRank,me,true),
-    makeRow(newRank+1,getEntry(newRank+1),false),
+    makeRow(newRank-2, getEntry(newRank-2), false),
+    makeRow(newRank-1, getEntry(newRank-1), false),
+    makeRow(newRank,   me,                  true),
+    makeRow(newRank+1, getEntry(newRank+1), false),
+    makeRow(newRank+2, getEntry(newRank+2), false),
   ].join('');
   const newMe=list.querySelector('.ra-me');
-  if(newMe)newMe.style.animation='raFadeIn .5s ease forwards, raPulse 1s ease .5s infinite';
+  if(newMe) newMe.style.animation='raFadeIn .5s ease forwards, raPulse 1s ease .5s 2';
   list.style.opacity='1';
 
   await new Promise(r=>setTimeout(r,400));
