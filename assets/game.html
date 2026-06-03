@@ -3717,7 +3717,7 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
   const me=entries.find(e=>e.name===playerName)||{name:playerName,score:0};
 
   const makeRow=(rank,entry,isMe)=>{
-    if(!entry) return `<div class="ra-row ra-empty" style="opacity:.3;border:1.5px dashed rgba(255,255,255,.2)"><span class="ra-rank-num">#${rank}</span><span class="ra-name-txt" style="color:rgba(255,255,255,.3)">—</span><span class="ra-score-txt">—</span></div>`;
+    if(rank<=0) return ''; if(!entry) return `<div class="ra-row ra-empty" style="opacity:.6;border:1px dashed rgba(255,255,255,.3)"><span class="ra-rank-num" style="color:rgba(255,255,255,.55)">#${rank}</span><span class="ra-name-txt" style="color:rgba(255,255,255,.5)">👤 —</span><span class="ra-score-txt"></span></div>`;
     const medal=rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':`#${rank}`;
     return`<div class="ra-row${isMe?' ra-me':''}">
       <span class="ra-rank-num">${medal}</span>
@@ -3752,16 +3752,17 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
 
     /* Satır oluşturucu — ME dışındakiler bulanık */
     const makeScrollRow = (rank, entry, isMe, opacity=1, blur=0) => {
-      const name  = entry ? entry.name : '—';
-      const score = entry ? (entry.score||0).toLocaleString() : '—';
-      const medal = rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':`#${rank}`;
+      const name  = entry ? entry.name : `👤 #${rank}`;
+      const score = entry ? (entry.score||0).toLocaleString() : '';
+      const medal = rank<=0 ? '' : rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':`#${rank}`;
+      if(rank<=0) return '';
       const style = isMe
         ? ''
-        : `opacity:${opacity};filter:blur(${blur}px);transform:scale(${0.94+opacity*0.06})`;
-      return `<div class="ra-row${isMe?' ra-me':''}" style="${style};transition:all .12s ease">
-        <span class="ra-rank-num">${medal}</span>
-        <span class="ra-name-txt">${name}</span>
-        <span class="ra-score-txt">${isMe?score:''}</span>
+        : `opacity:${opacity};filter:blur(${blur}px) brightness(0.85);transform:scale(${0.96+opacity*0.04})`;
+      return `<div class="ra-row${isMe?' ra-me':''}" style="${style};transition:all .1s ease">
+        <span class="ra-rank-num" style="${isMe?'':'color:rgba(255,255,255,.6)'}">${medal}</span>
+        <span class="ra-name-txt" style="${isMe?'':'color:rgba(255,255,255,.7)'}">${name}</span>
+        <span class="ra-score-txt" style="${isMe?'':'color:rgba(255,255,255,.4)'}">${score}</span>
       </div>`;
     };
 
@@ -3780,11 +3781,11 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
           const progress = (oldRank-val) / Math.max(diff,1);
           /* 2 üst, ME, 2 alt — yukarıdakiler daha soluk */
           list.innerHTML = [
-            makeScrollRow(val-2, getEntry(val-2), false, 0.25, 3),
-            makeScrollRow(val-1, getEntry(val-1), false, 0.55, 1.5),
+            makeScrollRow(val-2, getEntry(val-2), false, 0.55, 2.5),
+            makeScrollRow(val-1, getEntry(val-1), false, 0.82, 1.0),
             makeScrollRow(val,   me,               true),
-            makeScrollRow(val+1, getEntry(val+1), false, 0.55, 1.5),
-            makeScrollRow(val+2, getEntry(val+2), false, 0.25, 3),
+            makeScrollRow(val+1, getEntry(val+1), false, 0.82, 1.0),
+            makeScrollRow(val+2, getEntry(val+2), false, 0.55, 2.5),
           ].join('');
         }
         if(p<1) requestAnimationFrame(tick);
@@ -4439,7 +4440,7 @@ window.addEventListener('pagehide',()=>{
 </script>
 
 <!-- ══ RANK ANİMASYON OVERLAY ══ -->
-<div id="rank-anim-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.92);z-index:600;flex-direction:column;align-items:center;justify-content:center;font-family:'Segoe UI',Arial;color:#fff;text-align:center;padding:20px;transition:opacity .3s">
+<div id="rank-anim-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.72);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:600;flex-direction:column;align-items:center;justify-content:center;font-family:'Segoe UI',Arial;color:#fff;text-align:center;padding:20px;transition:opacity .3s">
   <div style="font-size:11px;letter-spacing:3px;color:rgba(255,255,255,.4);margin-bottom:8px;text-transform:uppercase">Şampiyonlar Ligi</div>
   <div id="rank-anim-counter" style="font-size:52px;font-weight:900;color:#f5a623;margin-bottom:12px;transition:all .1s;text-shadow:0 0 30px rgba(245,166,35,.5)">#—</div>
   <div id="rank-anim-list" style="width:92%;max-width:310px"></div>
