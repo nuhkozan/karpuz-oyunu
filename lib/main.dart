@@ -48,6 +48,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   bool _webViewReady = false;
   Timer? _loadTimeoutTimer;
   Timer? _periodicAdTimer;
+  bool _isGameScreenActive = false; // Hata 5: sadece oyundayken reklam
 
   // Interstitial
   InterstitialAd? _interstitialAd;
@@ -74,10 +75,10 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     _loadBannerAd();
     _loadRewardedAd();
 
-    // Her 30 dakikada bir otomatik interstitial reklam
+    // Her 30 dakikada bir otomatik interstitial â€” sadece oyun ekranÄ±ndayken (Hata 5)
     _periodicAdTimer = Timer.periodic(const Duration(minutes: 30), (timer) {
       if (!mounted) { timer.cancel(); return; }
-      _showInterstitialAd();
+      if (_isGameScreenActive) _showInterstitialAd();
     });
 
     _controller = WebViewController()
@@ -93,6 +94,12 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         }
       })
 
+      // -- Oyun ekranÄ± durumu (Hata 5) --
+      ..addJavaScriptChannel('FlutterGameState',
+          onMessageReceived: (JavaScriptMessage msg) {
+        _isGameScreenActive = msg.message == 'game';
+      })
+
       // -- Interstitial --
       ..addJavaScriptChannel('FlutterAd',
           onMessageReceived: (JavaScriptMessage msg) {
@@ -105,14 +112,13 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         if (msg.message == 'show') _showRewardedAd();
       })
 
-      // -- In-App Review (Level 8 basinda) --
+      // -- In-App Review (Level 8 - Hata 1) --
       ..addJavaScriptChannel('FlutterReview',
           onMessageReceived: (JavaScriptMessage msg) async {
         if (msg.message == 'show') {
           try {
-            if (await _inAppReview.isAvailable()) {
-              await _inAppReview.requestReview();
-            }
+            // isAvailable() kontrolÃ¼ olmadan direkt dene â€” Google kendi filtresini yapar
+            await _inAppReview.requestReview();
           } catch (e) {}
         }
       })
