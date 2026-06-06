@@ -2163,8 +2163,13 @@ async function registerUser(){
   try{localStorage.setItem(UKEY,n);}catch(e){}
   S.user=n;S.lv=1;S.totSc=0;
   const tutDone=localStorage.getItem('karpuz_tutdone');
-  if(!tutDone){showTutorial();}
-  else{checkDailyReward();beginLevel();}
+  try{
+    if(!tutDone){showTutorial();}
+    else{checkDailyReward();beginLevel();}
+  }catch(err){
+    showToast('❌ '+err.message);
+    errEl.textContent='❌ '+err.message;
+  }
 }
 
 function startNew(){registerUser();}
