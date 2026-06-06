@@ -2858,6 +2858,9 @@ function loop(ts){
     S.winPending=false;
     const wf=S.winFruit;
     /* Animasyonu hemen başlat, LB async gelince rank güncellenir */
+    const _curLB=getLB();
+    const _curIdx=_curLB.findIndex(e=>e.name===S.user);
+    S._winOldRank=_curIdx>=0?_curIdx+1:0; /* Güncelleme ÖNCESİ sıra */
     WA.start(wf.x, wf.y, {rank:0, score:S.totSc, lv:S.lv, elapsed:S.timeElapsed});
     submitLB(S.user,S.totSc,S.lv).then(rank=>{
       S._winRank=rank; S._winScore=S.totSc;
@@ -3577,8 +3580,9 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
 
   /* Satır oluştur */
   const makeRow=(rank,entry,isMe)=>{
-    if(!entry&&!isMe)return`<div class="ra-row ra-empty"></div>`;
-    const e=entry||{name:playerName,score:0};
+    if(!entry&&!isMe)return`<div class="ra-row ra-empty" style="height:48px"></div>`;
+    const e=entry||(isMe?{name:playerName,score:S.totSc||0}:null);
+    if(!e)return`<div class="ra-row ra-empty" style="height:48px"></div>`;
     const num=rank<=3?(['🥇','🥈','🥉'][rank-1]):`#${rank}`;
     return`<div class="ra-row${isMe?' ra-me':''}">
       <span class="ra-rank-num">${num}</span>
@@ -3591,7 +3595,7 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
     const rows=[];
     for(let r=centerRank-2;r<=centerRank+2;r++){
       const entry=entries[r-1]||null;
-      rows.push(makeRow(r,entry,r===centerRank&&entry&&entry.name===playerName));
+      rows.push(makeRow(r,entry,r===centerRank));
     }
     return rows.join('');
   };
@@ -3671,10 +3675,9 @@ async function winLevel(){
   if(S.dead)return; stop();
   S.totSc = S._winScore ?? S.totSc;
 
-  /* Eski sırayı kaydet (güncelleme öncesi) */
-  const oldLB=getLB();
-  const oldIdx=oldLB.findIndex(e=>e.name===S.user);
-  const oldRank=oldIdx>=0?oldIdx+1:0;
+  /* Eski sıra — WA başlamadan önce yakalandı */
+  const oldRank=S._winOldRank||0;
+  S._winOldRank=0;
 
   /* Yeni sıra + tüm liste */
   const lbResult = S._winRank
