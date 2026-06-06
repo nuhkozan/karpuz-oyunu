@@ -75,7 +75,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     _loadBannerAd();
     _loadRewardedAd();
 
-    // Her 30 dakikada bir otomatik interstitial â€” sadece oyun ekranÄ±ndayken (Hata 5)
+    // Her 30 dakikada bir otomatik interstitial Ã¢â‚¬â€ sadece oyun ekranÃ„Â±ndayken (Hata 5)
     _periodicAdTimer = Timer.periodic(const Duration(minutes: 30), (timer) {
       if (!mounted) { timer.cancel(); return; }
       if (_isGameScreenActive) _showInterstitialAd();
@@ -94,7 +94,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         }
       })
 
-      // -- Oyun ekranÄ± durumu (Hata 5) --
+      // -- Oyun ekranÃ„Â± durumu (Hata 5) --
       ..addJavaScriptChannel('FlutterGameState',
           onMessageReceived: (JavaScriptMessage msg) {
         _isGameScreenActive = msg.message == 'game';
@@ -117,7 +117,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
           onMessageReceived: (JavaScriptMessage msg) async {
         if (msg.message == 'show') {
           try {
-            // isAvailable() kontrolÃ¼ olmadan direkt dene â€” Google kendi filtresini yapar
+            // isAvailable() kontrolÃƒÂ¼ olmadan direkt dene Ã¢â‚¬â€ Google kendi filtresini yapar
             await _inAppReview.requestReview();
           } catch (e) {}
         }
@@ -164,25 +164,32 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
         try {
           final results = await Future.wait([
             http.get(Uri.parse('$fbUrl/users/$key.json'))
-                .timeout(const Duration(seconds: 10)),
+                .timeout(const Duration(seconds: 8)),
             http.get(Uri.parse('$fbUrl/leaderboard/$key.json'))
-                .timeout(const Duration(seconds: 10)),
+                .timeout(const Duration(seconds: 8)),
           ]);
           final usersData = jsonDecode(results[0].body);
           final lbData    = jsonDecode(results[1].body);
           final taken =
               (usersData != null && usersData is Map && usersData['name'] != null) ||
               (lbData    != null && lbData    is Map && lbData['name']    != null);
-          if (!taken) {
-            await http.put(
-              Uri.parse('$fbUrl/users/$key.json'),
-              headers: {'Content-Type': 'application/json'},
-              body: jsonEncode({'name': name, 't': DateTime.now().millisecondsSinceEpoch}),
-            ).timeout(const Duration(seconds: 10));
-          }
+
+          /* Sonucu JS'e hemen bildir â€” PUT bekleme */
           _controller.runJavaScript(
               'try{window._regCb("$id",${taken ? 'true' : 'false'})}catch(e){}');
+
+          /* KullanÄ±cÄ±yÄ± kaydet â€” fire and forget, hata olursa Ã¶nemli deÄŸil */
+          if (!taken) {
+            try {
+              await http.put(
+                Uri.parse('$fbUrl/users/$key.json'),
+                headers: {'Content-Type': 'application/json'},
+                body: jsonEncode({'name': name, 't': DateTime.now().millisecondsSinceEpoch}),
+              ).timeout(const Duration(seconds: 8));
+            } catch (e) { /* PUT baÅŸarÄ±sÄ±z olsa da sorun deÄŸil */ }
+          }
         } catch (e) {
+          /* Firebase GET baÅŸarÄ±sÄ±z â€” null dÃ¶ndÃ¼r */
           _controller.runJavaScript(
               'try{window._regCb("$id",null)}catch(e){}');
         }
@@ -418,7 +425,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text('ğŸ‰', style: TextStyle(fontSize: 64)),
+                              Text('ÄŸÅ¸Ââ€°', style: TextStyle(fontSize: 64)),
                               SizedBox(height: 16),
                               CircularProgressIndicator(color: Colors.green),
                             ],
