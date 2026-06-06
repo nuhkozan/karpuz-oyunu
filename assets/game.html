@@ -1867,7 +1867,7 @@ const S={
   cfg:null,
   timerId:null,rafId:null,
   lastTs:null,dead:false,dangerT:0,
-  autoT:3.0,
+  autoT:1.25,
   winPending:false,winFruit:null,
 };
 
@@ -2200,7 +2200,7 @@ function beginLevel(){
   const cfg=lvlCfg(S.lv);
   S.cfg=cfg;S.lvSc=0;S.timeElapsed=0;
   S.dropping=false;S.fruits=[];S.dead=false;S.dangerT=0;S.lastTs=null;
-  S.autoT=3.0;S.winPending=false;S.winFruit=null;WA.active=false;
+  S.autoT=1.25;S.winPending=false;S.winFruit=null;WA.active=false;
   S._winBonus=0;S._winRank=0;S._winScore=null;S._extraUsed=false;
   S._narrowingWarned=false;
   /* Hareketli tehlike çizgisi */
@@ -2556,7 +2556,7 @@ CV.addEventListener('touchcancel',()=>{
 function drop(x){
   if(S.dropping||S.dead)return;
   S.dropping=true;
-  S.autoT=3.0; /* reset auto-drop timer */
+  S.autoT=1.25; /* reset auto-drop timer */
   const f=new Fruit(x,S.cfg.dangerY-FR[S.curType][1]-4,S.curType);
   f.vy=280;
   S.fruits.push(f);
@@ -2577,9 +2577,9 @@ function physics(dt){
   /* Auto-drop countdown */
   if(!S.dropping){
     S.autoT-=dt;
-    const pct=Math.max(0,S.autoT/3.0)*100;
+    const pct=Math.max(0,S.autoT/1.25)*100;
     document.getElementById('adf').style.width=pct+'%';
-    if(S.autoT<=0){ drop(S.dropX); S.autoT=3.0; }
+    if(S.autoT<=0){ drop(S.dropX); S.autoT=1.25; }
   }else{
     document.getElementById('adf').style.width='100%';
   }
@@ -2587,17 +2587,18 @@ function physics(dt){
   for(const f of S.fruits){
     if(f.merged)continue;
     f.vy+=c.gravity*dt;f.y+=f.vy*dt;f.age+=dt;
-    /* Zigzag: küçük meyveler için kısa ve hafif, büyüklerde yok */
-    if(f.age<0.4 && f.r<30){
-      f.vx=Math.sin(f.age*f.zzFreq)*f.zzAmp*(1-f.age/0.4);
+    /* Zigzag: sadece çok küçük meyveler için, kısa süre */
+    if(f.age<0.25 && f.r<22){
+      f.vx=Math.sin(f.age*f.zzFreq)*f.zzAmp*(1-f.age/0.25)*0.5;
     }else{
-      f.vx*=0.88; /* hızlı sönümle — donmayı önler */
+      f.vx*=0.82; /* yatay sönüm */
+      f.vy*=0.995; /* dikey hafif sönüm — sonsuz zıplamayı önler */
       if(Math.abs(f.vx)<0.5) f.vx=0;
     }
     f.x+=f.vx*dt;
-    if(f.y+f.r>c.floor){f.y=c.floor-f.r;f.vy=-Math.abs(f.vy)*.33;f.vx*=.78;if(Math.abs(f.vy)<28)f.vy=0;}
-    if(f.x-f.r<c.wL){f.x=c.wL+f.r;f.vx=Math.abs(f.vx)*.36;}
-    if(f.x+f.r>c.wR){f.x=c.wR-f.r;f.vx=-Math.abs(f.vx)*.36;}
+    if(f.y+f.r>c.floor){f.y=c.floor-f.r;f.vy=-Math.abs(f.vy)*.22;f.vx*=.65;if(Math.abs(f.vy)<20)f.vy=0;}
+    if(f.x-f.r<c.wL){f.x=c.wL+f.r;f.vx=Math.abs(f.vx)*.25;}
+    if(f.x+f.r>c.wR){f.x=c.wR-f.r;f.vx=-Math.abs(f.vx)*.25;}
   }
 
   /* Freeze aktifse birleşim fizik durdur */
@@ -2647,7 +2648,7 @@ function physics(dt){
       const nx=dx/d,ny=dy/d,ov=(md-d)*.5;
       a.x-=nx*ov*.5;a.y-=ny*ov*.5;b.x+=nx*ov*.5;b.y+=ny*ov*.5;
       const rv=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;
-      if(rv<0){const im=rv*.28;a.vx+=im*nx;a.vy+=im*ny;b.vx-=im*nx;b.vy-=im*ny;}
+      if(rv<0){const im=rv*.18;a.vx+=im*nx;a.vy+=im*ny;b.vx-=im*nx;b.vy-=im*ny;}
     }
   }
   S.fruits=S.fruits.filter(f=>!f.merged);
@@ -2867,9 +2868,10 @@ function loop(ts){
     S._winOldRank=_localIdx>=0?(_localIdx+1)
       :(_lastRankStr?parseInt(_lastRankStr):0);
     WA.start(wf.x, wf.y, {rank:0, score:S.totSc, lv:S.lv, elapsed:S.timeElapsed});
-    submitLB(S.user,S.totSc,S.lv).then(rank=>{
-      S._winRank=rank; S._winScore=S.totSc;
-      if(WA.info) WA.info.rank=rank;
+    submitLBFull(S.user,S.totSc,S.lv).then(result=>{
+      S._winRank=result.rank; S._winScore=S.totSc;
+      S._winEntries=result.entries;
+      if(WA.info) WA.info.rank=result.rank;
     }).catch(()=>{});
     S.rafId=requestAnimationFrame(loop);
     return;
@@ -3467,7 +3469,7 @@ function resumeGame(){
   S.dead = false;
   S.dangerT = 0;
   S.dropping = false;
-  S.autoT = 3.0;
+  S.autoT = 1.25;
   S.winPending = false;
   S.winFruit = null;
   S._extraUsed = false;
@@ -3693,11 +3695,11 @@ async function winLevel(){
 
   /* Eski sıra — WA başlamadan önce yakalandı */
   const oldRank=S._winOldRank||0;
-  S._winOldRank=0;
+  S._winOldRank=0; S._winEntries=null;
 
   /* Yeni sıra + tüm liste */
   const lbResult = S._winRank
-    ? {rank:S._winRank, entries:getLB()}
+    ? {rank:S._winRank, entries:S._winEntries||getLB()}
     : await submitLBFull(S.user,S.totSc,S.lv);
   const rank = lbResult.rank;
   const lbEntries = lbResult.entries;
