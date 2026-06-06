@@ -2134,57 +2134,37 @@ async function registerUser(){
   const n=document.getElementById('uname').value.trim();
   const errEl=document.getElementById('uname-err');
   errEl.textContent='';
-  if(!n){errEl.textContent='⚠️ '+T('enter_username');document.getElementById('uname').focus();return;}
+  if(!n){errEl.textContent='⚠️ Kullanıcı adı boş olamaz!';document.getElementById('uname').focus();return;}
   if(n.length<2){errEl.textContent='⚠️ En az 2 karakter gir.';return;}
   if(n.length>16){errEl.textContent='⚠️ En fazla 16 karakter olabilir.';return;}
-
-  /* Kendi önceki adıysa direkt gir */
-  const prevName=localStorage.getItem(UKEY);
-  if(prevName && prevName.toLowerCase()===n.toLowerCase()){
-    errEl.textContent='';
-    S.user=prevName;S.lv=1;S.totSc=0;
-    const tutDone=localStorage.getItem('karpuz_tutdone');
-    if(!tutDone){showTutorial();}else{checkDailyReward();beginLevel();}
-    return;
-  }
-
   if(isNameTaken(n)){
     errEl.textContent='🚫 Bu kullanıcı adı bu cihazda alınmış!';
     document.getElementById('uname').select();
     return;
   }
-
   const btn=document.getElementById('btn-save-play');
-  if(btn){btn.textContent='⏳...';btn.disabled=true;}
-
-  /* Flutter kanalı varsa Firebase kontrolü yap */
-  if(window.FlutterRegister){
-    errEl.textContent='🔍 Kontrol ediliyor...';
-    try{
-      const taken=await Promise.race([
-        checkAndRegister(n),
-        new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),5000))
-      ]);
-      if(taken){
-        errEl.textContent='🚫 Bu kullanıcı adı alınmış! Başka bir isim seç.';
-        if(btn){btn.textContent=T('btn_save_play');btn.disabled=false;}
-        return;
-      }
-    }catch(e){
-      /* 5sn timeout veya bağlantı hatası — uyarıyla gir */
-      errEl.textContent='⚠️ Sunucu kontrolü yapılamadı, giriliyor...';
-      await new Promise(r=>setTimeout(r,800));
+  if(btn){btn.textContent='⏳ Kontrol ediliyor...';btn.disabled=true;}
+  errEl.textContent='🔍 Kontrol ediliyor...';
+  try{
+    const taken=await checkAndRegister(n);
+    if(taken){
+      errEl.textContent='🚫 Bu kullanıcı adı alınmış! Başka bir isim seç.';
+      if(btn){btn.textContent=T('btn_save_play');btn.disabled=false;}
+      return;
     }
+  }catch(e){
+    if(btn){btn.textContent=T('btn_save_play');btn.disabled=false;}
+    errEl.innerHTML='⚠️ Sunucuya bağlanılamadı.<br><small style="color:rgba(255,255,255,.5)">İnternet bağlantını kontrol et veya</small><br><button onclick="forceRegister(\''+n+'\')" style="margin-top:6px;padding:6px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;font-size:12px;cursor:pointer;">Yine de Gir (çevrimdışı)</button>';
+    return;
   }
-
-  /* Kayıt ve oyuna giriş */
   if(btn){btn.textContent=T('btn_save_play');btn.disabled=false;}
   errEl.textContent='';
   addRegistered(n);
   try{localStorage.setItem(UKEY,n);}catch(e){}
   S.user=n;S.lv=1;S.totSc=0;
   const tutDone=localStorage.getItem('karpuz_tutdone');
-  if(!tutDone){showTutorial();}else{checkDailyReward();beginLevel();}
+  if(!tutDone){showTutorial();}
+  else{checkDailyReward();beginLevel();}
 }
 
 function startNew(){registerUser();}
