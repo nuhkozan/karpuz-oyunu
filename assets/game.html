@@ -445,6 +445,16 @@ function setLang(lang){
   if(challCh)challCh.textContent=lang==='en'?'🔄 Any Challenges?':lang==='ru'?'🔄 Есть вызовы?':lang==='ar'?'🔄 هل هناك تحديات؟':'🔄 Meydan Okuma Var Mı?';
   var chalPh=document.getElementById('chal-input');
   if(chalPh)chalPh.placeholder=lang==='en'?'Username...':lang==='ru'?'Имя пользователя...':lang==='ar'?'اسم المستخدم...':'Kullanıcı adı...';
+  // Store desc
+  var sd=document.getElementById('lbl-store-desc');
+  if(sd)sd.innerHTML=lang==='en'?'Power-up packages &amp;<br>ad-free option<br>coming soon!':lang==='ru'?'Пакеты усилений и<br>игра без рекламы<br>скоро!':lang==='ar'?'حزم التعزيز<br>وخيار بدون إعلانات<br>قريباً!':'Güçlendirme paketleri ve<br>reklamsız oyun seçeneği<br>çok yakında sizlerle!';
+  // Guide desc
+  var gd=document.getElementById('lbl-guide-desc');
+  if(gd)gd.innerHTML=lang==='en'?'Merge matching fruits to reach the level target!<br>Game ends if the field overflows.':lang==='ru'?'Соединяй одинаковые фрукты чтобы достичь цели!<br>Игра заканчивается если поле переполнено.':lang==='ar'?'ادمج الفواكه للوصول إلى هدف المستوى!<br>تنتهي اللعبة إذا امتلأ الحقل.':'Aynı meyveleri birleştirerek level hedef meyvesine ulaş!<br>Alan taşarsa oyun biter. Güçlendirmeleri akıllıca kullan.';
+  // Mission footer
+  var mf=document.getElementById('lbl-mission-footer');
+  if(mf)mf.textContent=lang==='en'?'Resets daily · Rewards given as power-ups':lang==='ru'?'Сбрасывается ежедневно · Награды как усиления':lang==='ar'?'تُعاد يومياً · المكافآت كتعزيزات':'Her gün sıfırlanır · Görev ödülleri güçlendirme olarak verilir';
+  // HEDEF row
   var hedefRow=document.getElementById('lbl-hedef-row');
   if(hedefRow)hedefRow.textContent=lang==='en'?'TARGET:':lang==='ru'?'ЦЕЛЬ:':lang==='ar'?'الهدف:':'HEDEF:';
 }
@@ -462,7 +472,7 @@ function setLang(lang){
   <div class="mission-card">
     <div class="mission-title" id="lbl-missions-title">📋 GÜNLÜK GÖREVLER</div>
     <div id="mis-list"></div>
-    <div style="text-align:center;margin-top:8px;font-size:10px;color:rgba(255,255,255,.35)">Her gün sıfırlanır · Görev ödülleri güçlendirme olarak verilir</div>
+    <div style="text-align:center;margin-top:8px;font-size:10px;color:rgba(255,255,255,.35)"><span id="lbl-mission-footer">Her gün sıfırlanır · Görev ödülleri güçlendirme olarak verilir</span></div>
   </div>
   <button class="btn-main" style="margin-top:14px" id="btn-missions-close" onclick="closeMissions()">Kapat</button>
 </div>
@@ -488,7 +498,7 @@ function setLang(lang){
     <div style="background:#1a1a2e;border-radius:18px;padding:24px;border:1.5px solid rgba(255,215,0,.3);margin-bottom:20px">
       <div style="font-size:36px;margin-bottom:10px">🔜</div>
       <div style="font-size:16px;font-weight:800;color:#f5a623;margin-bottom:8px" id="lbl-store-soon">Yakında Aktif Olacak!</div>
-      <div style="font-size:13px;color:rgba(255,255,255,.6);line-height:1.7">
+      <div style="font-size:13px;color:rgba(255,255,255,.6);line-height:1.7" id="lbl-store-desc">
         Güçlendirme paketleri ve<br>reklamsız oyun seçeneği<br>çok yakında sizlerle!
       </div>
     </div>
@@ -542,7 +552,7 @@ function setLang(lang){
         letter-spacing:.5px; box-shadow:0 4px 20px rgba(76,175,80,.4)">
         ▶ ÜCRETSİZ İNDİR
       </button>
-      <div id="ad-pkg" style="margin-top:10px;font-size:10px;color:#555">
+      <div id="lbl-store-desc" style="margin-top:10px;font-size:13px;color:rgba(255,255,255,.5);">
         Google Play · com.puzzlemasters.game
       </div>
     </div>
@@ -1754,7 +1764,7 @@ async function renderLB(me){
     if(data&&typeof data==='object'){
       entries=Object.values(data).filter(e=>e&&e.name&&e.score);
       entries.sort((a,b)=>b.score-a.score);
-      entries=entries.slice(0,50);
+      /* slice yok — tüm kullanıcıları göster (rank context için) */
     }
   }catch(e){
     console.log('Firebase render err:',e);
@@ -1770,15 +1780,15 @@ async function renderLB(me){
   const myIdx=entries.findIndex(e=>e.name===me);
   const myRank=myIdx+1;
 
-  /* Gösterilecek satırları hesapla */
+  /* Gösterilecek satırları hesapla — İlk 10 + oyuncunun etrafı */
   let showIdxs=new Set();
-  /* İlk 10 */
-  for(let i=0;i<Math.min(10,entries.length);i++)showIdxs.add(i);
-  /* Kendi etrafındaki 5'er */
+  for(let i=0;i<Math.min(10,entries.length);i++) showIdxs.add(i);
   if(myIdx>=0){
-    for(let i=Math.max(0,myIdx-5);i<=Math.min(entries.length-1,myIdx+5);i++)showIdxs.add(i);
+    for(let i=Math.max(0,myIdx-5);i<=Math.min(entries.length-1,myIdx+5);i++) showIdxs.add(i);
   }
   const sortedIdxs=[...showIdxs].sort((a,b)=>a-b);
+
+  const rankLbl=_lang==='en'?`You are #${myRank}`:_lang==='ru'?`Вы на #${myRank} месте`:_lang==='ar'?`أنت في المركز #${myRank}`:`Sen: #${myRank}. sıradasın`;
 
   let html='';
   let lastIdx=-1;
@@ -1801,7 +1811,7 @@ async function renderLB(me){
     lastIdx=i;
   }
   if(myRank>0){
-    html=`<div style="font-size:11px;color:rgba(255,255,255,.4);padding:6px 12px;">Sen: #${myRank}. sıradasın</div>`+html;
+    html=`<div style="font-size:11px;color:rgba(255,255,255,.4);padding:6px 12px;">${rankLbl}</div>`+html;
   }
   el.innerHTML=html;
 }
@@ -2377,7 +2387,7 @@ function playTargetSound(idx){
   else if(idx===13) { sweep(600,200,'sine',0.4,0.3); }                        // 🍌 kayma
   else if(idx===14) { sweep(120,50,'triangle',0.4,0.45); }                    // 🍈 thud
   else if(idx===15) { noise(0.05,0.4); setTimeout(function(){noise(0.04,0.3);},60); setTimeout(function(){noise(0.03,0.2);},110); } // 🍏 crunch
-  else if(idx===16) { beep(500,'sine',0.1,0.2); setTimeout(function(){beep(350,'sine',0.1,0.2);},150); } // 🫐 pop pop
+  else if(idx===16) { beep(500,'sine',0.1,0.2); setTimeout(function(){beep(350,'sine',0.1,0.2);},125); } // 🫐 pop pop
   else if(idx===17) { sweep(300,80,'sine',0.15,0.5); noise(0.12,0.4); }       // 🍅 splat
   else if(idx===18) { arpej([523,659,784,1047],0.1,0.2,0.18); }               // 🍊 fanfar
   else if(idx===19) { [0,0.08,0.16,0.24].forEach(function(d){ try{ var o=AC.createOscillator(),g=AC.createGain(); o.connect(g);g.connect(AC.destination); o.type='sine';o.frequency.value=300+Math.random()*300; g.gain.setValueAtTime(0.2,t+d);g.gain.linearRampToValueAtTime(0,t+d+0.06); o.start(t+d);o.stop(t+d+0.08); }catch(e){} }); } // 🌽 pop corn
@@ -2454,16 +2464,16 @@ function checkRapidTap(){
   const now=Date.now();
   _tapTimes=_tapTimes.filter(t=>now-t<1000);
   _tapTimes.push(now);
-  if(_tapTimes.length>=5){
+  if(_tapTimes.length>=4){
     _tapFrozen=true; _tapTimes=[];
     showToast(_lang==='en'?'⚠️ Too fast! 5s freeze':_lang==='ru'?'⚠️ Слишком быстро! 5с':_lang==='ar'?'⚠️ سريع جداً! 5ث':'⚠️ Çok hızlı! 5sn durakladın');
     clearTimeout(_tapFreezeTimer);
     let autoCount=0;
     _tapAutoTimer=setInterval(()=>{
       if(!S.dead&&!S.dropping&&S.cfg) drop(S.dropX||S.cfg.cw/2);
-      if(++autoCount>=3){ clearInterval(_tapAutoTimer); _tapFrozen=false; }
+      if(++autoCount>=4){ clearInterval(_tapAutoTimer); _tapFrozen=false; }
     },1600);
-    _tapFreezeTimer=setTimeout(()=>{ clearInterval(_tapAutoTimer); _tapFrozen=false; },5000);
+    _tapFreezeTimer=setTimeout(()=>{ clearInterval(_tapAutoTimer); _tapFrozen=false; },7000);
     return false;
   }
   return true;
@@ -2551,7 +2561,7 @@ function drop(x){
     if(S.dead)return;
     S.dropping=false;
     S.curType=S.nxtType;S.nxtType=S.nxt2Type;S.nxt2Type=S.nxt3Type;S.nxt3Type=rndDrop();updNxt();
-  },150);
+  },125);
 }
 
 /* ══════════════════════════════════════════
@@ -3409,7 +3419,7 @@ function saveGameState(){
     nxtType: S.nxtType,
     dropX: S.dropX,
     pu: {...PU.stock},
-    winPending: S.winPending,
+    winPending: S.winPending || WA.active,
     savedAt: Date.now()
   };
   try{ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }catch(e){}
