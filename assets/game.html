@@ -233,18 +233,6 @@ canvas { display:block; cursor:crosshair; touch-action:none; border-radius:14px;
 .lb-name   { flex:1; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .lb-score  { font-weight:800; color:#f5a623; }
 .lb-lv     { font-size:10px; color:rgba(255,255,255,.35); margin-left:3px; }
-/* ══ RANK ANİMASYON CSS ══ */
-.ra-row{display:flex;align-items:center;gap:10px;padding:11px 16px;border-radius:14px;margin:4px 0;font-size:14px;background:rgba(255,255,255,.06);transition:all .4s ease;}
-.ra-row.ra-me{background:rgba(245,166,35,.22);border:1.5px solid rgba(245,166,35,.5);transform:scale(1.04);}
-.ra-row.ra-empty{height:44px;background:rgba(255,255,255,.02);}
-.ra-rank-num{width:36px;font-weight:900;font-size:13px;color:rgba(255,255,255,.5);text-align:center;}
-.ra-row.ra-me .ra-rank-num{color:#f5a623;}
-.ra-name-txt{flex:1;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.ra-row.ra-me .ra-name-txt{color:#fff;}
-.ra-score-txt{font-size:12px;color:rgba(255,255,255,.45);font-weight:700;}
-.ra-row.ra-me .ra-score-txt{color:#f5a623;}
-@keyframes raFadeIn{0%{opacity:0;transform:scale(1.04) translateY(20px);}100%{opacity:1;transform:scale(1.04) translateY(0);}}
-@keyframes raPulse{0%,100%{box-shadow:0 0 0 0 rgba(245,166,35,0);}50%{box-shadow:0 0 0 8px rgba(245,166,35,.25);}}
 </style>
 <!-- Firebase REST API - SDK yerine fetch kullanıyoruz, Flutter WebView uyumlu -->
 <script>
@@ -252,358 +240,132 @@ const FB_URL='https://karpuz-oyunu-default-rtdb.europe-west1.firebasedatabase.ap
 window._fbReady=true;
 
 /* ══ DİL SİSTEMİ ══ */
-const LANGS={
+var _lang=localStorage.getItem('karpuz_lang')||'tr';
+var LANGS={
 tr:{
-  'brand_sub':'Meyveleri birleştir · Sonsuz level · Şampiyona!',
-  'welcome_lbl':'HOŞ GELDİN','btn_new_game':'🎮 YENİ OYUN',
-  'btn_continue':'▶ Kaldığın Yerden Devam Et',
-  'btn_new_user':'✏️ Yeni Kullanıcı Adı Oluştur',
-  'u_new_lbl':'YENİ KULLANICI ADI','name_ph':'Adını gir...',
-  'btn_save_play':'KAYDET & OYNA 🚀','btn_back':'← Geri Dön',
-  'btn_lb':'🏆 Şampiyonlar Ligi','btn_info':'📖 Rehber',
-  'lbl_store':'MAĞAZA','lbl_mission':'GÖREV','lbl_music':'MÜZİK','lbl_sound':'SES',
-  'lbl_score':'PUAN','lbl_total':'TOPLAM','lbl_time':'SÜRE','lbl_mult':'ÇARPAN','lbl_target':'HEDEF',
-  'lbl_next':'Sıradaki:','lbl_bomb':'BOMBA','lbl_freeze':'DONDUR','lbl_x2':'2×PUAN',
-  'lbl_upgrade':'YÜKSELT','lbl_storm':'FIRTINA','lbl_luck':'ŞANS',
-  'lbl_completed':'TAMAMLANDI','lbl_new_record':'🏆 YENİ REKOR!','lbl_reward':'LEVEL ÖDÜLÜ',
-  'over_title':'OYUN BİTTİ','lbl_total_score':'TOPLAM PUAN',
-  'btn_lb_over':'🏆 Tablo','btn_retry':'🔄 Tekrar','btn_home_over':'🏠 Ana Sayfa',
-  'lbl_invite':'Arkadaşını Davet Et','lbl_challenge':'⚔️ Meydan Oku',
-  'lbl_paused':'DURAKLATILDI','lbl_tap_resume':'Ekrana bas ve devam et',
-  'btn_resume':'▶ Devam Et','btn_pause_home':'🏠 Ana Sayfa',
-  'rank_here':'#%r. Sıradasın','level_starting':'LEVEL %n BAŞLIYOR…',
-  'all_done':'TÜM LEVELLAR TAMAMLANDI! 👑','rank_anim_title':'Şampiyonlar Ligi',
-  'rank_up':'⬆ %d sıra yükseldin! 🚀','rank_same':'📍 Sıran değişmedi','rank_down':'⬇ %d sıra geriledi',
-  'level_skip':'yap → Level geç!','mission_done':'📋 Görev tamamlandı: %name → %reward',
-  'pts':'puan','lvl_pts':'level puanı','mult_info':'Çarpan %m%','you_did_it':'YAPTIN!',
-  'no_bomb':'💣 Bomban yok! Mağazadan al.','boom':'💥 BOOM!',
-  'no_freeze':'❄️ Dondurucu yok! Mağazadan al.','freeze_active':'❄️ Meyveler 5sn donduruldu!',
-  'no_x2':'⚡ 2× Puan yok! Mağazadan al.','x2_active':'⚡ 2× PUAN 10sn aktif!',
-  'no_upgrade':'⬆️ Yükselt yok! Görevlerden kazan.','cancelled':'⬆️ İptal edildi.',
-  'touch_upgrade':'⬆️ Yükseltmek istediğin meyveye dokun!',
-  'no_storm':'🌪️ Fırtına yok! Görevlerden kazan.','storm_active':'🌪️ FIRTINA! Meyveler karıştı!',
-  'no_luck':'🔮 Şans yok! Görevlerden kazan.','luck_active':'🔮 ŞANS! Sıradaki meyve','merge':'birleştir',
-  'area_shrinking':'⚠️ Alan daralıyor! Hızlan!','fruit_upgraded':'⬆️ Meyve yükseltildi!',
-  'already_max':'⬆️ Bu meyve zaten en üst!','touch_closer':'⬆️ Meyveye daha yakın dokun!',
-  'extra_life_used':'❤️ Extra can kullanıldı!','no_ads_active':'🎉 Reklamsız mod aktif!',
-  'resuming':'▶ Kaldığın yerden devam ediliyor…','new_record_toast':'YENİ REKOR!',
-  'enter_username':'Kullanıcı adı gir!','cant_challenge_self':'Kendinle yarışamazsın!',
-  'send_failed':'❌ Gönderilemedi, tekrar dene','copied':'📋 Kopyalandı! WhatsApp\'a yapıştır.',
-  'champions_rank':'#%r. sıradasın Şampiyonlar Liginde!',
-  'invite_msg':'%name seni Şampiyonlar Ligi\'ne davet ediyor!',
-  // Overlays
-  'lbl_missions_title':'📋 GÜNLÜK GÖREVLER',
-  'lbl_missions_sub':'Her gün sıfırlanır · Görev ödülleri güçlendirme olarak verilir',
-  'btn_missions_close':'Kapat',
-  'lbl_el_title':'OYUN BİTTİ!','lbl_el_extra':'❤️ 1 EXTRA CAN',
-  'lbl_el_desc':'Reklam izle ve kaldığın yerden devam et!',
-  'btn_el_watch':'📺 Reklam İzle (Ücretsiz)','btn_el_skip':'Vazgeç → Ana Sayfa',
-  'lbl_store_title':'MAĞAZA','lbl_store_soon':'Yakında Aktif Olacak!',
-  'lbl_store_desc':'Güçlendirme paketleri ve reklamsız oyun seçeneği çok yakında sizlerle!',
-  'btn_store_close':'Kapat',
-  'lbl_lb_title':'🏆 ŞAMPİYONLAR LİGİ','lbl_rivals_title':'⚔️ RAKİPLERİM','btn_lb_home':'🏠 Ana Sayfa',
-  'lbl_guide_title':'📖 OYUN REHBERİ',
-  'lbl_guide_desc':'Aynı meyveleri birleştirerek level hedef meyvesine ulaş!<br>Alan taşarsa oyun biter. Güçlendirmeleri akıllıca kullan.',
-  'lbl_guide_targets':'🎯 LEVEL HEDEFLERİ','lbl_guide_col_levels':'LEVELLAR',
-  'lbl_guide_col_target':'HEDEF','lbl_guide_col_diff':'ZORLUK',
-  'lbl_guide_titles':'⭐ ÜNVAN SİSTEMİ','lbl_guide_titles_sub':'Levelin yükseldikçe ünvanın artar',
-  'lbl_guide_chain':'🔗 MEYVE ZİNCİRİ','lbl_guide_chain_sub':'İki aynı meyve birleşince bir üstü oluşur',
-  'lbl_guide_tips':'💡 İPUÇLARI',
-  'lbl_guide_tips_content':'💣 <b>Bomba</b> — Seçilen meyveyi patlatır<br>❄️ <b>Dondur</b> — 3 saniye fizik durur<br>⚡ <b>2× Puan</b> — Puanlar 2 katına çıkar<br>⏸ <b>Duraklat</b> — Oyun kaydedilir<br>🏠 <b>Ana Sayfa</b> — Kaldığın yerden devam edebilirsin',
-  'btn_info_close':'Kapat',
-  'lbl_tut_title':'Karpuz Oyununa Hoş Geldin!','lbl_tut_sub':'Nasıl oynanır?',
-  'lbl_tut_0_title':'Ekrana Dokun','lbl_tut_0_desc':'İstediğin yere dokunarak meyveyi bırak',
-  'lbl_tut_1_title':'Aynıları Birleştir','lbl_tut_1_desc':'İki aynı meyve yan yana gelince büyük meyve oluşur',
-  'lbl_tut_2_title':'Hedefe Ulaş!','lbl_tut_2_desc':'Her levelin bir hedef meyvesi var. O meyveyi yap ve level geç!',
-  'daily_title':'Günlük Ödül!','btn_daily_claim':'🎉 Al!',
-  'lbl_challenge_title':'ARKADAŞINA MEYDAN OKU!','lbl_challenge_desc':'Rakibinin kullanıcı adını gir',
-  'challenge_ph':'Kullanıcı adı...','btn_challenge_check':'🔄 Meydan Okuma Var Mı?','btn_challenge_cancel':'Vazgeç',
-  'lbl_challenge_incoming':'MEYDAN OKUMA!','btn_challenge_reject':'❌ Reddet','btn_challenge_accept':'✅ Kabul Et',
+  brand_sub:'Meyveleri birleştir · Sonsuz level · Şampiyona!',
+  welcome_lbl:'HOŞ GELDİN',btn_new_game:'🎮 YENİ OYUN',
+  btn_continue:'▶ Kaldığın Yerden Devam Et',
+  btn_new_user:'✏️ Yeni Kullanıcı Adı Oluştur',
+  u_new_lbl:'YENİ KULLANICI ADI',btn_save_play:'KAYDET & OYNA 🚀',btn_back:'← Geri Dön',
+  btn_lb:'🏆 Şampiyonlar Ligi',btn_info:'📖 Rehber',
+  lbl_store:'MAĞAZA',lbl_mission:'GÖREV',lbl_music:'MÜZİK',lbl_sound:'SES',
+  lbl_lb_title:'🏆 ŞAMPİYONLAR LİGİ',lbl_rivals_title:'⚔️ RAKİPLERİM',btn_lb_home:'🏠 Ana Sayfa',
+  lbl_missions_title:'📋 GÜNLÜK GÖREVLER',btn_missions_close:'Kapat',
+  lbl_el_title:'OYUN BİTTİ!',lbl_el_extra:'❤️ 1 EXTRA CAN',btn_el_watch:'📺 Reklam İzle (Ücretsiz)',btn_el_skip:'Vazgeç → Ana Sayfa',
+  lbl_store_title:'MAĞAZA',lbl_store_soon:'Yakında Aktif Olacak!',btn_store_close:'Kapat',
+  lbl_guide_title:'📖 OYUN REHBERİ',btn_info_close:'Kapat',
+  lbl_paused:'DURAKLATILDI',btn_resume:'▶ Devam Et',btn_pause_home:'🏠 Ana Sayfa',
+  lbl_tut_title:'Karpuz Oyununa Hoş Geldin!',lbl_tut_sub:'Nasıl oynanır?',
+  daily_title:'Günlük Ödül!',btn_daily_claim:'🎉 Al!',
+  over_title:'OYUN BİTTİ',
+  lbl_challenge_title:'ARKADAŞINA MEYDAN OKU!',btn_challenge_cancel:'Vazgeç',
+  lbl_invite:'📲 Arkadaşını Davet Et',lbl_challenge:'⚔️ Meydan Oku',
 },
 en:{
-  'brand_sub':'Merge fruits · Endless levels · Championship!',
-  'welcome_lbl':'WELCOME BACK','btn_new_game':'🎮 NEW GAME',
-  'btn_continue':'▶ Continue Where You Left Off',
-  'btn_new_user':'✏️ Create New Username',
-  'u_new_lbl':'NEW USERNAME','name_ph':'Enter your name...',
-  'btn_save_play':'SAVE & PLAY 🚀','btn_back':'← Go Back',
-  'btn_lb':'🏆 Champions League','btn_info':'📖 Guide',
-  'lbl_store':'SHOP','lbl_mission':'MISSION','lbl_music':'MUSIC','lbl_sound':'SOUND',
-  'lbl_score':'SCORE','lbl_total':'TOTAL','lbl_time':'TIME','lbl_mult':'MULT','lbl_target':'TARGET',
-  'lbl_next':'Next:','lbl_bomb':'BOMB','lbl_freeze':'FREEZE','lbl_x2':'2×PTS',
-  'lbl_upgrade':'UPGRADE','lbl_storm':'STORM','lbl_luck':'LUCK',
-  'lbl_completed':'COMPLETED','lbl_new_record':'🏆 NEW RECORD!','lbl_reward':'LEVEL REWARD',
-  'over_title':'GAME OVER','lbl_total_score':'TOTAL SCORE',
-  'btn_lb_over':'🏆 Board','btn_retry':'🔄 Retry','btn_home_over':'🏠 Home',
-  'lbl_invite':'Invite a Friend','lbl_challenge':'⚔️ Challenge',
-  'lbl_paused':'PAUSED','lbl_tap_resume':'Tap screen to resume',
-  'btn_resume':'▶ Resume','btn_pause_home':'🏠 Home',
-  'rank_here':'Ranked #%r','level_starting':'LEVEL %n STARTING…',
-  'all_done':'ALL LEVELS DONE! 👑','rank_anim_title':'Champions League',
-  'rank_up':'⬆ %d ranks up! 🚀','rank_same':'📍 Rank unchanged','rank_down':'⬇ Down %d ranks',
-  'level_skip':'to go → Skip level!','mission_done':'📋 Mission done: %name → %reward',
-  'pts':'pts','lvl_pts':'level pts','mult_info':'Multiplier %m%','you_did_it':'YOU DID IT!',
-  'no_bomb':'💣 No bombs! Buy from Shop.','boom':'💥 BOOM!',
-  'no_freeze':'❄️ No freeze! Buy from Shop.','freeze_active':'❄️ Fruits frozen for 5s!',
-  'no_x2':'⚡ No 2× Points! Buy from Shop.','x2_active':'⚡ 2× POINTS active 10s!',
-  'no_upgrade':'⬆️ No upgrades! Earn from Missions.','cancelled':'⬆️ Cancelled.',
-  'touch_upgrade':'⬆️ Touch the fruit to upgrade!',
-  'no_storm':'🌪️ No storm! Earn from Missions.','storm_active':'🌪️ STORM! Fruits shuffled!',
-  'no_luck':'🔮 No luck! Earn from Missions.','luck_active':'🔮 LUCK! Next fruit','merge':'merge',
-  'area_shrinking':'⚠️ Area shrinking! Hurry!','fruit_upgraded':'⬆️ Fruit upgraded!',
-  'already_max':'⬆️ This fruit is already max!','touch_closer':'⬆️ Touch closer to a fruit!',
-  'extra_life_used':'❤️ Extra life used!','no_ads_active':'🎉 Ad-free mode active!',
-  'resuming':'▶ Resuming where you left off…','new_record_toast':'NEW RECORD!',
-  'enter_username':'Enter a username!','cant_challenge_self':'You can\'t challenge yourself!',
-  'send_failed':'❌ Failed to send, try again','copied':'📋 Copied! Paste in WhatsApp.',
-  'champions_rank':'Ranked #%r in Champions League!',
-  'invite_msg':'%name is challenging you in Champions League!',
-  // Overlays
-  'lbl_missions_title':'📋 DAILY MISSIONS',
-  'lbl_missions_sub':'Resets every day · Mission rewards are given as power-ups',
-  'btn_missions_close':'Close',
-  'lbl_el_title':'GAME OVER!','lbl_el_extra':'❤️ 1 EXTRA LIFE',
-  'lbl_el_desc':'Watch an ad and continue where you left off!',
-  'btn_el_watch':'📺 Watch Ad (Free)','btn_el_skip':'Skip → Home',
-  'lbl_store_title':'SHOP','lbl_store_soon':'Coming Soon!',
-  'lbl_store_desc':'Power-up packs and ad-free option coming very soon!',
-  'btn_store_close':'Close',
-  'lbl_lb_title':'🏆 CHAMPIONS LEAGUE','lbl_rivals_title':'⚔️ MY RIVALS','btn_lb_home':'🏠 Home',
-  'lbl_guide_title':'📖 GAME GUIDE',
-  'lbl_guide_desc':'Merge matching fruits to reach the level target fruit!<br>Game ends if the field overflows. Use power-ups wisely.',
-  'lbl_guide_targets':'🎯 LEVEL TARGETS','lbl_guide_col_levels':'LEVELS',
-  'lbl_guide_col_target':'TARGET','lbl_guide_col_diff':'DIFFICULTY',
-  'lbl_guide_titles':'⭐ TITLE SYSTEM','lbl_guide_titles_sub':'Your title grows as you level up',
-  'lbl_guide_chain':'🔗 FRUIT CHAIN','lbl_guide_chain_sub':'Two identical fruits merge into the next one',
-  'lbl_guide_tips':'💡 TIPS',
-  'lbl_guide_tips_content':'💣 <b>Bomb</b> — Explodes selected fruit<br>❄️ <b>Freeze</b> — Pauses physics for 3s<br>⚡ <b>2× Points</b> — Doubles your score<br>⏸ <b>Pause</b> — Game is saved<br>🏠 <b>Home</b> — You can continue where you left off',
-  'btn_info_close':'Close',
-  'lbl_tut_title':'Welcome to Fruit Bomb!','lbl_tut_sub':'How to play?',
-  'lbl_tut_0_title':'Tap the Screen','lbl_tut_0_desc':'Tap anywhere to drop the fruit',
-  'lbl_tut_1_title':'Merge the Same','lbl_tut_1_desc':'Two identical fruits side by side create a bigger fruit',
-  'lbl_tut_2_title':'Reach the Target!','lbl_tut_2_desc':'Each level has a target fruit. Make it and advance!',
-  'daily_title':'Daily Reward!','btn_daily_claim':'🎉 Claim!',
-  'lbl_challenge_title':'CHALLENGE A FRIEND!','lbl_challenge_desc':'Enter your rival\'s username',
-  'challenge_ph':'Username...','btn_challenge_check':'🔄 Any Challenges?','btn_challenge_cancel':'Cancel',
-  'lbl_challenge_incoming':'CHALLENGE!','btn_challenge_reject':'❌ Reject','btn_challenge_accept':'✅ Accept',
+  brand_sub:'Merge fruits · Endless levels · Championship!',
+  welcome_lbl:'WELCOME BACK',btn_new_game:'🎮 NEW GAME',
+  btn_continue:'▶ Continue Where You Left Off',
+  btn_new_user:'✏️ Create New Username',
+  u_new_lbl:'NEW USERNAME',btn_save_play:'SAVE & PLAY 🚀',btn_back:'← Go Back',
+  btn_lb:'🏆 Champions League',btn_info:'📖 Guide',
+  lbl_store:'SHOP',lbl_mission:'MISSION',lbl_music:'MUSIC',lbl_sound:'SOUND',
+  lbl_lb_title:'🏆 CHAMPIONS LEAGUE',lbl_rivals_title:'⚔️ MY RIVALS',btn_lb_home:'🏠 Home',
+  lbl_missions_title:'📋 DAILY MISSIONS',btn_missions_close:'Close',
+  lbl_el_title:'GAME OVER!',lbl_el_extra:'❤️ 1 EXTRA LIFE',btn_el_watch:'📺 Watch Ad (Free)',btn_el_skip:'Skip → Home',
+  lbl_store_title:'SHOP',lbl_store_soon:'Coming Soon!',btn_store_close:'Close',
+  lbl_guide_title:'📖 GAME GUIDE',btn_info_close:'Close',
+  lbl_paused:'PAUSED',btn_resume:'▶ Resume',btn_pause_home:'🏠 Home',
+  lbl_tut_title:'Welcome to Fruit Bomb!',lbl_tut_sub:'How to play?',
+  daily_title:'Daily Reward!',btn_daily_claim:'🎉 Claim!',
+  over_title:'GAME OVER',
+  lbl_challenge_title:'CHALLENGE A FRIEND!',btn_challenge_cancel:'Cancel',
+  lbl_invite:'📲 Invite a Friend',lbl_challenge:'⚔️ Challenge',
 },
 ru:{
-  'brand_sub':'Соединяй фрукты · Бесконечные уровни · Чемпионат!',
-  'welcome_lbl':'С ВОЗВРАЩЕНИЕМ','btn_new_game':'🎮 НОВАЯ ИГРА',
-  'btn_continue':'▶ Продолжить с места',
-  'btn_new_user':'✏️ Создать новое имя',
-  'u_new_lbl':'НОВОЕ ИМЯ','name_ph':'Введи имя...',
-  'btn_save_play':'СОХРАНИТЬ И ИГРАТЬ 🚀','btn_back':'← Назад',
-  'btn_lb':'🏆 Лига чемпионов','btn_info':'📖 Гид',
-  'lbl_store':'МАГАЗИН','lbl_mission':'ЗАДАНИЕ','lbl_music':'МУЗЫКА','lbl_sound':'ЗВУК',
-  'lbl_score':'ОЧКИ','lbl_total':'ИТОГО','lbl_time':'ВРЕМЯ','lbl_mult':'МНОЖ','lbl_target':'ЦЕЛЬ',
-  'lbl_next':'Следующий:','lbl_bomb':'БОМБА','lbl_freeze':'ЗАМОРОЗКА','lbl_x2':'2×ОЧК',
-  'lbl_upgrade':'УЛУЧШИТЬ','lbl_storm':'БУРЯ','lbl_luck':'УДАЧА',
-  'lbl_completed':'ЗАВЕРШЕНО','lbl_new_record':'🏆 НОВЫЙ РЕКОРД!','lbl_reward':'НАГРАДА',
-  'over_title':'ИГРА ОКОНЧЕНА','lbl_total_score':'ИТОГО ОЧКИ',
-  'btn_lb_over':'🏆 Таблица','btn_retry':'🔄 Ещё раз','btn_home_over':'🏠 Меню',
-  'lbl_invite':'Пригласить друга','lbl_challenge':'⚔️ Вызов',
-  'lbl_paused':'ПАУЗА','lbl_tap_resume':'Нажми чтобы продолжить',
-  'btn_resume':'▶ Продолжить','btn_pause_home':'🏠 Меню',
-  'rank_here':'#%r место','level_starting':'УРОВЕНЬ %n НАЧИНАЕТСЯ…',
-  'all_done':'ВСЕ УРОВНИ ПРОЙДЕНЫ! 👑','rank_anim_title':'Лига чемпионов',
-  'rank_up':'⬆ +%d позиций! 🚀','rank_same':'📍 Позиция не изменилась','rank_down':'⬇ -%d позиций',
-  'level_skip':'сделай → Пропустить уровень!','mission_done':'📋 Задание выполнено: %name → %reward',
-  'pts':'очк','lvl_pts':'очков уровня','mult_info':'Множитель %m%','you_did_it':'СДЕЛАЛ!',
-  'no_bomb':'💣 Нет бомб! Купи в магазине.','boom':'💥 БУМ!',
-  'no_freeze':'❄️ Нет заморозки! Купи.','freeze_active':'❄️ Заморозка на 5с!',
-  'no_x2':'⚡ Нет 2× очков! Купи.','x2_active':'⚡ 2× ОЧКИ 10с!',
-  'no_upgrade':'⬆️ Нет улучшений! Зарабатывай в заданиях.',
-  'cancelled':'⬆️ Отменено.','touch_upgrade':'⬆️ Нажми на фрукт для улучшения!',
-  'no_storm':'🌪️ Нет бури! Зарабатывай.','storm_active':'🌪️ БУРЯ! Фрукты перемешаны!',
-  'no_luck':'🔮 Нет удачи! Зарабатывай.','luck_active':'🔮 УДАЧА! Следующий фрукт','merge':'соедини',
-  'area_shrinking':'⚠️ Поле сужается! Быстрее!','fruit_upgraded':'⬆️ Фрукт улучшен!',
-  'already_max':'⬆️ Это максимальный фрукт!','touch_closer':'⬆️ Нажми ближе к фрукту!',
-  'extra_life_used':'❤️ Дополнительная жизнь!','no_ads_active':'🎉 Режим без рекламы!',
-  'resuming':'▶ Продолжаем...','new_record_toast':'НОВЫЙ РЕКОРД!',
-  'enter_username':'Введи имя!','cant_challenge_self':'Нельзя играть против себя!',
-  'send_failed':'❌ Ошибка отправки','copied':'📋 Скопировано! Вставь в WhatsApp.',
-  'champions_rank':'#%r место в Лиге чемпионов!',
-  'invite_msg':'%name вызывает тебя в Лигу чемпионов!',
-  'lbl_missions_title':'📋 ЕЖЕДНЕВНЫЕ ЗАДАНИЯ',
-  'lbl_missions_sub':'Сбрасывается каждый день · Награды за задания',
-  'btn_missions_close':'Закрыть',
-  'lbl_el_title':'ИГРА ОКОНЧЕНА!','lbl_el_extra':'❤️ 1 ЖИЗНЬ',
-  'lbl_el_desc':'Посмотри рекламу и продолжи игру!',
-  'btn_el_watch':'📺 Смотреть рекламу (Бесплатно)','btn_el_skip':'Пропустить → Меню',
-  'lbl_store_title':'МАГАЗИН','lbl_store_soon':'Скоро!',
-  'lbl_store_desc':'Пакеты усилений и режим без рекламы — скоро!',
-  'btn_store_close':'Закрыть',
-  'lbl_lb_title':'🏆 ЛИГА ЧЕМПИОНОВ','lbl_rivals_title':'⚔️ МОИ СОПЕРНИКИ','btn_lb_home':'🏠 Меню',
-  'lbl_guide_title':'📖 РУКОВОДСТВО',
-  'lbl_guide_desc':'Соединяй одинаковые фрукты, чтобы достичь цели уровня!<br>Игра заканчивается если поле переполнено.',
-  'lbl_guide_targets':'🎯 ЦЕЛИ УРОВНЕЙ','lbl_guide_col_levels':'УРОВНИ',
-  'lbl_guide_col_target':'ЦЕЛЬ','lbl_guide_col_diff':'СЛОЖНОСТЬ',
-  'lbl_guide_titles':'⭐ СИСТЕМА ТИТУЛОВ','lbl_guide_titles_sub':'Твой титул растёт вместе с уровнем',
-  'lbl_guide_chain':'🔗 ЦЕПОЧКА ФРУКТОВ','lbl_guide_chain_sub':'Два одинаковых фрукта превращаются в следующий',
-  'lbl_guide_tips':'💡 СОВЕТЫ',
-  'lbl_guide_tips_content':'💣 <b>Бомба</b> — Взрывает фрукт<br>❄️ <b>Заморозка</b> — Стоп физика 3с<br>⚡ <b>2× Очки</b> — Удваивает очки<br>⏸ <b>Пауза</b> — Игра сохраняется<br>🏠 <b>Меню</b> — Можно продолжить',
-  'btn_info_close':'Закрыть',
-  'lbl_tut_title':'Добро пожаловать в Fruit Bomb!','lbl_tut_sub':'Как играть?',
-  'lbl_tut_0_title':'Нажми на экран','lbl_tut_0_desc':'Нажми куда угодно чтобы бросить фрукт',
-  'lbl_tut_1_title':'Соединяй одинаковые','lbl_tut_1_desc':'Два одинаковых рядом создают больший фрукт',
-  'lbl_tut_2_title':'Достигни цели!','lbl_tut_2_desc':'У каждого уровня есть цель. Создай её!',
-  'daily_title':'Ежедневная награда!','btn_daily_claim':'🎉 Получить!',
-  'lbl_challenge_title':'ВЫЗОВ ДРУГУ!','lbl_challenge_desc':'Введи имя соперника',
-  'challenge_ph':'Имя пользователя...','btn_challenge_check':'🔄 Есть вызовы?','btn_challenge_cancel':'Отмена',
-  'lbl_challenge_incoming':'ВЫЗОВ!','btn_challenge_reject':'❌ Отклонить','btn_challenge_accept':'✅ Принять',
+  brand_sub:'Соединяй фрукты · Бесконечные уровни · Чемпионат!',
+  welcome_lbl:'С ВОЗВРАЩЕНИЕМ',btn_new_game:'🎮 НОВАЯ ИГРА',
+  btn_continue:'▶ Продолжить с места',
+  btn_new_user:'✏️ Создать новое имя',
+  u_new_lbl:'НОВОЕ ИМЯ',btn_save_play:'СОХРАНИТЬ И ИГРАТЬ 🚀',btn_back:'← Назад',
+  btn_lb:'🏆 Лига чемпионов',btn_info:'📖 Гид',
+  lbl_store:'МАГАЗИН',lbl_mission:'ЗАДАНИЕ',lbl_music:'МУЗЫКА',lbl_sound:'ЗВУК',
+  lbl_lb_title:'🏆 ЛИГА ЧЕМПИОНОВ',lbl_rivals_title:'⚔️ МОИ СОПЕРНИКИ',btn_lb_home:'🏠 Меню',
+  lbl_missions_title:'📋 ЕЖЕДНЕВНЫЕ ЗАДАНИЯ',btn_missions_close:'Закрыть',
+  lbl_el_title:'ИГРА ОКОНЧЕНА!',lbl_el_extra:'❤️ 1 ЖИЗНЬ',btn_el_watch:'📺 Смотреть рекламу',btn_el_skip:'Пропустить → Меню',
+  lbl_store_title:'МАГАЗИН',lbl_store_soon:'Скоро!',btn_store_close:'Закрыть',
+  lbl_guide_title:'📖 РУКОВОДСТВО',btn_info_close:'Закрыть',
+  lbl_paused:'ПАУЗА',btn_resume:'▶ Продолжить',btn_pause_home:'🏠 Меню',
+  lbl_tut_title:'Добро пожаловать в Fruit Bomb!',lbl_tut_sub:'Как играть?',
+  daily_title:'Ежедневная награда!',btn_daily_claim:'🎉 Получить!',
+  over_title:'ИГРА ОКОНЧЕНА',
+  lbl_challenge_title:'ВЫЗОВ ДРУГУ!',btn_challenge_cancel:'Отмена',
+  lbl_invite:'📲 Пригласить друга',lbl_challenge:'⚔️ Вызов',
 },
 ar:{
-  'brand_sub':'ادمج الفواكه · مستويات لا نهائية · بطولة!',
-  'welcome_lbl':'مرحباً بعودتك','btn_new_game':'🎮 لعبة جديدة',
-  'btn_continue':'▶ تابع من حيث توقفت',
-  'btn_new_user':'✏️ إنشاء اسم جديد',
-  'u_new_lbl':'اسم جديد','name_ph':'أدخل اسمك...',
-  'btn_save_play':'احفظ والعب 🚀','btn_back':'← رجوع',
-  'btn_lb':'🏆 دوري الأبطال','btn_info':'📖 دليل',
-  'lbl_store':'متجر','lbl_mission':'مهمة','lbl_music':'موسيقى','lbl_sound':'صوت',
-  'lbl_score':'نقاط','lbl_total':'الإجمالي','lbl_time':'وقت','lbl_mult':'مضاعف','lbl_target':'هدف',
-  'lbl_next':'التالي:','lbl_bomb':'قنبلة','lbl_freeze':'تجميد','lbl_x2':'2×نقاط',
-  'lbl_upgrade':'ترقية','lbl_storm':'عاصفة','lbl_luck':'حظ',
-  'lbl_completed':'مكتمل','lbl_new_record':'🏆 رقم قياسي!','lbl_reward':'مكافأة المستوى',
-  'over_title':'انتهت اللعبة','lbl_total_score':'مجموع النقاط',
-  'btn_lb_over':'🏆 جدول','btn_retry':'🔄 مرة أخرى','btn_home_over':'🏠 الرئيسية',
-  'lbl_invite':'دعوة صديق','lbl_challenge':'⚔️ تحدي',
-  'lbl_paused':'متوقف','lbl_tap_resume':'اضغط للمتابعة',
-  'btn_resume':'▶ تابع','btn_pause_home':'🏠 القائمة',
-  'rank_here':'المركز #%r','level_starting':'المستوى %n يبدأ…',
-  'all_done':'جميع المستويات مكتملة! 👑','rank_anim_title':'دوري الأبطال',
-  'rank_up':'⬆ ارتفعت %d مركز! 🚀','rank_same':'📍 مركزك لم يتغير','rank_down':'⬇ انخفضت %d مركز',
-  'level_skip':'اصنع → تخطى المستوى!','mission_done':'📋 مهمة مكتملة: %name → %reward',
-  'pts':'نقطة','lvl_pts':'نقطة مستوى','mult_info':'المضاعف %m%','you_did_it':'أنجزت!',
-  'no_bomb':'💣 لا قنابل! اشترِ من المتجر.','boom':'💥 بووم!',
-  'no_freeze':'❄️ لا تجميد! اشترِ.','freeze_active':'❄️ تجميد لمدة 5ث!',
-  'no_x2':'⚡ لا 2× نقاط! اشترِ.','x2_active':'⚡ 2× نقاط لمدة 10ث!',
-  'no_upgrade':'⬆️ لا ترقيات! اكسب من المهام.',
-  'cancelled':'⬆️ تم الإلغاء.','touch_upgrade':'⬆️ انقر على الفاكهة للترقية!',
-  'no_storm':'🌪️ لا عاصفة! اكسب.','storm_active':'🌪️ عاصفة! الفواكه تختلط!',
-  'no_luck':'🔮 لا حظ! اكسب.','luck_active':'🔮 حظ! الفاكهة التالية','merge':'ادمج',
-  'area_shrinking':'⚠️ المساحة تضيق! أسرع!','fruit_upgraded':'⬆️ تمت ترقية الفاكهة!',
-  'already_max':'⬆️ هذه الفاكهة بالحد الأقصى!','touch_closer':'⬆️ انقر أقرب من الفاكهة!',
-  'extra_life_used':'❤️ تم استخدام حياة إضافية!','no_ads_active':'🎉 وضع بدون إعلانات!',
-  'resuming':'▶ استئناف من حيث توقفت...','new_record_toast':'رقم قياسي جديد!',
-  'enter_username':'أدخل اسماً!','cant_challenge_self':'لا يمكنك تحدي نفسك!',
-  'send_failed':'❌ فشل الإرسال','copied':'📋 تم النسخ! الصق في واتساب.',
-  'champions_rank':'المركز #%r في دوري الأبطال!',
-  'invite_msg':'%name يتحداك في دوري الأبطال!',
-  'lbl_missions_title':'📋 المهام اليومية',
-  'lbl_missions_sub':'يعاد تعيينها كل يوم · مكافآت المهام كتعزيزات',
-  'btn_missions_close':'إغلاق',
-  'lbl_el_title':'انتهت اللعبة!','lbl_el_extra':'❤️ حياة إضافية',
-  'lbl_el_desc':'شاهد إعلاناً وتابع من حيث توقفت!',
-  'btn_el_watch':'📺 شاهد الإعلان (مجاني)','btn_el_skip':'تخطى → القائمة',
-  'lbl_store_title':'متجر','lbl_store_soon':'قريباً!',
-  'lbl_store_desc':'حزم التعزيز ووضع بلا إعلانات — قريباً!',
-  'btn_store_close':'إغلاق',
-  'lbl_lb_title':'🏆 دوري الأبطال','lbl_rivals_title':'⚔️ منافسوني','btn_lb_home':'🏠 القائمة',
-  'lbl_guide_title':'📖 دليل اللعبة',
-  'lbl_guide_desc':'ادمج الفواكه المتطابقة للوصول إلى هدف المستوى!<br>تنتهي اللعبة إذا امتلأ الحقل.',
-  'lbl_guide_targets':'🎯 أهداف المستويات','lbl_guide_col_levels':'المستويات',
-  'lbl_guide_col_target':'الهدف','lbl_guide_col_diff':'الصعوبة',
-  'lbl_guide_titles':'⭐ نظام الألقاب','lbl_guide_titles_sub':'يرتفع لقبك مع المستوى',
-  'lbl_guide_chain':'🔗 سلسلة الفواكه','lbl_guide_chain_sub':'فاكهتان متطابقتان تنتجان الفاكهة التالية',
-  'lbl_guide_tips':'💡 نصائح',
-  'lbl_guide_tips_content':'💣 <b>قنبلة</b> — تفجير الفاكهة<br>❄️ <b>تجميد</b> — إيقاف الفيزياء 3ث<br>⚡ <b>2× نقاط</b> — مضاعفة النقاط<br>⏸ <b>توقف</b> — اللعبة محفوظة<br>🏠 <b>القائمة</b> — يمكن الاستمرار',
-  'btn_info_close':'إغلاق',
-  'lbl_tut_title':'مرحباً في Fruit Bomb!','lbl_tut_sub':'كيف تلعب؟',
-  'lbl_tut_0_title':'انقر على الشاشة','lbl_tut_0_desc':'انقر في أي مكان لإسقاط الفاكهة',
-  'lbl_tut_1_title':'ادمج المتطابقة','lbl_tut_1_desc':'فاكهتان متجاورتان تخلقان فاكهة أكبر',
-  'lbl_tut_2_title':'ابلغ الهدف!','lbl_tut_2_desc':'لكل مستوى فاكهة هدف. اصنعها وتقدم!',
-  'daily_title':'المكافأة اليومية!','btn_daily_claim':'🎉 احصل عليها!',
-  'lbl_challenge_title':'تحدى صديقاً!','lbl_challenge_desc':'أدخل اسم منافسك',
-  'challenge_ph':'اسم المستخدم...','btn_challenge_check':'🔄 هل هناك تحديات؟','btn_challenge_cancel':'إلغاء',
-  'lbl_challenge_incoming':'تحدي!','btn_challenge_reject':'❌ رفض','btn_challenge_accept':'✅ قبول',
-},
-};
-
-var _lang=localStorage.getItem('karpuz_lang')||'tr';
+  brand_sub:'ادمج الفواكه · مستويات لا نهائية · بطولة!',
+  welcome_lbl:'مرحباً بعودتك',btn_new_game:'🎮 لعبة جديدة',
+  btn_continue:'▶ تابع من حيث توقفت',
+  btn_new_user:'✏️ إنشاء اسم جديد',
+  u_new_lbl:'اسم جديد',btn_save_play:'احفظ والعب 🚀',btn_back:'← رجوع',
+  btn_lb:'🏆 دوري الأبطال',btn_info:'📖 دليل',
+  lbl_store:'متجر',lbl_mission:'مهمة',lbl_music:'موسيقى',lbl_sound:'صوت',
+  lbl_lb_title:'🏆 دوري الأبطال',lbl_rivals_title:'⚔️ منافسوني',btn_lb_home:'🏠 القائمة',
+  lbl_missions_title:'📋 المهام اليومية',btn_missions_close:'إغلاق',
+  lbl_el_title:'انتهت اللعبة!',lbl_el_extra:'❤️ حياة إضافية',btn_el_watch:'📺 شاهد الإعلان',btn_el_skip:'تخطى → القائمة',
+  lbl_store_title:'متجر',lbl_store_soon:'قريباً!',btn_store_close:'إغلاق',
+  lbl_guide_title:'📖 دليل اللعبة',btn_info_close:'إغلاق',
+  lbl_paused:'متوقف',btn_resume:'▶ تابع',btn_pause_home:'🏠 القائمة',
+  lbl_tut_title:'مرحباً في Fruit Bomb!',lbl_tut_sub:'كيف تلعب؟',
+  daily_title:'المكافأة اليومية!',btn_daily_claim:'🎉 احصل عليها!',
+  over_title:'انتهت اللعبة',
+  lbl_challenge_title:'تحدى صديقاً!',btn_challenge_cancel:'إلغاء',
+  lbl_invite:'📲 دعوة صديق',lbl_challenge:'⚔️ تحدي',
+}};
 
 function T(key,vars){
-  let s=(LANGS[_lang]||LANGS.tr)[key]||(LANGS.tr[key]||key);
-  if(vars)Object.keys(vars).forEach(k=>s=s.replace('%'+k,vars[k]));
+  var s=(LANGS[_lang]||LANGS.tr)[key]||(LANGS.tr[key]||key);
+  if(vars)Object.keys(vars).forEach(function(k){s=s.replace('%'+k,vars[k]);});
   return s;
 }
 
 function setLang(lang){
   _lang=lang;
   try{localStorage.setItem('karpuz_lang',lang);}catch(e){}
-  const tr=document.getElementById('lang-tr'),en=document.getElementById('lang-en');
-  const ru=document.getElementById('lang-ru'),ar=document.getElementById('lang-ar');
-  [['lang-tr','tr'],['lang-en','en'],['lang-ru','ru'],['lang-ar','ar']].forEach(([id,l])=>{
-    const el=document.getElementById(id);
+  ['tr','en','ru','ar'].forEach(function(l){
+    var el=document.getElementById('lang-'+l);
     if(!el)return;
-    const active=l===lang;
+    var active=l===lang;
     el.style.background=active?'rgba(245,166,35,.25)':'rgba(255,255,255,.06)';
     el.style.color=active?'#f5a623':'rgba(255,255,255,.5)';
     el.style.borderColor=active?'rgba(255,255,255,.35)':'rgba(255,255,255,.15)';
   });
-  // RTL kaldırıldı - sadece metin içeriği değişir, layout değişmez
-  const set=(id,key)=>{const el=document.getElementById(id);if(el)el.textContent=T(key);};
-  const setH=(id,key)=>{const el=document.getElementById(id);if(el)el.innerHTML=T(key);};
-  const ph=(id,key)=>{const el=document.getElementById(id);if(el)el.placeholder=T(key);};
-  // Home
-  set('brand-sub','brand_sub');set('welcome-lbl','welcome_lbl');
-  set('btn-new-game','btn_new_game');set('btn-continue','btn_continue');
-  set('btn-new-user','btn_new_user');set('u-new-lbl','u_new_lbl');
-  ph('uname','name_ph');set('btn-save-play','btn_save_play');
-  set('btn-back','btn_back');set('btn-lb','btn_lb');set('btn-info','btn_info');
-  // Tab bar
-  set('lbl-store','lbl_store');set('lbl-mission','lbl_mission');
-  set('lbl-music','lbl_music');set('lbl-sound','lbl_sound');
-  // HUD
-  set('lbl-score','lbl_score');set('lbl-total','lbl_total');
-  set('lbl-time','lbl_time');set('lbl-mult','lbl_mult');set('lbl-target','lbl_target');
-  set('lbl-next','lbl_next');
-  // Power-ups
-  set('lbl-bomb','lbl_bomb');set('lbl-freeze','lbl_freeze');set('lbl-x2','lbl_x2');
-  set('lbl-upgrade','lbl_upgrade');set('lbl-storm','lbl_storm');set('lbl-luck','lbl_luck');
-  // Level overlay
-  set('lbl-completed','lbl_completed');set('lv-newrecord','lbl_new_record');set('lbl-reward','lbl_reward');
-  // Game over
-  set('over-title','over_title');set('lbl-total-score','lbl_total_score');
-  set('btn-lb-over','btn_lb_over');set('btn-retry','btn_retry');set('btn-home-over','btn_home_over');
-  // WA bar
-  set('lbl-invite','lbl_invite');set('lbl-challenge','lbl_challenge');
-  // Pause
-  set('lbl-paused','lbl_paused');set('lbl-tap-resume','lbl_tap_resume');
-  set('btn-resume','btn_resume');set('btn-pause-home','btn_pause_home');
-  // Missions overlay
-  set('lbl-missions-title','lbl_missions_title');set('lbl-missions-sub','lbl_missions_sub');
-  set('btn-missions-close','btn_missions_close');
-  // Extra life
-  set('lbl-el-title','lbl_el_title');set('lbl-el-extra','lbl_el_extra');
-  set('lbl-el-desc','lbl_el_desc');set('btn-el-watch','btn_el_watch');set('btn-el-skip','btn_el_skip');
-  // Store
-  set('lbl-store-title','lbl_store_title');set('lbl-store-soon','lbl_store_soon');
-  set('lbl-store-desc','lbl_store_desc');set('btn-store-close','btn_store_close');
-  // LB screen
-  set('lbl-lb-title','lbl_lb_title');set('lbl-rivals-title','lbl_rivals_title');set('btn-lb-home','btn_lb_home');
-  // Guide
-  set('lbl-guide-title','lbl_guide_title');setH('lbl-guide-desc','lbl_guide_desc');
-  set('lbl-guide-targets','lbl_guide_targets');set('lbl-guide-col-levels','lbl_guide_col_levels');
-  set('lbl-guide-col-target','lbl_guide_col_target');set('lbl-guide-col-diff','lbl_guide_col_diff');
-  set('lbl-guide-titles','lbl_guide_titles');set('lbl-guide-titles-sub','lbl_guide_titles_sub');
-  set('lbl-guide-chain','lbl_guide_chain');set('lbl-guide-chain-sub','lbl_guide_chain_sub');
-  set('lbl-guide-tips','lbl_guide_tips');setH('lbl-guide-tips-content','lbl_guide_tips_content');
-  set('btn-info-close','btn_info_close');
-  // Tutorial
-  set('lbl-tut-title','lbl_tut_title');set('lbl-tut-sub','lbl_tut_sub');
-  set('lbl-tut-0-title','lbl_tut_0_title');set('lbl-tut-0-desc','lbl_tut_0_desc');
-  set('lbl-tut-1-title','lbl_tut_1_title');set('lbl-tut-1-desc','lbl_tut_1_desc');
-  set('lbl-tut-2-title','lbl_tut_2_title');set('lbl-tut-2-desc','lbl_tut_2_desc');
-  // Daily
-  set('daily-title','daily_title');set('btn-daily-claim','btn_daily_claim');
-  // Challenge
-  set('lbl-challenge-title','lbl_challenge_title');set('lbl-challenge-desc','lbl_challenge_desc');
-  ph('challenge-ph','challenge_ph');set('btn-challenge-check','btn_challenge_check');
-  set('btn-challenge-cancel','btn_challenge_cancel');
-  set('lbl-challenge-incoming','lbl_challenge_incoming');
-  set('btn-challenge-reject','btn_challenge_reject');set('btn-challenge-accept','btn_challenge_accept');
+  function s(id,key){var el=document.getElementById(id);if(el)el.textContent=T(key);}
+  function ph(id,key){var el=document.getElementById(id);if(el)el.placeholder=T(key);}
+  s('brand-sub','brand_sub'); s('welcome-lbl','welcome_lbl');
+  s('btn-new-game','btn_new_game'); s('btn-continue','btn_continue');
+  s('btn-new-user','btn_new_user'); s('u-new-lbl','u_new_lbl');
+  s('btn-save-play','btn_save_play'); s('btn-back','btn_back');
+  s('btn-lb','btn_lb'); s('btn-info','btn_info');
+  s('lbl-store','lbl_store'); s('lbl-mission','lbl_mission');
+  s('lbl-music','lbl_music'); s('lbl-sound','lbl_sound');
+  s('lbl-lb-title','lbl_lb_title'); s('lbl-rivals-title','lbl_rivals_title');
+  s('btn-lb-home','btn_lb_home');
+  s('lbl-missions-title','lbl_missions_title'); s('btn-missions-close','btn_missions_close');
+  s('lbl-el-title','lbl_el_title'); s('lbl-el-extra','lbl_el_extra');
+  s('btn-el-watch','btn_el_watch'); s('btn-el-skip','btn_el_skip');
+  s('lbl-store-title','lbl_store_title'); s('lbl-store-soon','lbl_store_soon');
+  s('btn-store-close','btn_store_close');
+  s('lbl-guide-title','lbl_guide_title'); s('btn-info-close','btn_info_close');
+  s('lbl-paused','lbl_paused'); s('btn-resume','btn_resume');
+  s('btn-pause-home','btn_pause_home');
+  s('lbl-tut-title','lbl_tut_title'); s('lbl-tut-sub','lbl_tut_sub');
+  s('daily-title','daily_title'); s('btn-daily-claim','btn_daily_claim');
+  s('over-title','over_title');
+  s('lbl-challenge-title','lbl_challenge_title');
+  s('btn-challenge-cancel','btn_challenge_cancel');
+  s('lbl-invite','lbl_invite'); s('lbl-challenge','lbl_challenge');
+  ph('uname', lang==='tr'?'Adını gir...':lang==='en'?'Enter your name...':lang==='ru'?'Введи имя...':'أدخل اسمك...');
 }
 </script>
 </head>
@@ -619,7 +381,7 @@ function setLang(lang){
   <div class="mission-card">
     <div class="mission-title" id="lbl-missions-title">📋 GÜNLÜK GÖREVLER</div>
     <div id="mis-list"></div>
-    <div style="text-align:center;margin-top:8px;font-size:10px;color:rgba(255,255,255,.35)" id="lbl-missions-sub">Her gün sıfırlanır · Görev ödülleri güçlendirme olarak verilir</div>
+    <div style="text-align:center;margin-top:8px;font-size:10px;color:rgba(255,255,255,.35)">Her gün sıfırlanır · Görev ödülleri güçlendirme olarak verilir</div>
   </div>
   <button class="btn-main" style="margin-top:14px" id="btn-missions-close" onclick="closeMissions()">Kapat</button>
 </div>
@@ -631,7 +393,7 @@ function setLang(lang){
   <div style="font-size:13px;color:rgba(255,255,255,.5);margin-bottom:24px" id="el-rsn">—</div>
   <div style="background:#1a1a2e;border-radius:20px;padding:20px;width:85%;max-width:300px;margin-bottom:16px">
     <div style="font-size:15px;font-weight:800;color:#f5a623;margin-bottom:10px" id="lbl-el-extra">❤️ 1 EXTRA CAN</div>
-    <div style="font-size:12px;color:rgba(255,255,255,.6);margin-bottom:14px" id="lbl-el-desc">Reklam izle ve kaldığın yerden devam et!</div>
+    <div style="font-size:12px;color:rgba(255,255,255,.6);margin-bottom:14px">Reklam izle ve kaldığın yerden devam et!</div>
     <button class="btn-main" style="width:100%;padding:12px" id="btn-el-watch" onclick="useExtraLife()">📺 Reklam İzle (Ücretsiz)</button>
   </div>
   <button class="btn-out" id="btn-el-skip" onclick="elSkip()">Vazgeç → Ana Sayfa</button>
@@ -646,7 +408,7 @@ function setLang(lang){
       <div style="font-size:36px;margin-bottom:10px">🔜</div>
       <div style="font-size:16px;font-weight:800;color:#f5a623;margin-bottom:8px" id="lbl-store-soon">Yakında Aktif Olacak!</div>
       <div style="font-size:13px;color:rgba(255,255,255,.6);line-height:1.7">
-        <span id="lbl-store-desc">Güçlendirme paketleri ve reklamsız oyun seçeneği çok yakında sizlerle!</span>
+        Güçlendirme paketleri ve<br>reklamsız oyun seçeneği<br>çok yakında sizlerle!
       </div>
     </div>
     <button class="btn-out" style="width:100%" id="btn-store-close" onclick="closeStore()">Kapat</button>
@@ -770,7 +532,9 @@ function setLang(lang){
 </style>
 
 <!-- WhatsApp bar — her zaman üstte -->
-<!-- Ses butonları -->
+  </div>
+</div>
+<!-- Ses butonları - barın hemen altında -->
 <div style="width:100%;max-width:440px;display:flex;justify-content:space-between;align-items:center;gap:6px;padding:4px 8px;background:rgba(0,0,0,.2);position:sticky;top:0;z-index:99;">
   <div style="display:flex;gap:6px;">
     <div class="store-btn" id="top-store-btn" onclick="openStore()" style="padding:4px 10px;font-size:13px;border-radius:20px;border:1.5px solid rgba(255,255,255,.2);background:rgba(0,0,0,.45);color:#fff;display:flex;align-items:center;gap:4px;cursor:pointer;">💎 <span style="font-size:10px" id="lbl-store">MAĞAZA</span></div>
@@ -799,13 +563,13 @@ function setLang(lang){
   <div id="u-return" style="display:none;width:100%;text-align:center">
     <div style="font-size:13px;color:rgba(255,255,255,.5);letter-spacing:2px;margin-bottom:6px" id="welcome-lbl">HOŞ GELDİN</div>
     <div id="u-welcome" style="font-size:26px;font-weight:900;color:#f5a623;margin-bottom:18px">—</div>
-    <button class="btn-main" id="btn-new-game" style="width:220px" onclick="continueUser()">🎮 YENİ OYUN</button>
+    <button class="btn-main" style="width:220px" id="btn-new-game" onclick="continueUser()">🎮 YENİ OYUN</button>
     <div id="u-continue-wrap" style="margin-top:10px;display:none">
-      <button class="btn-main" id="btn-continue" style="width:220px;background:linear-gradient(90deg,#22aa66,#1a7a4a);font-size:15px" onclick="resumeGame()">▶ Kaldığın Yerden Devam Et</button>
+      <button class="btn-main" style="width:220px;background:linear-gradient(90deg,#22aa66,#1a7a4a);font-size:15px" id="btn-continue" onclick="resumeGame()">▶ Kaldığın Yerden Devam Et</button>
       <div id="u-continue-info" style="font-size:11px;color:rgba(255,255,255,.4);margin-top:5px"></div>
     </div>
     <div style="margin-top:12px">
-      <button class="btn-out" id="btn-new-user" style="font-size:12px;padding:8px 18px" onclick="showNewUser()">
+      <button id="btn-new-user" class="btn-out" style="font-size:12px;padding:8px 18px" onclick="showNewUser()">
         ✏️ Yeni Kullanıcı Adı Oluştur
       </button>
     </div>
@@ -816,9 +580,9 @@ function setLang(lang){
     <div class="input-lbl" id="u-new-lbl">YENİ KULLANICI ADI</div>
     <input id="uname" class="txt-in" type="text" maxlength="14" placeholder="Adını gir...">
     <div id="uname-err" style="color:#ff6688;font-size:12px;margin-bottom:8px;min-height:18px;font-weight:700"></div>
-    <button class="btn-main" id="btn-save-play" style="width:220px" onclick="registerUser()">KAYDET & OYNA 🚀</button>
+    <button class="btn-main" style="width:220px" onclick="registerUser()">KAYDET & OYNA 🚀</button>
     <div style="margin-top:10px" id="u-back-wrap" style="display:none">
-      <button class="btn-out" id="btn-back" style="font-size:12px;padding:8px 18px" onclick="showReturn()">
+      <button class="btn-out" style="font-size:12px;padding:8px 18px" onclick="showReturn()">
         ← Geri Dön
       </button>
     </div>
@@ -851,9 +615,15 @@ function setLang(lang){
 <div class="mission-overlay" id="info-overlay">
   <div class="mission-card" style="max-height:80vh;overflow-y:auto">
     <div class="mission-title" id="lbl-guide-title">📖 OYUN REHBERİ</div>
-    <div id="guide-dyn-content"></div>
+    <div style="font-size:12px;color:rgba(255,255,255,.7);margin-bottom:14px;line-height:1.7" id="lbl-guide-desc">
+      Aynı meyveleri birleştirerek level hedef meyvesine ulaş!<br>
+      Alan taşarsa oyun biter. Güçlendirmeleri akıllıca kullan.
+    </div>
+    <div id="guide-dyn"></div>
   </div>
   <button class="btn-main" style="margin-top:14px" id="btn-info-close" onclick="closeInfo()">Kapat</button>
+</div>
+
 <!-- ══ TUTORIAL OVERLAY ══ -->
 <div id="tutorial-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.92);z-index:600;flex-direction:column;align-items:center;justify-content:center;font-family:'Segoe UI',Arial;color:#fff;text-align:center;padding:20px">
   <div style="font-size:48px;margin-bottom:8px">🍉</div>
@@ -862,22 +632,22 @@ function setLang(lang){
   <div id="tut-steps" style="width:90%;max-width:300px">
     <div class="tut-step active" id="tut-0" style="background:rgba(255,255,255,.06);border-radius:18px;padding:20px;margin-bottom:12px">
       <div style="font-size:40px">👆</div>
-      <div style="font-size:16px;font-weight:800;margin:8px 0 4px" id="lbl-tut-0-title">Ekrana Dokun</div>
-      <div style="font-size:12px;color:rgba(255,255,255,.6)" id="lbl-tut-0-desc">İstediğin yere dokunarak meyveyi bırak</div>
+      <div style="font-size:16px;font-weight:800;margin:8px 0 4px">Ekrana Dokun</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.6)">İstediğin yere dokunarak meyveyi bırak</div>
     </div>
     <div class="tut-step" id="tut-1" style="background:rgba(255,255,255,.06);border-radius:18px;padding:20px;margin-bottom:12px;display:none">
       <div style="font-size:40px">🍒+🍒</div>
-      <div style="font-size:16px;font-weight:800;margin:8px 0 4px" id="lbl-tut-1-title">Aynıları Birleştir</div>
-      <div style="font-size:12px;color:rgba(255,255,255,.6)" id="lbl-tut-1-desc">İki aynı meyve yan yana gelince büyük meyve oluşur</div>
+      <div style="font-size:16px;font-weight:800;margin:8px 0 4px">Aynıları Birleştir</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.6)">İki aynı meyve yan yana gelince büyük meyve oluşur</div>
     </div>
     <div class="tut-step" id="tut-2" style="background:rgba(255,255,255,.06);border-radius:18px;padding:20px;margin-bottom:12px;display:none">
       <div style="font-size:40px" id="tut-target">🍇</div>
-      <div style="font-size:16px;font-weight:800;margin:8px 0 4px" id="lbl-tut-2-title">Hedefe Ulaş!</div>
-      <div style="font-size:12px;color:rgba(255,255,255,.6)" id="lbl-tut-2-desc">Her levelin bir hedef meyvesi var. O meyveyi yap ve level geç!</div>
+      <div style="font-size:16px;font-weight:800;margin:8px 0 4px">Hedefe Ulaş!</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.6)">Her levelin bir hedef meyvesi var. O meyveyi yap ve level geç!</div>
     </div>
   </div>
   <div style="display:flex;gap:12px;margin-top:8px">
-    <button id="tut-prev" onclick="tutPrev()" class="btn-out" style="display:none" data-i18n-text="tut_back">← Geri</button>
+    <button id="tut-prev" onclick="tutPrev()" class="btn-out" style="display:none">← Geri</button>
     <button id="tut-next" onclick="tutNext()" class="btn-main" style="padding:12px 32px">Devam →</button>
   </div>
   <div style="display:flex;gap:6px;margin-top:14px">
@@ -905,22 +675,22 @@ function setLang(lang){
   <div style="font-size:48px;margin-bottom:8px">⚔️</div>
   <div style="font-size:20px;font-weight:900;color:#f5a623;margin-bottom:16px" id="lbl-challenge-title">ARKADAŞINA MEYDAN OKU!</div>
   <div style="background:#1a1a2e;border-radius:18px;padding:20px;width:90%;max-width:300px;margin-bottom:14px">
-    <div style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:10px" id="lbl-challenge-desc">Rakibinin kullanıcı adını gir</div>
-    <input id="challenge-nick" type="text" id="challenge-ph" placeholder="Kullanıcı adı..." style="width:100%;padding:12px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-size:16px;font-weight:700;text-align:center;outline:none;margin-bottom:12px">
+    <div style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:10px">Rakibinin kullanıcı adını gir</div>
+    <input id="challenge-nick" type="text" placeholder="Kullanıcı adı..." style="width:100%;padding:12px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-size:16px;font-weight:700;text-align:center;outline:none;margin-bottom:12px">
     <button onclick="sendChallenge()" style="width:100%;padding:12px;border-radius:12px;border:none;background:linear-gradient(90deg,#e94560,#f5a623);color:#fff;font-size:14px;font-weight:800;cursor:pointer;">⚔️ Meydan Oku!</button>
   </div>
-  <button onclick="_checkIncomingChallenge()" class="btn-out" id="btn-challenge-check" style="margin-bottom:8px;font-size:12px">🔄 Meydan Okuma Var Mı?</button>
-  <button onclick="closeChallenge()" class="btn-out" id="btn-challenge-cancel">Vazgeç</button>
+  <button onclick="_checkIncomingChallenge()" class="btn-out" style="margin-bottom:8px;font-size:12px">🔄 Meydan Okuma Var Mı?</button>
+  <button id="btn-challenge-cancel" onclick="closeChallenge()" class="btn-out">Vazgeç</button>
 </div>
 
 <!-- ══ MEYDAN OKUMA GELDİ OVERLAY ══ -->
 <div id="challenge-incoming" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.92);z-index:500;flex-direction:column;align-items:center;justify-content:center;font-family:'Segoe UI',Arial;color:#fff;text-align:center;padding:20px">
   <div style="font-size:48px;margin-bottom:8px">⚔️</div>
-  <div style="font-size:18px;font-weight:900;color:#f5a623;margin-bottom:6px" id="lbl-challenge-incoming">MEYDAN OKUMA!</div>
+  <div style="font-size:18px;font-weight:900;color:#f5a623;margin-bottom:6px">MEYDAN OKUMA!</div>
   <div id="challenge-from-txt" style="font-size:14px;color:rgba(255,255,255,.7);margin-bottom:20px"></div>
   <div style="display:flex;gap:12px">
-    <button onclick="rejectChallenge()" class="btn-out" id="btn-challenge-reject" style="padding:12px 24px">❌ Reddet</button>
-    <button onclick="acceptChallenge()" id="btn-challenge-accept" style="padding:12px 24px;border-radius:20px;border:none;background:linear-gradient(90deg,#22aa66,#1a7a4a);color:#fff;font-size:14px;font-weight:800;cursor:pointer;">✅ Kabul Et</button>
+    <button onclick="rejectChallenge()" class="btn-out" style="padding:12px 24px">❌ Reddet</button>
+    <button onclick="acceptChallenge()" style="padding:12px 24px;border-radius:20px;border:none;background:linear-gradient(90deg,#22aa66,#1a7a4a);color:#fff;font-size:14px;font-weight:800;cursor:pointer;">✅ Kabul Et</button>
   </div>
 </div>
 
@@ -931,14 +701,14 @@ function setLang(lang){
     <div class="prog-bg"><div class="prog-fill" id="prog-f" style="width:0%"></div></div>
   </div>
   <div class="hud">
-    <div class="hud-box"><div class="hud-lbl" id="lbl-score">PUAN</div><div class="hud-val" id="h-sc">0</div></div>
-    <div class="hud-box"><div class="hud-lbl" id="lbl-total">TOPLAM</div><div class="hud-val" id="h-tot">0</div></div>
-    <div class="hud-box" id="tbox"><div class="hud-lbl" id="lbl-time">SÜRE</div><div class="hud-val" id="h-tm">0</div></div>
-    <div class="hud-box" style="background:rgba(34,170,68,.18)"><div class="hud-lbl" id="lbl-mult">ÇARPAN</div><div class="hud-val" id="h-mult">×1.00</div></div>
+    <div class="hud-box"><div class="hud-lbl">PUAN</div><div class="hud-val" id="h-sc">0</div></div>
+    <div class="hud-box"><div class="hud-lbl">TOPLAM</div><div class="hud-val" id="h-tot">0</div></div>
+    <div class="hud-box" id="tbox"><div class="hud-lbl">SÜRE</div><div class="hud-val" id="h-tm">0</div></div>
+    <div class="hud-box" style="background:rgba(34,170,68,.18)"><div class="hud-lbl">ÇARPAN</div><div class="hud-val" id="h-mult">×1.00</div></div>
     <div class="hud-box" style="background:rgba(255,80,80,.15);border:1.5px solid rgba(255,80,80,.3)"><div class="hud-lbl">HEDEF</div><div class="hud-val" style="font-size:20px" id="h-hedef-hud">🍉</div></div>
   </div>
   <div class="next-row">
-    <span style="font-size:11px" id="lbl-next">Sıradaki:</span>
+    <span style="font-size:11px">Sıradaki:</span>
     <span id="nxt" class="next-fruit-big">🍒</span>
     <span id="nxt2" style="font-size:18px;opacity:.6">🍒</span>
     <span id="nxt3" style="font-size:14px;opacity:.35">🍒</span>
@@ -956,27 +726,27 @@ function setLang(lang){
   <div id="game-toast-area" style="width:100%;min-height:22px;text-align:center;margin:2px 0;font-size:12px;font-weight:700;color:#f5a623;opacity:0;transition:opacity .3s;"></div>
   <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;width:100%;justify-content:center;flex-wrap:wrap;">
     <button class="pu-btn" id="pu-bomb"   onclick="usePower('bomb')"   title="Bomba">
-      <span class="pu-icon">💣</span><span style="font-size:8px" id="lbl-bomb">BOMBA</span>
+      <span class="pu-icon">💣</span><span style="font-size:8px">BOMBA</span>
       <span class="pu-cnt" id="pu-bomb-cnt">0</span>
     </button>
     <button class="pu-btn" id="pu-freeze" onclick="usePower('freeze')" title="Dondurucu">
-      <span class="pu-icon">❄️</span><span style="font-size:8px" id="lbl-freeze">DONDUR</span>
+      <span class="pu-icon">❄️</span><span style="font-size:8px">DONDUR</span>
       <span class="pu-cnt" id="pu-freeze-cnt">0</span>
     </button>
     <button class="pu-btn" id="pu-x2"    onclick="usePower('x2')"    title="2× Puan">
-      <span class="pu-icon">⚡</span><span style="font-size:8px" id="lbl-x2">2×PUAN</span>
+      <span class="pu-icon">⚡</span><span style="font-size:8px">2×PUAN</span>
       <span class="pu-cnt" id="pu-x2-cnt">0</span>
     </button>
     <button class="pu-btn" id="pu-upgrade" onclick="usePower('upgrade')" title="Yükselt">
-      <span class="pu-icon">⬆️</span><span style="font-size:8px" id="lbl-upgrade">YÜKSELT</span>
+      <span class="pu-icon">⬆️</span><span style="font-size:8px">YÜKSELT</span>
       <span class="pu-cnt" id="pu-upgrade-cnt">0</span>
     </button>
     <button class="pu-btn" id="pu-storm" onclick="usePower('storm')" title="Fırtına">
-      <span class="pu-icon">🌪️</span><span style="font-size:8px" id="lbl-storm">FIRTINA</span>
+      <span class="pu-icon">🌪️</span><span style="font-size:8px">FIRTINA</span>
       <span class="pu-cnt" id="pu-storm-cnt">0</span>
     </button>
     <button class="pu-btn" id="pu-luck" onclick="usePower('luck')" title="Şans">
-      <span class="pu-icon">🔮</span><span style="font-size:8px" id="lbl-luck">ŞANS</span>
+      <span class="pu-icon">🔮</span><span style="font-size:8px">ŞANS</span>
       <span class="pu-cnt" id="pu-luck-cnt">0</span>
     </button>
     <div style="flex:1;min-width:8px"></div>
@@ -998,12 +768,12 @@ function setLang(lang){
     <div class="stat-row">
       <div class="stat-box"><div class="stat-v" id="ok-sc">0</div><div class="stat-l">LEVEL PUAN</div></div>
       <div class="stat-box"><div class="stat-v" id="ok-bn">+0</div><div class="stat-l">SÜRE BONUS</div></div>
-      <div class="stat-box"><div class="stat-v" id="ok-tot">0</div><div class="stat-l" id="lbl-total">TOPLAM</div></div>
+      <div class="stat-box"><div class="stat-v" id="ok-tot">0</div><div class="stat-l">TOPLAM</div></div>
     </div>
     <div class="rank-badge" id="ok-rank">🏆 #1 Sıraya Girdin!</div>
   </div>
   <div class="btn-row">
-    <button class="btn-out" id="btn-lb-over" onclick="openLB()">🏆 Tablo</button>
+    <button class="btn-out" onclick="openLB()">🏆 Tablo</button>
     <button class="btn-main" id="ok-next" onclick="nextLv()">Level 2 →</button>
   </div>
 </div>
@@ -1012,7 +782,7 @@ function setLang(lang){
 <div id="pause-block-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:150;background:rgba(0,0,0,.6);flex-direction:column;align-items:center;justify-content:center;cursor:pointer;" onclick="togglePause()">
   <div style="font-size:60px;margin-bottom:12px">⏸</div>
   <div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:6px" id="lbl-paused">DURAKLATILDI</div>
-  <div style="font-size:13px;color:rgba(255,255,255,.5);margin-bottom:24px" id="lbl-tap-resume">Ekrana bas ve devam et</div>
+  <div style="font-size:13px;color:rgba(255,255,255,.5);margin-bottom:24px">Ekrana bas ve devam et</div>
   <div style="display:flex;gap:16px">
     <button onclick="event.stopPropagation();togglePause()" style="padding:14px 28px;border-radius:20px;border:none;background:linear-gradient(90deg,#e94560,#f5a623);color:#fff;font-size:16px;font-weight:800;cursor:pointer;">▶ Devam Et</button>
     <button onclick="event.stopPropagation();pauseAndHome()" style="padding:14px 28px;border-radius:20px;border:2px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;font-size:16px;font-weight:800;cursor:pointer;">🏠 Ana Sayfa</button>
@@ -1028,7 +798,7 @@ function setLang(lang){
     <div id="ov-close" style="font-size:13px;color:#f5a623;margin-bottom:10px;font-weight:700"></div>
     <div class="stat-row">
       <div class="stat-box"><div class="stat-v" id="ov-lv">1</div><div class="stat-l">LEVEL</div></div>
-      <div class="stat-box"><div class="stat-v" id="ov-sc">0</div><div class="stat-l" id="lbl-total-score">TOPLAM PUAN</div></div>
+      <div class="stat-box"><div class="stat-v" id="ov-sc">0</div><div class="stat-l">TOPLAM PUAN</div></div>
     </div>
     <div class="rank-badge" id="ov-rank">🎖 #3 Sırada!</div>
   </div>
@@ -1036,12 +806,12 @@ function setLang(lang){
     <button class="btn-out" onclick="openLB()">🏆 Tablo</button>
     <button class="btn-main" onclick="retry()">🔄 Tekrar</button>
   </div>
-  <button class="btn-out" style="margin-top:10px;width:200px" id="btn-home-over" onclick="home()">🏠 Ana Sayfa</button>
+  <button class="btn-out" style="margin-top:10px;width:200px" onclick="home()">🏠 Ana Sayfa</button>
 </div>
 
 <!-- ⑤ LEADERBOARD -->
 <div id="s-lb" class="screen">
-  <button class="btn-out" style="align-self:flex-start;margin-bottom:10px" id="btn-lb-home" onclick="home()">🏠 Ana Sayfa</button>
+  <button class="btn-out" id="btn-lb-home" style="align-self:flex-start;margin-bottom:10px" onclick="home()">🏠 Ana Sayfa</button>
 
   <!-- Şampiyonlar Ligi accordion -->
   <div style="width:100%;max-width:340px;margin-bottom:10px">
@@ -1680,16 +1450,16 @@ const WA={
     ctx.textAlign='center';
     ctx.fillStyle='#f5a623';
     ctx.font='bold 13px Segoe UI,Arial';
-    ctx.fillText('🏆  '+T('rank_here',{r:ri.rank}),W/2,py+22);
+    ctx.fillText(`🏆  #${ri.rank}. Sıradasın`,W/2,py+22);
     /* Puan */
     ctx.fillStyle='#ffffff';
     ctx.font='bold 22px Segoe UI,Arial';
-    ctx.fillText(ri.score.toLocaleString()+' '+T('pts'),W/2,py+46);
+    ctx.fillText(ri.score.toLocaleString()+' puan',W/2,py+46);
     /* Süre + level */
     const mult=Math.max(10,Math.round(100*100/(100+ri.elapsed)));
     ctx.fillStyle='rgba(255,255,255,0.52)';
     ctx.font='11px Segoe UI,Arial';
-    ctx.fillText(`${ri.elapsed}s · `+T('mult_info',{m:mult}),W/2,py+66);
+    ctx.fillText(`${ri.elapsed}s'de tamamlandı  ·  Puan çarpanı %${mult}`,W/2,py+66);
     ctx.restore();
   },
 
@@ -1728,7 +1498,7 @@ const WA={
       ctx.fillStyle='#ffff00';
       ctx.shadowColor='transparent';ctx.shadowBlur=0;
       ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillText(`🎉 ${tgtEmoji} `+T('you_did_it')+` 🎉`,W/2,this.y-110);
+      ctx.fillText(`🎉 ${tgtEmoji} YAPTIN! 🎉`,W/2,this.y-110);
       ctx.restore();
       this._drawInfoPanel(W,H,Math.min(1,this.timer*1.5));
 
@@ -1851,7 +1621,7 @@ function flutterFetch(url, method='GET', body=null){
   });
 }
 
-async function submitLBFull(name,score,lv){
+async function submitLB(name,score,lv){
   /* Lokal fallback */
   const lb=getLB();
   const i=lb.findIndex(e=>e.name===name);
@@ -1866,7 +1636,7 @@ async function submitLBFull(name,score,lv){
     const key=name.replace(/[.#$[\]/]/g,'_');
     await flutterFetch(`${FB_URL}/leaderboard/${key}.json`,'PUT',
       JSON.stringify({name,score,lv,t:Date.now()}));
-  }catch(e){}
+  }catch(e){console.log('Firebase submit err:',e);}
 
   /* Gerçek sırayı Firebase'den hesapla */
   try{
@@ -1876,16 +1646,11 @@ async function submitLBFull(name,score,lv){
       const all=Object.values(data).filter(e=>e&&e.score!=null);
       all.sort((a,b)=>b.score-a.score);
       const rank=all.findIndex(e=>e.name===name)+1;
-      return {rank:rank>0?rank:localRank, entries:all};
+      return rank>0?rank:localRank;
     }
   }catch(e){}
 
-  return {rank:localRank, entries:lb};
-}
-
-async function submitLB(name,score,lv){
-  const r=await submitLBFull(name,score,lv);
-  return r.rank;
+  return localRank;
 }
 
 async function renderLB(me){
@@ -1961,7 +1726,7 @@ function shareWA(){
   const name=S.user||'Bir arkadaşın';
   const text=
     `🍉 *Karpuz Oyunu* oynuyor musun?\n\n`+
-    T('invite_msg',{name:name})+'\n\n'+
+    `${name} seni Şampiyonlar Ligi'ne davet ediyor! `+
     `Meyveleri birleştir, karpuza ulaş! 99 level!\n\n`+
     `📲 Google Play'den indir:\nhttps://play.google.com/store/apps/details?id=com.nuhkozan.karpuz`;
   /* Flutter channel varsa kullan */
@@ -1979,7 +1744,7 @@ function shareWA(){
 function _copyShare(text){
   try{
     if(navigator.clipboard&&navigator.clipboard.writeText){
-      navigator.clipboard.writeText(text).then(()=>showToast(T('copied'))).catch(()=>_fallbackCopy(text));
+      navigator.clipboard.writeText(text).then(()=>showToast('📋 Kopyalandı! WhatsApp\'a yapıştır.')).catch(()=>_fallbackCopy(text));
     } else { _fallbackCopy(text); }
   }catch(e){_fallbackCopy(text);}
 }
@@ -1987,7 +1752,7 @@ function _fallbackCopy(text){
   const ta=document.createElement('textarea');
   ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
   document.body.appendChild(ta); ta.focus(); ta.select();
-  try{document.execCommand('copy');showToast(T('copied'));}catch(e){}
+  try{document.execCommand('copy');showToast('📋 Kopyalandı! WhatsApp\'a yapıştır.');}catch(e){}
   document.body.removeChild(ta);
 }
 
@@ -2036,7 +1801,6 @@ function resizeCanvas(logW, logH){
 function show(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  /* Flutter'a ekran durumunu bildir — periyodik reklam sadece oyundayken */
   try{ FlutterGameState.postMessage(id==='s-game'?'game':'menu'); }catch(e){}
 }
 
@@ -2112,22 +1876,22 @@ window._regCb=function(id,taken){
   }
 };
 
-async function checkAndRegister(name){
-  const key=name.replace(/[.#$\[\]/]/g,'_');
-  /* FlutterFetch kanalını kullan — zaten leaderboard için çalışıyor */
-  try{
-    const resp=await flutterFetch(`${FB_URL}/leaderboard/${key}.json`,'GET');
-    const data=await resp.json();
-    const taken=!!(data && typeof data==='object' && data.name);
-    if(!taken){
-      /* Fire and forget — ismi kaydet */
-      flutterFetch(`${FB_URL}/leaderboard/${key}/reg.json`,'PUT',
-        JSON.stringify({reg:true,t:Date.now()})).catch(()=>{});
-    }
-    return taken;
-  }catch(e){
-    throw new Error('fetch_hata');
-  }
+function checkAndRegister(name){
+  return new Promise((resolve,reject)=>{
+    if(!window.FlutterRegister){reject(new Error('kanal yok'));return;}
+    const id='reg_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+    window._regCallbacks[id]=(taken)=>{
+      if(taken===null)reject(new Error('hata'));
+      else resolve(taken);
+    };
+    FlutterRegister.postMessage(JSON.stringify({id,name}));
+    setTimeout(()=>{
+      if(window._regCallbacks[id]){
+        delete window._regCallbacks[id];
+        reject(new Error('zaman aşımı'));
+      }
+    },15000);
+  });
 }
 
 async function registerUser(){
@@ -2142,34 +1906,30 @@ async function registerUser(){
     document.getElementById('uname').select();
     return;
   }
-  const btn=document.getElementById('btn-save-play');
+  const btn=document.querySelector('button[onclick="registerUser()"]');
   if(btn){btn.textContent='⏳ Kontrol ediliyor...';btn.disabled=true;}
   errEl.textContent='🔍 Kontrol ediliyor...';
   try{
     const taken=await checkAndRegister(n);
     if(taken){
       errEl.textContent='🚫 Bu kullanıcı adı alınmış! Başka bir isim seç.';
-      if(btn){btn.textContent=T('btn_save_play');btn.disabled=false;}
+      if(btn){btn.textContent='KAYDET & OYNA 🚀';btn.disabled=false;}
       return;
     }
   }catch(e){
-    if(btn){btn.textContent=T('btn_save_play');btn.disabled=false;}
-    errEl.textContent='⚠️ Sunucuya bağlanılamadı. İnternet bağlantını kontrol et.';
+    /* Sunucuya ulaşılamadı — yine de gir seçeneği sun */
+    if(btn){btn.textContent='KAYDET & OYNA 🚀';btn.disabled=false;}
+    errEl.innerHTML='⚠️ Sunucuya bağlanılamadı.<br><small style="color:rgba(255,255,255,.5)">İnternet bağlantını kontrol et veya</small><br><button onclick="forceRegister(\''+n+'\')" style="margin-top:6px;padding:6px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;font-size:12px;cursor:pointer;">Yine de Gir (çevrimdışı)</button>';
     return;
   }
-  if(btn){btn.textContent=T('btn_save_play');btn.disabled=false;}
+  if(btn){btn.textContent='KAYDET & OYNA 🚀';btn.disabled=false;}
   errEl.textContent='';
   addRegistered(n);
   try{localStorage.setItem(UKEY,n);}catch(e){}
   S.user=n;S.lv=1;S.totSc=0;
   const tutDone=localStorage.getItem('karpuz_tutdone');
-  try{
-    if(!tutDone){showTutorial();}
-    else{checkDailyReward();beginLevel();}
-  }catch(err){
-    showToast('❌ '+err.message);
-    errEl.textContent='❌ '+err.message;
-  }
+  if(!tutDone){showTutorial();}
+  else{checkDailyReward();beginLevel();}
 }
 
 function startNew(){registerUser();}
@@ -2418,7 +2178,7 @@ function updNxt(){
 function updProg(){
   document.getElementById('prog-f').style.width='0%';
   const tgt=S.cfg?FR[S.cfg.target][0]:'🍉';
-  document.getElementById('prog-txt').textContent=tgt+' '+T('level_skip');
+  document.getElementById('prog-txt').textContent=tgt+' yap → Level geç!';
 }
 
 function tick(){
@@ -2553,7 +2313,7 @@ function playNarrowingWarning(){
     },180);
   }
   /* Uyarı toast */
-  showToast(T('area_shrinking'));
+  showToast(_lang==='en'?'⚠️ Area shrinking!':_lang==='ru'?'⚠️ Поле сужается!':_lang==='ar'?'⚠️ المساحة تضيق!':'⚠️ Alan daralıyor! Hızlan!');
   /* Ses kapalıysa çalma */
   if(!sfxOn||!AC)return;
   try{
@@ -2598,35 +2358,8 @@ let _touchMoved=false;
 const TOUCH_MOVE_THRESHOLD=8;   /* px — titremede yanlış drop olmasın */
 const TOUCH_SENSITIVITY=1.25;   /* 1.25x — küçük hareketle geniş alan */
 
-/* ── Anti-cheat: Hızlı tıklama tespiti ── */
-let _tapTimes=[], _tapFrozen=false, _tapFreezeTimer=null, _tapAutoTimer=null;
-function checkRapidTap(){
-  if(_tapFrozen) return false;
-  const now=Date.now();
-  _tapTimes=_tapTimes.filter(t=>now-t<1000);
-  _tapTimes.push(now);
-  if(_tapTimes.length>=5){
-    _tapFrozen=true; _tapTimes=[];
-    /* Kırmızı uyarı */
-    showToast('⚠️ Çok hızlı! 5sn durakladın.');
-    /* 5sn boyunca otomatik düşür */
-    let autoCount=0;
-    _tapAutoTimer=setInterval(()=>{
-      if(!S.dead&&!S.dropping&&S.cfg) drop(S.dropX||S.cfg.cw/2);
-      autoCount++;
-      if(autoCount>=10){clearInterval(_tapAutoTimer);_tapFrozen=false;}
-    },500);
-    clearTimeout(_tapFreezeTimer);
-    _tapFreezeTimer=setTimeout(()=>{
-      clearInterval(_tapAutoTimer); _tapFrozen=false;
-    },5000);
-    return false;
-  }
-  return true;
-}
-
 CV.addEventListener('mousemove',e=>{if(!S.dead)S.dropX=clampX(e.clientX);});
-CV.addEventListener('click',    e=>{if(!S.dead&&!S.dropping&&checkRapidTap())drop(clampX(e.clientX));});
+CV.addEventListener('click',    e=>{if(!S.dead&&!S.dropping)drop(clampX(e.clientX));});
 
 CV.addEventListener('touchstart',e=>{
   e.preventDefault();
@@ -2652,7 +2385,7 @@ CV.addEventListener('touchstart',e=>{
       closest.r=FR[closest.t][1];
       PU.stock.upgrade--; PU.upgradeMode=false;
       PU.save(); PU.render();
-      showToast(T('fruit_upgraded')+' '+FR[closest.t][0]);
+      showToast((_lang==='en'?'⬆️ Upgraded! ':_lang==='ru'?'⬆️ Улучшено! ':_lang==='ar'?'⬆️ ترقية! ':'⬆️ Yükseltildi! ')+FR[closest.t][0]);
       if(navigator.vibrate) navigator.vibrate(60);
       /* Hedef meyveye ulaşıldıysa level bitir */
       if(closest.t===S.cfg.target){
@@ -2662,9 +2395,9 @@ CV.addEventListener('touchstart',e=>{
         S.winFruit=closest;
       }
     } else if(closest && closest.t >= FR.length-1){
-      showToast(T('already_max'));
+      showToast(_lang==='en'?'⬆️ Already max!':_lang==='ru'?'⬆️ Максимум!':_lang==='ar'?'⬆️ الحد الأقصى!':'⬆️ Bu meyve zaten en üst!');
     } else {
-      showToast(T('touch_closer'));
+      showToast('⬆️ Meyveye daha yakın dokun!');
     }
     return;
   }
@@ -2689,7 +2422,7 @@ CV.addEventListener('touchend',e=>{
   e.preventDefault();
   if(S.dead) return;
   /* Tap da sürükleme de — her ikisinde de meyveyi düşür */
-  if(!S.dropping && checkRapidTap()) drop(S.dropX);
+  if(!S.dropping) drop(S.dropX);
   _touchStartX=null; _touchStartDropX=null; _touchMoved=false;
 },{passive:false});
 
@@ -2997,20 +2730,16 @@ function loop(ts){
     return;
   }
 
-  /* ── 2. Karpuz oluştu, animasyonu hemen başlat ── */
+  /* ── 2. Karpuz oluştu, animasyonu başlat ── */
   if(S.winPending && S.winFruit){
     physics(dt);
     render();
     S.winPending=false;
-    const wf=S.winFruit;
-    /* Yerel sırayı hemen kullan — animasyon gecikmesin (Hata 4a fix) */
-    const localRank=0; /* Gerçek rank LB'den async gelecek */
-    S._winScore=S.totSc;
-    WA.start(wf.x, wf.y, {rank:0, score:S.totSc, lv:S.lv, elapsed:S.timeElapsed});
-    /* Firebase'e gönder, rank güncellendikçe WA da güncellensin */
-    submitLBFull(S.user,S.totSc,S.lv).then(result=>{
-      S._winRank=result.rank; S._winEntries=result.entries;
-      if(WA.active && WA.ri) WA.ri.rank=result.rank;
+    /* Async submit — animasyonu bekletmeden başlat */
+    submitLB(S.user,S.totSc,S.lv).then(rank=>{
+      S._winRank=rank; S._winScore=S.totSc;
+      WA.start(S.winFruit.x, S.winFruit.y,
+        {rank, score:S.totSc, lv:S.lv, elapsed:S.timeElapsed});
     });
     S.rafId=requestAnimationFrame(loop);
     return;
@@ -3240,7 +2969,7 @@ const PU={
 function usePower(type){
   if(S.dead||!S.cfg)return;
   if(type==='bomb'){
-    if(PU.stock.bomb<=0){showToast(T('no_bomb'));return;}
+    if(PU.stock.bomb<=0){showToast(_lang==='en'?'💣 No bombs! Buy from Shop.':_lang==='ru'?'💣 Нет бомб!':_lang==='ar'?'💣 لا قنابل!':'💣 Bomban yok! Mağazadan al.');return;}
     const sorted=[...S.fruits].sort((a,b)=>a.y-b.y).slice(0,3);
     sorted.forEach(f=>{
       f.merged=true;
@@ -3256,30 +2985,30 @@ function usePower(type){
     flash.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,100,0,.35);pointer-events:none;z-index:999;';
     document.body.appendChild(flash);
     setTimeout(()=>flash.remove(),200);
-    showToast(T('boom'));
+    showToast('💥 BOOM!');
   } else if(type==='freeze'){
-    if(PU.stock.freeze<=0){showToast(T('no_freeze'));return;}
+    if(PU.stock.freeze<=0){showToast(_lang==='en'?'❄️ No freeze!':_lang==='ru'?'❄️ Нет заморозки!':_lang==='ar'?'❄️ لا تجميد!':'❄️ Dondurucu yok!');return;}
     PU.freezeActive=true; PU.freezeTimer=5;
     PU.stock.freeze--; PU.save(); PU.render();
-    showToast(T('freeze_active'));
+    showToast(_lang==='en'?'❄️ Frozen 5s!':_lang==='ru'?'❄️ Заморозка 5с!':_lang==='ar'?'❄️ تجميد 5ث!':'❄️ Meyveler 5sn donduruldu!');
   } else if(type==='x2'){
-    if(PU.stock.x2<=0){showToast(T('no_x2'));return;}
+    if(PU.stock.x2<=0){showToast(_lang==='en'?'⚡ No 2× Points!':_lang==='ru'?'⚡ Нет 2× очков!':_lang==='ar'?'⚡ لا 2× نقاط!':'⚡ 2× Puan yok!');return;}
     PU.x2Active=true; PU.x2Timer=10;
     PU.stock.x2--; PU.save(); PU.render();
-    showToast(T('x2_active'));
+    showToast(_lang==='en'?'⚡ 2× POINTS 10s!':_lang==='ru'?'⚡ 2× ОЧКИ 10с!':_lang==='ar'?'⚡ 2× نقاط 10ث!':'⚡ 2× PUAN 10sn aktif!');
     if(navigator.vibrate)navigator.vibrate(50);
   } else if(type==='upgrade'){
-    if(PU.stock.upgrade<=0){showToast(T('no_upgrade'));return;}
+    if(PU.stock.upgrade<=0){showToast(_lang==='en'?'⬆️ No upgrades!':_lang==='ru'?'⬆️ Нет улучшений!':_lang==='ar'?'⬆️ لا ترقيات!':'⬆️ Yükselt yok!');return;}
     if(PU.upgradeMode){
       /* İkinci tıklama — iptal */
       PU.upgradeMode=false; PU.render();
-      showToast(T('cancelled'));
+      showToast(_lang==='en'?'⬆️ Cancelled.':_lang==='ru'?'⬆️ Отменено.':_lang==='ar'?'⬆️ تم الإلغاء.':'⬆️ İptal edildi.');
       return;
     }
     PU.upgradeMode=true; PU.render();
-    showToast(T('touch_upgrade'));
+    showToast('⬆️ Yükseltmek istediğin meyveye dokun!');
   } else if(type==='storm'){
-    if(PU.stock.storm<=0){showToast(T('no_storm'));return;}
+    if(PU.stock.storm<=0){showToast(_lang==='en'?'🌪️ No storm!':_lang==='ru'?'🌪️ Нет бури!':_lang==='ar'?'🌪️ لا عاصفة!':'🌪️ Fırtına yok!');return;}
     /* Güçlü rastgele itme — gerçekten karıştırsın */
     S.fruits.forEach(f=>{
       if(!f.merged){
@@ -3288,20 +3017,20 @@ function usePower(type){
       }
     });
     PU.stock.storm--; PU.save(); PU.render();
-    showToast(T('storm_active'));
+    showToast(_lang==='en'?'🌪️ STORM!':_lang==='ru'?'🌪️ БУРЯ!':_lang==='ar'?'🌪️ عاصفة!':'🌪️ FIRTINA! Meyveler karıştı!');
     if(navigator.vibrate)navigator.vibrate([80,30,150,30,80]);
     const fl=document.createElement('div');
     fl.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(100,180,255,.3);pointer-events:none;z-index:999;';
     document.body.appendChild(fl);
     setTimeout(()=>fl.remove(),400);
   } else if(type==='luck'){
-    if(PU.stock.luck<=0){showToast(T('no_luck'));return;}
+    if(PU.stock.luck<=0){showToast(_lang==='en'?'🔮 No luck!':_lang==='ru'?'🔮 Нет удачи!':_lang==='ar'?'🔮 لا حظ!':'🔮 Şans yok!');return;}
     /* Hedeften bir önceki meyveyi ver — iki tane birleşince level geçer */
     const luckType=Math.max(0, S.cfg.target-1);
     S.curType=luckType;
     updNxt();
     PU.stock.luck--; PU.save(); PU.render();
-    showToast('🔮 '+T('luck_active')+' '+FR[luckType][0]+' — '+T('merge')+'!');
+    showToast('🔮 ŞANS! Sıradaki meyve '+FR[luckType][0]+' — birleştir!');
     if(navigator.vibrate)navigator.vibrate(80);
   }
 }
@@ -3327,15 +3056,14 @@ function showToast(msg){
    GÜNLÜK GÖREVLER
 ══════════════════════════════════════════ */
 const MISSION_DEFS=[
-  {id:'m_merges',  icon:'🔀', names:{tr:'50 Birleşim Yap',   en:'Make 50 Merges',      ru:'50 слияний',         ar:'اصنع 50 دمجاً'},    target:50,   reward:{type:'x2',n:1},      rewardTxt:'+1 ⚡'},
-  {id:'m_score',   icon:'🏆', names:{tr:'1000 Puan Kazan',   en:'Earn 1000 Points',    ru:'Набери 1000 очков',  ar:'اكسب 1000 نقطة'},   target:1000, reward:{type:'upgrade',n:1}, rewardTxt:'+1 ⬆️'},
-  {id:'m_levels',  icon:'⬆️', names:{tr:'3 Level Geç',       en:'Pass 3 Levels',       ru:'Пройди 3 уровня',    ar:'اجتز 3 مستويات'},   target:3,    reward:{type:'freeze',n:1},  rewardTxt:'+1 ❄️'},
-  {id:'m_levels2', icon:'🚀', names:{tr:'5 Level Geç',       en:'Pass 5 Levels',       ru:'Пройди 5 уровней',   ar:'اجتز 5 مستويات'},   target:5,    reward:{type:'storm',n:1},   rewardTxt:'+1 🌪️'},
-  {id:'m_merges2', icon:'⚡', names:{tr:'100 Birleşim Yap',  en:'Make 100 Merges',     ru:'100 слияний',        ar:'اصنع 100 دمج'},     target:100,  reward:{type:'luck',n:1},    rewardTxt:'+1 🔮'},
-  {id:'m_score2',  icon:'💎', names:{tr:'5000 Puan Kazan',   en:'Earn 5000 Points',    ru:'Набери 5000 очков',  ar:'اكسب 5000 نقطة'},   target:5000, reward:{type:'bomb',n:1},    rewardTxt:'+1 💣'},
+  {id:'m_merges', icon:'🔀',names:{tr:'50 Birleşim Yap',en:'Make 50 Merges',ru:'50 слияний',ar:'اصنع 50 دمجاً'},target:50,reward:{type:'x2',n:1},rewardTxt:'+1 ⚡'},
+  {id:'m_score',  icon:'🏆',names:{tr:'1000 Puan Kazan',en:'Earn 1000 Points',ru:'Набери 1000 очков',ar:'اكسب 1000 نقطة'},target:1000,reward:{type:'upgrade',n:1},rewardTxt:'+1 ⬆️'},
+  {id:'m_levels', icon:'⬆️',names:{tr:'3 Level Geç',en:'Pass 3 Levels',ru:'Пройди 3 уровня',ar:'اجتز 3 مستويات'},target:3,reward:{type:'freeze',n:1},rewardTxt:'+1 ❄️'},
+  {id:'m_levels2',icon:'🚀',names:{tr:'5 Level Geç',en:'Pass 5 Levels',ru:'Пройди 5 уровней',ar:'اجتز 5 مستويات'},target:5,reward:{type:'storm',n:1},rewardTxt:'+1 🌪️'},
+  {id:'m_merges2',icon:'⚡',names:{tr:'100 Birleşim Yap',en:'Make 100 Merges',ru:'100 слияний',ar:'اصنع 100 دمج'},target:100,reward:{type:'luck',n:1},rewardTxt:'+1 🔮'},
+  {id:'m_score2', icon:'💎',names:{tr:'5000 Puan Kazan',en:'Earn 5000 Points',ru:'Набери 5000 очков',ar:'اكسب 5000 نقطة'},target:5000,reward:{type:'bomb',n:1},rewardTxt:'+1 💣'},
 ];
-/* Mevcut dildeki görev adını döndür */
-function mName(def){ return (def.names&&def.names[_lang])||def.names.tr; }
+function mName(def){return(def.names&&def.names[_lang])||def.names.tr;}
 
 function getMissionState(){
   const today=new Date().toDateString();
@@ -3356,7 +3084,7 @@ function missionProgress(id,val){
   const def=MISSION_DEFS.find(m=>m.id===id);
   if(def && ms.progress[id]>=def.target && !ms.claimed[id]){
     document.getElementById('mis-badge').style.display='inline';
-    showToast(T('mission_done',{name:mName(def),reward:def.rewardTxt}));
+    showToast('📋 Görev tamamlandı: '+def.name+' → '+def.rewardTxt);
   }
 }
 
@@ -3387,7 +3115,7 @@ function renderMissions(){
     div.innerHTML=`
       <span class="mission-icon">${def.icon}</span>
       <div class="mission-info">
-        <div class="mission-name">${mName(def)}</div>
+        <div class="mission-name">${def.name}</div>
         <div class="mission-prog"><div class="mission-fill" style="width:${(prog/def.target)*100}%"></div></div>
         <div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:2px">${prog}/${def.target}</div>
       </div>
@@ -3416,7 +3144,7 @@ function useExtraLife(){
   document.getElementById('el-overlay').style.display='none';
   showRewardedAd(()=>{
     if(elCallback){elCallback();elCallback=null;}
-    showToast(T('extra_life_used'));
+    showToast('❤️ Extra can kullanıldı!');
   });
 }
 
@@ -3454,7 +3182,7 @@ function buyAdFree(){
   btn.style.background='#44cc66';
   btn.disabled=true;
   try{localStorage.setItem('suika_adfree','1');}catch(e){}
-  showToast(T('no_ads_active'));
+  showToast('🎉 Reklamsız mod aktif!');
 }
 
 function buyPower(type,n){
@@ -3660,15 +3388,9 @@ function resumeGame(){
   S.lastTs = null;
   S.rafId = requestAnimationFrame(loop);
   if(musicOn){ MUS.stop(); setTimeout(()=>MUS.start(), 200); }
-  showToast(T('resuming'));
+  showToast(_lang==='en'?'▶ Resuming...':_lang==='ru'?'▶ Продолжаем...':_lang==='ar'?'▶ استئناف...':'▶ Kaldığın yerden devam ediliyor…');
   setTimeout(()=>checkDailyReward(), 1000);
-
-  /* Hata 4b fix: Eğer kayıt sırasında hedef zaten yakalanmıştı, level'ı bitir */
-  if(st.winPending){
-    clearInterval(S.timerId);
-    cancelAnimationFrame(S.rafId);
-    setTimeout(()=>winLevel(), 600);
-  }
+  if(st.winPending){ clearInterval(S.timerId); cancelAnimationFrame(S.rafId); setTimeout(()=>winLevel(), 600); }
 }
 
 function checkContinueButton(){
@@ -3712,23 +3434,7 @@ function togglePause(){
 async function winLevel(){
   if(S.dead)return; stop();
   S.totSc = S._winScore ?? S.totSc;
-
-  /* Eski Firebase sırası (bir önceki leveldan) */
-  const oldRank = S._lastFBRank || 0;
-
-  /* Yeni sıra + tüm liste */
-  const lbResult = S._winRank
-    ? {rank:S._winRank, entries:S._winEntries||getLB()}
-    : await submitLBFull(S.user,S.totSc,S.lv);
-  const rank = lbResult.rank;
-  const lbEntries = lbResult.entries;
-  S._lastFBRank = rank;
-
-  /* Level 8'de in_app_review tetikle (Hata 1 fix) */
-  if(S.lv === 8){
-    try{ FlutterReview.postMessage('show'); }catch(e){}
-  }
-
+  const rank = S._winRank || await submitLB(S.user,S.totSc,S.lv);
   const nextLvNum = S.lv + 1;
 
   /* Yeni rekor kontrolü */
@@ -3743,23 +3449,18 @@ async function winLevel(){
   const lvFruit=document.getElementById('lv-fruit');
   if(lvFruit){ lvFruit.textContent=tgtEmoji; lvFruit.style.animation='none'; requestAnimationFrame(()=>{lvFruit.style.animation='fruitPop .5s ease';}); }
   document.getElementById('lv-done').textContent  = `LEVEL ${S.lv} ✓`;
-  document.getElementById('lv-score').textContent = S.totSc.toLocaleString() + ' ' + T('pts');
-  document.getElementById('lv-rank').textContent  = '🏆 '+T('rank_here',{r:rank});
-  document.getElementById('lv-next').textContent  = nextLvNum<=99?T('level_starting',{n:nextLvNum}):T('all_done');
+  document.getElementById('lv-score').textContent = S.totSc.toLocaleString() + ' puan';
+  document.getElementById('lv-rank').textContent  = `🏆 #${rank}. Sıradasın`;
+  document.getElementById('lv-next').textContent  = nextLvNum<=99?`LEVEL ${nextLvNum} BAŞLIYOR…`:'TÜM LEVELLAR TAMAMLANDI! 👑';
   document.getElementById('lv-bar').style.width   = '0%';
   const nrEl=document.getElementById('lv-newrecord');
   if(nrEl) nrEl.style.display=isNewRecord?'block':'none';
   const statsEl=document.getElementById('lv-stats');
-  if(statsEl) statsEl.textContent=`${S.timeElapsed}s · ${S.lvSc.toLocaleString()} `+T('pts')+` · `+T('lvl_pts');
+  if(statsEl) statsEl.textContent=`${S.timeElapsed}s'de tamamlandı · ${S.lvSc.toLocaleString()} level puanı`;
   ov.style.display = 'flex';
   requestAnimationFrame(()=>{ document.getElementById('lv-bar').style.width='100%'; });
 
-  /* Sıralama animasyonu */
-  if(S.user && rank>0 && lbEntries.length>0){
-    setTimeout(()=>showRankAnim(oldRank, rank, lbEntries, S.user), 900);
-  }
-
-  if(isNewRecord) showToast('🏆 '+T('new_record_toast')+' '+S.totSc.toLocaleString()+' '+T('pts')+'!');
+  if(isNewRecord) showToast('🏆 YENİ REKOR! '+S.totSc.toLocaleString()+' puan!');
 
   /* Level ödülü ver */
   const rewardTypes=[
@@ -3844,7 +3545,7 @@ async function killGame(rsn){
   document.getElementById('ov-rsn').textContent=rsn;
   document.getElementById('ov-lv').textContent=S.lv;
   document.getElementById('ov-sc').textContent=S.totSc.toLocaleString();
-  document.getElementById('ov-rank').textContent=`🎖 `+T('champions_rank',{r:rank});
+  document.getElementById('ov-rank').textContent=`🎖 Şampiyonlar Liginda #${rank}. sıradasın!`;
   const closeEl=document.getElementById('ov-close');
   if(closeEl)closeEl.textContent=closeMsg;
   show('s-over');
@@ -3872,100 +3573,34 @@ function pauseAndHome(){
   home();
 }
 
-function renderGuide(){
-  const L=_lang;
-  const fruits={
+function openInfo(){
+  var ov=document.getElementById('info-overlay');
+  if(!ov)return;
+  renderGuideContent();
+  ov.style.display='flex';
+}
+function renderGuideContent(){
+  var L=_lang;
+  var fruits={
     tr:['Hindistan Cevizi','Balkabağı','Soğan','Üzüm','Limon','Şeftali','Muz','Kavun','Yeşil Elma','Yaban Mersini','Domates','Mandalina','Mısır','Patlıcan','Havuç','Kestane','Karpuz'],
     en:['Coconut','Pumpkin','Onion','Grapes','Lemon','Peach','Banana','Melon','Green Apple','Blueberry','Tomato','Tangerine','Corn','Eggplant','Carrot','Chestnut','Watermelon'],
     ru:['Кокос','Тыква','Лук','Виноград','Лимон','Персик','Банан','Дыня','Яблоко','Черника','Помидор','Мандарин','Кукуруза','Баклажан','Морковь','Каштан','Арбуз'],
-    ar:['جوز الهند','يقطين','بصل','عنب','ليمون','خوخ','موز','شمام','تفاحة خضراء','توت أزرق','طماطم','يوسفي','ذرة','باذنجان','جزر','كستناء','بطيخ'],
+    ar:['جوز الهند','يقطين','بصل','عنب','ليمون','خوخ','موز','شمام','تفاحة خضراء','توت أزرق','طماطم','يوسفي','ذرة','باذنجان','جزر','كستناء','بطيخ']
   };
-  const fn=fruits[L]||fruits.tr;
-  const rows=[
-    ['1','🥥',fn[0],'⭐'],['2 – 3','🎃',fn[1],'⭐'],['4 – 5','🧅',fn[2],'⭐⭐'],
-    ['6 – 7','🍇',fn[3],'⭐⭐'],['8 – 9','🍋',fn[4],'⭐⭐'],['10','🍑',fn[5],'⭐⭐'],
-    ['11','🍌',fn[6],'⭐⭐'],['12 – 13','🍈',fn[7],'⭐⭐⭐'],['14 – 15','🍏',fn[8],'⭐⭐⭐'],
-    ['16 – 17','🫐',fn[9],'⭐⭐⭐'],['18 – 22','🍅',fn[10],'⭐⭐⭐'],['23 – 30','🍊',fn[11],'⭐⭐⭐⭐'],
-    ['31 – 40','🌽',fn[12],'⭐⭐⭐⭐'],['41 – 50','🍆',fn[13],'⭐⭐⭐⭐⭐'],['51 – 60','🥕',fn[14],'⭐⭐⭐⭐⭐'],
-    ['61 – 70','🌰',fn[15],'⭐⭐⭐⭐⭐'],['71 – 99','🍉',fn[16],'🌟🌟'],
-  ];
-  const titles={
-    tr:['1 Yıldız','2 Yıldız','3 Yıldız','4 Yıldız','5 Yıldız','Üstad','Kral','KARPUZ REİS'],
-    en:['1 Star','2 Stars','3 Stars','4 Stars','5 Stars','Master','King','WATERMELON KING'],
-    ru:['1 Звезда','2 Звезды','3 Звезды','4 Звезды','5 Звёзд','Мастер','Король','КОРОЛЬ АРБУЗА'],
-    ar:['نجمة واحدة','نجمتان','3 نجوم','4 نجوم','5 نجوم','أستاذ','ملك','ملك البطيخ'],
+  var fn=fruits[L]||fruits.tr;
+  var s={
+    tr:{targets:'🎯 LEVEL HEDEFLERİ',levels:'LEVELLAR',target:'HEDEF',diff:'ZORLUK',tips:'💡 İPUÇLARI',tip:'💣 <b>Bomba</b>—Meyveyi patlatır<br>❄️ <b>Dondur</b>—3sn fizik durur<br>⚡ <b>2×Puan</b>—Puan 2x<br>⏸ <b>Duraklat</b>—Oyun kaydedilir'},
+    en:{targets:'🎯 LEVEL TARGETS',levels:'LEVELS',target:'TARGET',diff:'DIFFICULTY',tips:'💡 TIPS',tip:'💣 <b>Bomb</b>—Explodes fruit<br>❄️ <b>Freeze</b>—Stops physics 3s<br>⚡ <b>2×Points</b>—Double score<br>⏸ <b>Pause</b>—Game is saved'},
+    ru:{targets:'🎯 ЦЕЛИ УРОВНЕЙ',levels:'УРОВНИ',target:'ЦЕЛЬ',diff:'СЛОЖНОСТЬ',tips:'💡 СОВЕТЫ',tip:'💣 <b>Бомба</b>—Взрывает<br>❄️ <b>Заморозка</b>—Стоп 3с<br>⚡ <b>2×Очки</b>—Удваивает<br>⏸ <b>Пауза</b>—Сохраняется'},
+    ar:{targets:'🎯 أهداف المستويات',levels:'المستويات',target:'الهدف',diff:'الصعوبة',tips:'💡 نصائح',tip:'💣 <b>قنبلة</b>—تفجير<br>❄️ <b>تجميد</b>—إيقاف 3ث<br>⚡ <b>2×نقاط</b>—مضاعفة<br>⏸ <b>توقف</b>—يحفظ'}
   };
-  const tl=titles[L]||titles.tr;
-  const chain={
-    tr:['Kivi','Çilek','Kiraz','Mango','Elma','Portakal','Kavun','Karpuz'],
-    en:['Kiwi','Strawberry','Cherry','Mango','Apple','Orange','Melon','Watermelon'],
-    ru:['Киви','Клубника','Черешня','Манго','Яблоко','Апельсин','Дыня','Арбуз'],
-    ar:['كيوي','فراولة','كرز','مانجو','تفاح','برتقال','شمام','بطيخ'],
-  };
-  const cl=chain[L]||chain.tr;
-  const tips={
-    tr:'💣 <b>Bomba</b> — Seçilen meyveyi patlatır<br>❄️ <b>Dondur</b> — 3 saniye fizik durur<br>⚡ <b>2× Puan</b> — Puanlar 2 katına çıkar<br>⏸ <b>Duraklat</b> — Oyun kaydedilir<br>🏠 <b>Ana Sayfa</b> — Kaldığın yerden devam edebilirsin',
-    en:'💣 <b>Bomb</b> — Explodes selected fruit<br>❄️ <b>Freeze</b> — Stops physics for 3s<br>⚡ <b>2× Points</b> — Doubles your score<br>⏸ <b>Pause</b> — Game is saved<br>🏠 <b>Home</b> — Continue where you left off',
-    ru:'💣 <b>Бомба</b> — Взрывает фрукт<br>❄️ <b>Заморозка</b> — Физика стоп 3с<br>⚡ <b>2× Очки</b> — Удваивает очки<br>⏸ <b>Пауза</b> — Игра сохраняется<br>🏠 <b>Меню</b> — Можно продолжить',
-    ar:'💣 <b>قنبلة</b> — تفجير الفاكهة<br>❄️ <b>تجميد</b> — إيقاف الفيزياء 3ث<br>⚡ <b>2× نقاط</b> — مضاعفة النقاط<br>⏸ <b>توقف</b> — اللعبة محفوظة<br>🏠 <b>القائمة</b> — يمكن الاستمرار',
-  };
-  const secs={tr:{targets:'🎯 LEVEL HEDEFLERİ',levels:'LEVELLAR',target:'HEDEF',diff:'ZORLUK',titles:'⭐ ÜNVAN SİSTEMİ',titlesub:'Levelin yükseldikçe ünvanın artar',chain:'🔗 MEYVE ZİNCİRİ',chainsub:'İki aynı meyve birleşince bir üstü oluşur',tips:'💡 İPUÇLARI',desc:'Aynı meyveleri birleştirerek level hedef meyvesine ulaş!<br>Alan taşarsa oyun biter. Güçlendirmeleri akıllıca kullan.'},
-    en:{targets:'🎯 LEVEL TARGETS',levels:'LEVELS',target:'TARGET',diff:'DIFFICULTY',titles:'⭐ TITLE SYSTEM',titlesub:'Your title grows as you level up',chain:'🔗 FRUIT CHAIN',chainsub:'Two identical fruits merge into the next one',tips:'💡 TIPS',desc:'Merge matching fruits to reach the level target fruit!<br>Game ends if the field overflows. Use power-ups wisely.'},
-    ru:{targets:'🎯 ЦЕЛИ УРОВНЕЙ',levels:'УРОВНИ',target:'ЦЕЛЬ',diff:'СЛОЖНОСТЬ',titles:'⭐ СИСТЕМА ТИТУЛОВ',titlesub:'Твой титул растёт вместе с уровнем',chain:'🔗 ЦЕПОЧКА ФРУКТОВ',chainsub:'Два одинаковых фрукта превращаются в следующий',tips:'💡 СОВЕТЫ',desc:'Соединяй одинаковые фрукты, чтобы достичь цели уровня!<br>Игра заканчивается если поле переполнено.'},
-    ar:{targets:'🎯 أهداف المستويات',levels:'المستويات',target:'الهدف',diff:'الصعوبة',titles:'⭐ نظام الألقاب',titlesub:'يرتفع لقبك مع المستوى',chain:'🔗 سلسلة الفواكه',chainsub:'فاكهتان متطابقتان تنتجان الفاكهة التالية',tips:'💡 نصائح',desc:'ادمج الفواكه المتطابقة للوصول إلى هدف المستوى!<br>تنتهي اللعبة إذا امتلأ الحقل.'},
-  };
-  const s=secs[L]||secs.tr;
-  const chainEmojis=[['🍒','🥝'],['🥝','🍓'],['🍓','🍒'],['🥭','🍎'],['🍎','🍊'],['🍊','🍈'],['🍈','🍉']];
-  const titleData=[
-    {stars:'⭐',name:tl[0],color:'rgba(255,255,255,.7)',bg:'rgba(255,255,255,.05)',lv:'5+'},
-    {stars:'⭐⭐',name:tl[1],color:'#44cc66',bg:'rgba(68,204,102,.1)',lv:'10+'},
-    {stars:'⭐⭐⭐',name:tl[2],color:'#f5a623',bg:'rgba(245,166,35,.1)',lv:'15+'},
-    {stars:'⭐⭐⭐⭐',name:tl[3],color:'#44aaff',bg:'rgba(68,170,255,.1)',lv:'20+'},
-    {stars:'⭐⭐⭐⭐⭐',name:tl[4],color:'#e94560',bg:'rgba(233,69,96,.1)',lv:'30+'},
-    {stars:'🏅',name:tl[5],color:'#ff8800',bg:'rgba(255,136,0,.1)',lv:'40+'},
-    {stars:'🤴',name:tl[6],color:'#cc44ff',bg:'rgba(204,68,255,.1)',lv:'50+'},
-    {stars:'👑',name:tl[7],color:'#ff0000',bg:'rgba(255,0,0,.15)',lv:'70+',border:'1px solid rgba(255,0,0,.3)'},
-  ];
-
-  const html=`
-<div style="font-size:12px;color:rgba(255,255,255,.7);margin-bottom:14px;line-height:1.7">${s.desc}</div>
-<div style="font-size:13px;font-weight:800;color:#f5a623;margin-bottom:8px">${s.targets}</div>
-<table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:14px">
-  <thead><tr style="background:rgba(255,255,255,.06);color:rgba(255,255,255,.45);font-size:10px;letter-spacing:1px">
-    <th style="padding:6px 8px;text-align:left">${s.levels}</th>
-    <th style="padding:6px 8px;text-align:center">${s.target}</th>
-    <th style="padding:6px 8px;text-align:right">${s.diff}</th>
-  </tr></thead>
-  <tbody>${rows.map(([lv,em,nm,st])=>`<tr style="border-bottom:1px solid rgba(255,255,255,.07)"><td style="padding:8px 8px;color:rgba(255,255,255,.7)">${lv}</td><td style="padding:8px 8px;text-align:center;font-size:16px">${em} ${nm}</td><td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">${st}</td></tr>`).join('')}</tbody>
-</table>
-<div style="font-size:13px;font-weight:800;color:#f5a623;margin-bottom:8px;margin-top:4px">${s.titles}</div>
-<div style="background:rgba(0,0,0,.3);border-radius:12px;padding:10px 8px;margin-bottom:14px">
-  <div style="font-size:10px;color:rgba(255,255,255,.4);margin-bottom:10px;text-align:center">${s.titlesub}</div>
-  <div style="display:flex;flex-direction:column;gap:6px">
-    ${titleData.map(t=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:${t.bg};border-radius:8px${t.border?';border:'+t.border:''}"><span style="font-size:${t.stars.length>5?'16px':'13px'}">${t.stars}</span><span style="font-size:11px;color:${t.color};font-weight:900">${t.name}</span><span style="font-size:10px;color:rgba(255,255,255,.4)">Level ${t.lv}</span></div>`).join('')}
-  </div>
-</div>
-<div style="font-size:13px;font-weight:800;color:#f5a623;margin-bottom:8px">${s.chain}</div>
-<div style="background:rgba(0,0,0,.3);border-radius:12px;padding:10px 8px;margin-bottom:14px">
-  <div style="font-size:10px;color:rgba(255,255,255,.4);margin-bottom:8px;text-align:center">${s.chainsub}</div>
-  <div style="display:flex;flex-direction:column;gap:4px">
-    <div style="display:flex;align-items:center;gap:4px;font-size:13px">🍒<span style="color:rgba(255,255,255,.3)">+</span>🍒<span style="color:rgba(255,255,255,.3);font-size:10px">→</span>🥝<span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">${cl[0]}</span></div>
-    <div style="display:flex;align-items:center;gap:4px;font-size:13px">🥝<span style="color:rgba(255,255,255,.3)">+</span>🥝<span style="color:rgba(255,255,255,.3);font-size:10px">→</span>🍓<span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">${cl[1]}</span></div>
-    <div style="display:flex;align-items:center;gap:4px;font-size:13px">🍓<span style="color:rgba(255,255,255,.3)">+</span>🍓<span style="color:rgba(255,255,255,.3);font-size:10px">→</span>🍒<span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">${cl[2]}</span></div>
-    <div style="display:flex;align-items:center;gap:4px;font-size:13px">…<span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:4px">${L==='tr'?'ve devam eder':L==='ru'?'и так далее':L==='ar'?'وهكذا':'and so on'}</span></div>
-  </div>
-</div>
-<div style="font-size:13px;font-weight:800;color:#f5a623;margin-bottom:8px">${s.tips}</div>
-<div style="font-size:12px;color:rgba(255,255,255,.65);line-height:1.9;margin-bottom:4px">${tips[L]||tips.tr}</div>`;
-  const el=document.getElementById('guide-dyn-content');
-  if(el) el.innerHTML=html;
+  var sec=s[L]||s.tr;
+  var rows=[['1','🥥',fn[0],'⭐'],['2-3','🎃',fn[1],'⭐'],['4-5','🧅',fn[2],'⭐⭐'],['6-7','🍇',fn[3],'⭐⭐'],['8-9','🍋',fn[4],'⭐⭐'],['10','🍑',fn[5],'⭐⭐'],['11','🍌',fn[6],'⭐⭐'],['12-13','🍈',fn[7],'⭐⭐⭐'],['14-15','🍏',fn[8],'⭐⭐⭐'],['16-17','🫐',fn[9],'⭐⭐⭐'],['18-22','🍅',fn[10],'⭐⭐⭐'],['23-30','🍊',fn[11],'⭐⭐⭐⭐'],['31-40','🌽',fn[12],'⭐⭐⭐⭐'],['41-50','🍆',fn[13],'⭐⭐⭐⭐⭐'],['51-60','🥕',fn[14],'⭐⭐⭐⭐⭐'],['61-70','🌰',fn[15],'⭐⭐⭐⭐⭐'],['71-99','🍉',fn[16],'🌟🌟']];
+  var tbody=rows.map(function(r){return'<tr style="border-bottom:1px solid rgba(255,255,255,.07)"><td style="padding:6px 8px;color:rgba(255,255,255,.7)">'+r[0]+'</td><td style="padding:6px 8px;text-align:center">'+r[1]+' '+r[2]+'</td><td style="padding:6px 8px;text-align:right;color:#f5a623;font-size:11px">'+r[3]+'</td></tr>';}).join('');
+  var dyn=document.getElementById('guide-dyn');
+  if(dyn)dyn.innerHTML='<div style="font-size:13px;font-weight:800;color:#f5a623;margin-bottom:8px">'+sec.targets+'</div><table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:14px"><thead><tr style="background:rgba(255,255,255,.06);color:rgba(255,255,255,.45);font-size:10px"><th style="padding:6px 8px;text-align:left">'+sec.levels+'</th><th style="padding:6px 8px;text-align:center">'+sec.target+'</th><th style="padding:6px 8px;text-align:right">'+sec.diff+'</th></tr></thead><tbody>'+tbody+'</tbody></table><div style="font-size:13px;font-weight:800;color:#f5a623;margin-bottom:8px">'+sec.tips+'</div><div style="font-size:12px;color:rgba(255,255,255,.65);line-height:1.9">'+sec.tip+'</div>';
 }
-function openInfo(){
-  renderGuide();
-  set('lbl-guide-title','lbl_guide_title');
-  set('btn-info-close','btn_info_close');
-  document.getElementById('info-overlay').style.display='flex';
-}
+function closeInfo(){document.getElementById('info-overlay').style.display='none';}
 async function renderRivals(me){
   const el=document.getElementById('rival-tbl2');
   if(!el)return;
@@ -4015,13 +3650,7 @@ function toggleLBSection(id){
   el.style.display=open?'none':'block';
   if(arrow)arrow.textContent=open?'▶':'▼';
 }
-function openLB(){
-  show('s-lb');
-  /* S.user henüz set olmamışsa localStorage'dan al */
-  const me = S.user || localStorage.getItem(UKEY) || '';
-  renderLB(me);
-  renderRivals(me);
-}
+function openLB(){show('s-lb');renderLB(S.user);renderRivals(S.user);}
 
 /* ══════════════════════════════════════════
    TUTORIAL
@@ -4187,8 +3816,8 @@ function closeChallenge(){
 
 async function sendChallenge(){
   const nick=document.getElementById('challenge-nick').value.trim();
-  if(!nick){showToast(T('enter_username'));return;}
-  if(nick===S.user){showToast(T('cant_challenge_self'));return;}
+  if(!nick){showToast(_lang==='en'?'Enter a username!':_lang==='ru'?'Введи имя!':_lang==='ar'?'أدخل اسماً!':'Kullanıcı adı gir!');return;}
+  if(nick===S.user){showToast(_lang==='en'?"Can't challenge yourself!":_lang==='ru'?'Нельзя с собой!':_lang==='ar'?'لا يمكنك تحدي نفسك!':'Kendinle yarışamazsın!');return;}
 
   const btn=document.querySelector('#challenge-overlay button[onclick="sendChallenge()"]');
   if(btn){btn.textContent='⏳ Gönderiliyor...';btn.disabled=true;}
@@ -4214,7 +3843,7 @@ async function sendChallenge(){
     _listenChallengeResponse(nick);
   }catch(e){
     if(btn){btn.textContent='⚔️ Meydan Oku!';btn.disabled=false;}
-    showToast(T('send_failed'));
+    showToast('❌ Gönderilemedi, tekrar dene');
   }
 }
 
@@ -4408,122 +4037,6 @@ document.addEventListener('visibilitychange',()=>{
 window.addEventListener('pagehide',()=>{
   try{if(S.cfg&&!S.dead)saveGameState();}catch(e){}
 });
-
-/* ══ RANK ANİMASYON ══ */
-async function showRankAnim(oldRank,newRank,entries,playerName){
-  if(!entries||entries.length<1)return;
-  if(newRank<=0)return;
-  const diff=oldRank>0?(oldRank-newRank):0;
-  const overlay=document.getElementById('rank-anim-overlay');
-  const list=document.getElementById('rank-anim-list');
-  const counter=document.getElementById('rank-anim-counter');
-  const msg=document.getElementById('rank-anim-msg');
-  if(!overlay||!list||!counter||!msg)return;
-
-  const getEntry=(rank)=>rank>=1&&rank<=entries.length?entries[rank-1]:null;
-  const me=entries.find(e=>e.name===playerName)||{name:playerName,score:0};
-
-  const makeRow=(rank,entry,isMe)=>{
-    if(rank<=0)return'';
-    if(!entry)return`<div class="ra-row ra-empty" style="opacity:.6;border:1px dashed rgba(255,255,255,.3)"><span class="ra-rank-num" style="color:rgba(255,255,255,.55)">#${rank}</span><span class="ra-name-txt" style="color:rgba(255,255,255,.5)">👤 —</span><span class="ra-score-txt"></span></div>`;
-    const medal=rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':`#${rank}`;
-    return`<div class="ra-row${isMe?' ra-me':''}"><span class="ra-rank-num">${medal}</span><span class="ra-name-txt">${entry.name}</span><span class="ra-score-txt">${(entry.score||0).toLocaleString()}</span></div>`;
-  };
-
-  const makeScrollRow=(rank,entry,isMe,opacity=1,blur=0)=>{
-    if(rank<=0)return'';
-    const name=entry?entry.name:`👤 #${rank}`;
-    const score=entry?(entry.score||0).toLocaleString():'';
-    const medal=rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':`#${rank}`;
-    const style=isMe?'':`opacity:${opacity};filter:blur(${blur}px) brightness(0.85);transform:scale(${0.96+opacity*0.04})`;
-    return`<div class="ra-row${isMe?' ra-me':''}" style="${style};transition:all .1s ease"><span class="ra-rank-num" style="${isMe?'':'color:rgba(255,255,255,.6)'}">${medal}</span><span class="ra-name-txt" style="${isMe?'':'color:rgba(255,255,255,.7)'}">${name}</span><span class="ra-score-txt" style="${isMe?'':'color:rgba(255,255,255,.4)'}">${score}</span></div>`;
-  };
-
-  overlay.style.opacity='0';
-  overlay.style.display='flex';
-  msg.style.opacity='0'; msg.textContent='';
-  const ratitle=document.getElementById('rank-anim-title');
-  if(ratitle)ratitle.textContent=T('rank_anim_title');
-  setTimeout(()=>{overlay.style.opacity='1';},20);
-
-  counter.textContent=`#${oldRank>0?oldRank:newRank}`;
-  list.style.opacity='1';
-  list.innerHTML=[
-    makeRow(oldRank>0?oldRank-2:newRank-2,getEntry(oldRank>0?oldRank-2:newRank-2),false),
-    makeRow(oldRank>0?oldRank-1:newRank-1,getEntry(oldRank>0?oldRank-1:newRank-1),false),
-    makeRow(oldRank>0?oldRank:newRank,me,true),
-    makeRow(oldRank>0?oldRank+1:newRank+1,getEntry(oldRank>0?oldRank+1:newRank+1),false),
-    makeRow(oldRank>0?oldRank+2:newRank+2,getEntry(oldRank>0?oldRank+2:newRank+2),false),
-  ].join('');
-
-  await new Promise(r=>setTimeout(r,1000));
-
-  if(diff>0){
-    const dur=Math.min(2800,diff*120+800);
-    const t0=performance.now();
-    let lastVal=-1;
-    await new Promise(resolve=>{
-      const tick=(now)=>{
-        const p=Math.min((now-t0)/dur,1);
-        const ease=1-Math.pow(1-p,2.5);
-        const val=Math.round(oldRank-(oldRank-newRank)*ease);
-        counter.textContent=`#${val}`;
-        if(val!==lastVal){
-          lastVal=val;
-          list.innerHTML=[
-            makeScrollRow(val-2,getEntry(val-2),false,0.55,2.5),
-            makeScrollRow(val-1,getEntry(val-1),false,0.82,1.0),
-            makeScrollRow(val,me,true),
-            makeScrollRow(val+1,getEntry(val+1),false,0.82,1.0),
-            makeScrollRow(val+2,getEntry(val+2),false,0.55,2.5),
-          ].join('');
-        }
-        if(p<1)requestAnimationFrame(tick);
-        else resolve();
-      };
-      requestAnimationFrame(tick);
-    });
-    const meRow=list.querySelector('.ra-me');
-    if(meRow){meRow.style.animation='none';requestAnimationFrame(()=>{meRow.style.animation='raPulse 0.6s ease 2';});}
-    await new Promise(r=>setTimeout(r,200));
-  } else {
-    counter.textContent=`#${newRank}`;
-    await new Promise(r=>setTimeout(r,400));
-  }
-
-  list.style.transition='opacity .2s';
-  list.style.opacity='0';
-  await new Promise(r=>setTimeout(r,200));
-  counter.textContent=`#${newRank}`;
-  list.innerHTML=[
-    makeRow(newRank-2,getEntry(newRank-2),false),
-    makeRow(newRank-1,getEntry(newRank-1),false),
-    makeRow(newRank,me,true),
-    makeRow(newRank+1,getEntry(newRank+1),false),
-    makeRow(newRank+2,getEntry(newRank+2),false),
-  ].join('');
-  const newMe=list.querySelector('.ra-me');
-  if(newMe)newMe.style.animation='raFadeIn .5s ease forwards, raPulse 1s ease .5s 2';
-  list.style.opacity='1';
-
-  await new Promise(r=>setTimeout(r,400));
-  msg.textContent=diff>0?T('rank_up',{d:diff}):(diff<0?T('rank_down',{d:Math.abs(diff)}):T('rank_same'));
-  msg.style.opacity='1';
-
-  await new Promise(r=>setTimeout(r,1600));
-  overlay.style.opacity='0';
-  await new Promise(r=>setTimeout(r,300));
-  overlay.style.display='none';
-  msg.style.opacity='0';
-}
 </script>
-
-<!-- ══ RANK ANİMASYON OVERLAY ══ -->
-<div id="rank-anim-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.72);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:600;flex-direction:column;align-items:center;justify-content:center;font-family:'Segoe UI',Arial;color:#fff;text-align:center;padding:20px;transition:opacity .3s">
-  <div id="rank-anim-title" style="font-size:11px;letter-spacing:3px;color:rgba(255,255,255,.4);margin-bottom:8px;text-transform:uppercase">Şampiyonlar Ligi</div>
-  <div id="rank-anim-counter" style="font-size:52px;font-weight:900;color:#f5a623;margin-bottom:12px;transition:all .1s;text-shadow:0 0 30px rgba(245,166,35,.5)">#—</div>
-  <div id="rank-anim-list" style="width:92%;max-width:310px"></div>
-  <div id="rank-anim-msg" style="margin-top:18px;font-size:20px;font-weight:900;color:#44ff88;opacity:0;transition:opacity .4s;text-shadow:0 0 20px rgba(68,255,136,.4)"></div>
-</div>
 </body>
 </html>
