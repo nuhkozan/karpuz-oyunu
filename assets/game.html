@@ -1026,7 +1026,7 @@ function lvlCfg(lv){
   return {
     targetScore,
     timeLimit,
-    gravity:3200+eff*60,
+    gravity:2400+eff*45,
     cw,ch, wL:wt,wR:cw-wt,floor:ch-wt,
     dangerY,
     maxDrop:Math.min(14, 7 + Math.floor((eff-1)/2)),
@@ -1740,7 +1740,9 @@ async function submitLBFull(name,score,lv){
       const all=Object.values(data).filter(e=>e&&e.score!=null);
       all.sort((a,b)=>b.score-a.score);
       const rank=all.findIndex(e=>e.name===name)+1;
-      return {rank:rank>0?rank:localRank, entries:all};
+      const finalRank=rank>0?rank:localRank;
+      try{localStorage.setItem('karpuz_lastrank_'+name, finalRank);}catch(e){}
+      return {rank:finalRank, entries:all};
     }
   }catch(e){}
 
@@ -2556,7 +2558,7 @@ function drop(x){
   S.dropping=true;
   S.autoT=3.0; /* reset auto-drop timer */
   const f=new Fruit(x,S.cfg.dangerY-FR[S.curType][1]-4,S.curType);
-  f.vy=350;
+  f.vy=280;
   S.fruits.push(f);
   snd(S.curType,false);
   setTimeout(()=>{
@@ -2645,7 +2647,7 @@ function physics(dt){
       const nx=dx/d,ny=dy/d,ov=(md-d)*.5;
       a.x-=nx*ov*.5;a.y-=ny*ov*.5;b.x+=nx*ov*.5;b.y+=ny*ov*.5;
       const rv=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;
-      if(rv<0){const im=rv*.42;a.vx+=im*nx;a.vy+=im*ny;b.vx-=im*nx;b.vy-=im*ny;}
+      if(rv<0){const im=rv*.28;a.vx+=im*nx;a.vy+=im*ny;b.vx-=im*nx;b.vy-=im*ny;}
     }
   }
   S.fruits=S.fruits.filter(f=>!f.merged);
@@ -2858,9 +2860,12 @@ function loop(ts){
     S.winPending=false;
     const wf=S.winFruit;
     /* Animasyonu hemen başlat, LB async gelince rank güncellenir */
-    const _curLB=getLB();
-    const _curIdx=_curLB.findIndex(e=>e.name===S.user);
-    S._winOldRank=_curIdx>=0?_curIdx+1:0; /* Güncelleme ÖNCESİ sıra */
+    /* Son bilinen sırayı localStorage'dan al — local LB sadece top50 */
+    const _lastRankStr=localStorage.getItem('karpuz_lastrank_'+S.user);
+    const _localLB=getLB();
+    const _localIdx=_localLB.findIndex(e=>e.name===S.user);
+    S._winOldRank=_localIdx>=0?(_localIdx+1)
+      :(_lastRankStr?parseInt(_lastRankStr):0);
     WA.start(wf.x, wf.y, {rank:0, score:S.totSc, lv:S.lv, elapsed:S.timeElapsed});
     submitLB(S.user,S.totSc,S.lv).then(rank=>{
       S._winRank=rank; S._winScore=S.totSc;
