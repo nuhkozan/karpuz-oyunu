@@ -118,15 +118,17 @@ canvas { display:block; cursor:crosshair; touch-action:none; border-radius:14px;
 @keyframes bgSnow{0%{transform:translateY(-60px) translateX(0) rotate(0deg);opacity:1}100%{transform:translateY(110vh) translateX(40px) rotate(540deg);opacity:0}}
 @keyframes bgOrbit{0%{transform:rotate(0deg) translateX(60px) rotate(0deg)}100%{transform:rotate(360deg) translateX(60px) rotate(-360deg)}}
 .bg-el{position:absolute;pointer-events:none;user-select:none;will-change:transform;}
-.ra-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;margin:4px 0;background:rgba(255,255,255,.05);font-size:13px;transition:all .3s;}
-.ra-me{background:rgba(245,166,35,.18)!important;border:1.5px solid rgba(245,166,35,.5);font-weight:900;}
-.ra-rank-num{min-width:36px;text-align:center;font-weight:800;color:#f5a623;}
-.ra-name-txt{flex:1;text-align:left;color:#fff;}
-.ra-score-txt{color:rgba(255,255,255,.5);font-size:11px;}
-.ra-empty{height:40px;}
-@keyframes raFlyUp{0%{transform:translateY(0);opacity:1;}60%{transform:translateY(-80px);opacity:.3;}100%{transform:translateY(-40px);opacity:0;}}
-@keyframes raPulse{0%,100%{box-shadow:0 0 0 0 rgba(245,166,35,.4);}50%{box-shadow:0 0 0 8px rgba(245,166,35,0);}}
-@keyframes raFadeIn{from{opacity:0;transform:scale(.92);}to{opacity:1;transform:scale(1);}}
+.ra-row{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:14px;margin:5px 0;background:rgba(255,255,255,.07);font-size:14px;}
+.ra-me{background:rgba(245,166,35,.18)!important;border:2px solid #f5a623;}
+.ra-rank-num{min-width:44px;font-weight:800;color:rgba(255,255,255,.45);font-size:13px;}
+.ra-me .ra-rank-num{color:#f5a623;}
+.ra-name-txt{flex:1;font-weight:700;color:#fff;text-align:left;}
+.ra-score-txt{color:rgba(255,255,255,.45);font-size:13px;}
+.ra-me .ra-score-txt{color:#f5a623;}
+.ra-empty{height:48px;background:transparent!important;}
+@keyframes raFlyUp{0%{transform:translateY(0);opacity:1;}60%{transform:translateY(-60px);opacity:.2;}100%{transform:translateY(-40px);opacity:0;}}
+@keyframes raPulse{0%,100%{box-shadow:0 0 0 0 rgba(245,166,35,.5);}50%{box-shadow:0 0 0 6px rgba(245,166,35,0);}}
+@keyframes raFadeIn{from{opacity:0;transform:scale(.96);}to{opacity:1;transform:scale(1);}}
 @keyframes canvasGlow{
   0%  {border-color:rgba(100,255,120,.6);box-shadow:0 0 18px rgba(100,255,120,.35);}
   25% {border-color:rgba(255,200,60,.6); box-shadow:0 0 18px rgba(255,200,60,.35);}
@@ -256,7 +258,7 @@ tr:{
   welcome_lbl:'HOŞ GELDİN',btn_new_game:'🎮 YENİ OYUN',
   btn_continue:'▶ Kaldığın Yerden Devam Et',
   btn_new_user:'✏️ Yeni Kullanıcı Adı Oluştur',
-  u_new_lbl:'YENİ KULLANICI ADI',btn_save_play:'KAYDET & OYNA 🚀',btn_back:'← Geri Dön',
+  u_new_lbl:'YENİ KULLANICI ADI',u_new_lbl2:'KULLANICI ADI',btn_save_play:'KAYDET & OYNA 🚀',btn_back:'← Geri Dön',
   btn_lb:'🏆 Şampiyonlar Ligi',btn_info:'📖 Rehber',
   lbl_store:'MAĞAZA',lbl_mission:'GÖREV',lbl_music:'MÜZİK',lbl_sound:'SES',
   lbl_score:'PUAN',lbl_total:'TOPLAM',lbl_time:'SÜRE',lbl_mult:'ÇARPAN',lbl_target:'HEDEF',lbl_next:'Sıradaki:',
@@ -282,7 +284,7 @@ en:{
   welcome_lbl:'WELCOME BACK',btn_new_game:'🎮 NEW GAME',
   btn_continue:'▶ Continue Where You Left Off',
   btn_new_user:'✏️ Create New Username',
-  u_new_lbl:'NEW USERNAME',btn_save_play:'SAVE & PLAY 🚀',btn_back:'← Go Back',
+  u_new_lbl:'NEW USERNAME',u_new_lbl2:'USERNAME',btn_save_play:'SAVE & PLAY 🚀',btn_back:'← Go Back',
   btn_lb:'🏆 Champions League',btn_info:'📖 Guide',
   lbl_store:'SHOP',lbl_mission:'MISSION',lbl_music:'MUSIC',lbl_sound:'SOUND',
   lbl_score:'SCORE',lbl_total:'TOTAL',lbl_time:'TIME',lbl_mult:'MULT',lbl_target:'TARGET',lbl_next:'Next:',
@@ -308,7 +310,7 @@ ru:{
   welcome_lbl:'С ВОЗВРАЩЕНИЕМ',btn_new_game:'🎮 НОВАЯ ИГРА',
   btn_continue:'▶ Продолжить с места',
   btn_new_user:'✏️ Создать новое имя',
-  u_new_lbl:'НОВОЕ ИМЯ',btn_save_play:'СОХРАНИТЬ И ИГРАТЬ 🚀',btn_back:'← Назад',
+  u_new_lbl:'НОВОЕ ИМЯ',u_new_lbl2:'ИМЯ ПОЛЬЗОВАТЕЛЯ',btn_save_play:'СОХРАНИТЬ И ИГРАТЬ 🚀',btn_back:'← Назад',
   btn_lb:'🏆 Лига чемпионов',btn_info:'📖 Гид',
   lbl_store:'МАГАЗИН',lbl_mission:'ЗАДАНИЕ',lbl_music:'МУЗЫКА',lbl_sound:'ЗВУК',
   lbl_score:'ОЧКИ',lbl_total:'ИТОГО',lbl_time:'ВРЕМЯ',lbl_mult:'МНОЖ',lbl_target:'ЦЕЛЬ',lbl_next:'Следующий:',
@@ -334,7 +336,7 @@ ar:{
   welcome_lbl:'مرحباً بعودتك',btn_new_game:'🎮 لعبة جديدة',
   btn_continue:'▶ تابع من حيث توقفت',
   btn_new_user:'✏️ إنشاء اسم جديد',
-  u_new_lbl:'اسم جديد',btn_save_play:'احفظ والعب 🚀',btn_back:'← رجوع',
+  u_new_lbl:'اسم جديد',u_new_lbl2:'اسم المستخدم',btn_save_play:'احفظ والعب 🚀',btn_back:'← رجوع',
   btn_lb:'🏆 دوري الأبطال',btn_info:'📖 دليل',
   lbl_store:'متجر',lbl_mission:'مهمة',lbl_music:'موسيقى',lbl_sound:'صوت',
   lbl_score:'نقاط',lbl_total:'الإجمالي',lbl_time:'وقت',lbl_mult:'مضاعف',lbl_target:'هدف',lbl_next:'التالي:',
@@ -673,7 +675,7 @@ function setLang(lang){
     <div id="uname-err" style="color:#ff6688;font-size:12px;margin-bottom:8px;min-height:18px;font-weight:700"></div>
     <button class="btn-main" id="btn-save-play" style="width:220px" onclick="registerUser()">KAYDET & OYNA 🚀</button>
     <div style="margin-top:10px" id="u-back-wrap" style="display:none">
-      <button class="btn-out" style="font-size:12px;padding:8px 18px" onclick="showReturn()">
+      <button id="btn-back" class="btn-out" style="font-size:12px;padding:8px 18px" onclick="showReturn()">
         ← Geri Dön
       </button>
     </div>
@@ -1024,7 +1026,7 @@ function lvlCfg(lv){
   return {
     targetScore,
     timeLimit,
-    gravity:1380+eff*38,
+    gravity:3200+eff*60,
     cw,ch, wL:wt,wR:cw-wt,floor:ch-wt,
     dangerY,
     maxDrop:Math.min(14, 7 + Math.floor((eff-1)/2)),
@@ -1950,7 +1952,7 @@ function showNewUser(showBack){
   if(showBack===undefined)showBack=true;
   document.getElementById('u-return').style.display='none';
   document.getElementById('u-new').style.display='block';
-  document.getElementById('u-new-lbl').textContent=showBack?'YENİ KULLANICI ADI':'KULLANICI ADI';
+  document.getElementById('u-new-lbl').textContent=showBack?T('u_new_lbl'):T('u_new_lbl2')||T('u_new_lbl');
   const bw=document.getElementById('u-back-wrap');
   if(bw)bw.style.display=showBack?'block':'none';
   document.getElementById('uname').value='';
@@ -2554,7 +2556,7 @@ function drop(x){
   S.dropping=true;
   S.autoT=3.0; /* reset auto-drop timer */
   const f=new Fruit(x,S.cfg.dangerY-FR[S.curType][1]-4,S.curType);
-  f.vy=180;
+  f.vy=350;
   S.fruits.push(f);
   snd(S.curType,false);
   setTimeout(()=>{
@@ -3557,111 +3559,114 @@ function togglePause(){
 }
 
 async function showRankAnim(oldRank, newRank, entries, playerName){
-  if(!entries||entries.length<1)return;
-  if(newRank<=0)return;
-  /* Yeni oyuncu için oldRank=0 kabul et, animasyonu yine de göster */
-  const isNew=(oldRank<=0||oldRank<=newRank);
-  const diff=isNew?0:oldRank-newRank;
+  if(!entries||entries.length<1||newRank<=0)return;
 
   const overlay=document.getElementById('rank-anim-overlay');
-  const list=document.getElementById('rank-anim-list');
+  const list   =document.getElementById('rank-anim-list');
   const counter=document.getElementById('rank-anim-counter');
-  const msg=document.getElementById('rank-anim-msg');
+  const msg    =document.getElementById('rank-anim-msg');
+  const lbl    =document.getElementById('rank-anim-league');
   if(!overlay||!list||!counter||!msg)return;
 
-  const lbl=document.getElementById('rank-anim-league');
-  if(lbl)lbl.textContent=_lang==='en'?'Champions League':_lang==='ru'?'Лига чемпионов':_lang==='ar'?'دوري الأبطال':'Şampiyonlar Ligi';
+  /* Dil etiketi */
+  if(lbl)lbl.textContent=(_lang==='en'?'CHAMPIONS LEAGUE':_lang==='ru'?'ЛИГА ЧЕМПИОНОВ':_lang==='ar'?'دوري الأبطال':'ŞAMPİYONLAR LİGİ');
 
-  const getEntry=(rank)=>rank>=1&&rank<=entries.length?entries[rank-1]:null;
-  const me=entries.find(e=>e.name===playerName)||{name:playerName,score:0};
+  const isNew    = oldRank<=0;
+  const improved = !isNew && newRank<oldRank;
+  const diff     = improved ? oldRank-newRank : 0;
 
+  /* Satır oluştur */
   const makeRow=(rank,entry,isMe)=>{
-    if(!entry&&!isMe)return'<div class="ra-row ra-empty"></div>';
-    const e=entry||(isMe?me:null);
-    if(!e)return'<div class="ra-row ra-empty"></div>';
-    const medal=rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':`#${rank}`;
+    if(!entry&&!isMe)return`<div class="ra-row ra-empty"></div>`;
+    const e=entry||{name:playerName,score:0};
+    const num=rank<=3?(['🥇','🥈','🥉'][rank-1]):`#${rank}`;
     return`<div class="ra-row${isMe?' ra-me':''}">
-      <span class="ra-rank-num">${medal}</span>
+      <span class="ra-rank-num">${num}</span>
       <span class="ra-name-txt">${e.name}</span>
       <span class="ra-score-txt">${(e.score||0).toLocaleString()}</span>
     </div>`;
   };
 
-  /* 5 satır: 2 üst + ben + 2 alt */
-  const makeRows=(centerRank)=>[
-    makeRow(centerRank-2,getEntry(centerRank-2),false),
-    makeRow(centerRank-1,getEntry(centerRank-1),false),
-    makeRow(centerRank,  getEntry(centerRank),  true),
-    makeRow(centerRank+1,getEntry(centerRank+1),false),
-    makeRow(centerRank+2,getEntry(centerRank+2),false),
-  ].join('');
+  const makeRows=(centerRank)=>{
+    const rows=[];
+    for(let r=centerRank-2;r<=centerRank+2;r++){
+      const entry=entries[r-1]||null;
+      rows.push(makeRow(r,entry,r===centerRank&&entry&&entry.name===playerName));
+    }
+    return rows.join('');
+  };
 
-  overlay.style.opacity='0';
-  overlay.style.display='flex';
-  msg.style.opacity='0';
-  msg.textContent='';
+  /* Göster */
+  msg.style.opacity='0'; msg.textContent='';
+  overlay.style.opacity='0'; overlay.style.display='flex';
   setTimeout(()=>{overlay.style.opacity='1';},20);
 
-  if(isNew){
-    /* Yeni oyuncu — direkt yeni sırayı göster */
+  if(isNew||!improved){
+    /* Yeni oyuncu veya sıra değişmedi */
     counter.textContent=`#${newRank}`;
-    list.style.opacity='1';
     list.innerHTML=makeRows(newRank);
-    const newMe=list.querySelector('.ra-me');
-    if(newMe)newMe.style.animation='raFadeIn .5s ease forwards, raPulse 1s ease .5s infinite';
-    msg.textContent=_lang==='en'?`🎉 You are #${newRank}!`:_lang==='ru'?`🎉 Вы на #${newRank} месте!`:_lang==='ar'?`🎉 أنت في المركز #${newRank}!`:`🎉 #${newRank}. Sıradasın!`;
-    await new Promise(r=>setTimeout(r,400));
-    msg.style.opacity='1';
-    await new Promise(r=>setTimeout(r,2000));
-  } else {
-    /* Rank yükselen oyuncu */
-    counter.textContent=`#${oldRank}`;
-    list.style.opacity='1';
-    list.innerHTML=makeRows(oldRank);
-
-    await new Promise(r=>setTimeout(r,1000));
-
-    /* Uçuş animasyonu */
     const meRow=list.querySelector('.ra-me');
-    if(meRow)meRow.style.animation='raFlyUp .8s ease forwards';
+    if(meRow)meRow.style.animation='raFadeIn .4s ease forwards, raPulse 1.2s ease .4s infinite';
+    await new Promise(r=>setTimeout(r,800));
+    msg.textContent=isNew
+      ?(_lang==='en'?`🎉 Welcome to the league!`:_lang==='ru'?`🎉 Добро пожаловать!`:_lang==='ar'?`🎉 مرحباً في الدوري!`:`🎉 Ligaya hoş geldin!`)
+      :(_lang==='en'?`📌 Rank unchanged`:_lang==='ru'?`📌 Место не изменилось`:_lang==='ar'?`📌 المركز لم يتغير`:`📌 Sıra değişmedi`);
+    msg.style.opacity='1';
+    await new Promise(r=>setTimeout(r,2200));
 
-    const dur=Math.min(1400,diff*60+500);
+  } else {
+    /* Sıra yükseldi — animasyon */
+    counter.textContent=`#${oldRank}`;
+    list.innerHTML=makeRows(oldRank);
+    await new Promise(r=>setTimeout(r,900));
+
+    /* Uçuş */
+    list.querySelectorAll('.ra-row').forEach(row=>{
+      row.style.transition='transform .7s ease, opacity .7s ease';
+      row.style.transform='translateY(-55px)';
+      row.style.opacity='0';
+    });
+
+    /* Sıra sayacı animasyonu */
+    const dur=Math.min(1200,diff*50+400);
     const t0=performance.now();
     await new Promise(resolve=>{
       const tick=(now)=>{
         const p=Math.min((now-t0)/dur,1);
         const ease=1-Math.pow(1-p,3);
         counter.textContent=`#${Math.round(oldRank-(oldRank-newRank)*ease)}`;
-        if(p<1)requestAnimationFrame(tick);
-        else resolve();
+        if(p<1)requestAnimationFrame(tick); else resolve();
       };
       requestAnimationFrame(tick);
     });
 
     /* Yeni pozisyon */
-    list.style.transition='opacity .25s';
-    list.style.opacity='0';
-    await new Promise(r=>setTimeout(r,250));
-
+    list.style.opacity='0'; list.style.transition='opacity .2s';
+    await new Promise(r=>setTimeout(r,200));
     counter.textContent=`#${newRank}`;
     list.innerHTML=makeRows(newRank);
-    const newMe2=list.querySelector('.ra-me');
-    if(newMe2)newMe2.style.animation='raFadeIn .5s ease forwards, raPulse 1s ease .5s infinite';
     list.style.opacity='1';
-    await new Promise(r=>setTimeout(r,400));
+    const newMe=list.querySelector('.ra-me');
+    if(newMe)newMe.style.animation='raFadeIn .4s ease forwards, raPulse 1.2s ease .4s infinite';
+    await new Promise(r=>setTimeout(r,500));
 
-    const riseMsg=_lang==='en'?`⬆ ${diff} places up! 🚀`:_lang==='ru'?`⬆ +${diff} позиций! 🚀`:_lang==='ar'?`⬆ ارتفعت ${diff} مراكز! 🚀`:`⬆ ${diff} sıra yükseldin! 🚀`;
-    msg.textContent=riseMsg;
+    /* Mesaj */
+    msg.textContent=_lang==='en'?`↑ ${diff} ranks up! 🚀`:_lang==='ru'?`↑ +${diff} позиций! 🚀`:_lang==='ar'?`↑ ارتفعت ${diff} مراكز! 🚀`:`↑ ${diff} sıra yükseldin! 🚀`;
     msg.style.opacity='1';
-    await new Promise(r=>setTimeout(r,1600));
+    await new Promise(r=>setTimeout(r,1800));
   }
 
+  /* Kapat */
+  overlay.style.transition='opacity .3s';
   overlay.style.opacity='0';
   await new Promise(r=>setTimeout(r,300));
   overlay.style.display='none';
-  msg.style.opacity='0';
+  list.style.transition='';
 }
 
+  const overlay=document.getElementById('rank-anim-overlay');
+  const list=document.getElementById('rank-anim-list');
+  const counter=document.getElementById('rank-anim-counter');
 async function winLevel(){
   if(S.dead)return; stop();
   S.totSc = S._winScore ?? S.totSc;
@@ -4328,11 +4333,14 @@ window.addEventListener('pagehide',()=>{
 </script>
 
 <!-- ══ RANK ANİMASYON OVERLAY ══ -->
-<div id="rank-anim-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.92);z-index:600;flex-direction:column;align-items:center;justify-content:center;font-family:'Segoe UI',Arial;color:#fff;text-align:center;padding:20px;transition:opacity .3s">
-  <div style="font-size:11px;letter-spacing:3px;color:rgba(255,255,255,.4);margin-bottom:8px;text-transform:uppercase" id="rank-anim-league">Şampiyonlar Ligi</div>
-  <div id="rank-anim-counter" style="font-size:52px;font-weight:900;color:#f5a623;margin-bottom:12px;text-shadow:0 0 30px rgba(245,166,35,.5)">#—</div>
-  <div id="rank-anim-list" style="width:92%;max-width:310px"></div>
-  <div id="rank-anim-msg" style="margin-top:18px;font-size:20px;font-weight:900;color:#44ff88;opacity:0;transition:opacity .4s;text-shadow:0 0 20px rgba(68,255,136,.4)"></div>
+<!-- ══ RANK ANİMASYON OVERLAY ══ -->
+<div id="rank-anim-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(12,14,28,.88);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);z-index:650;flex-direction:column;align-items:center;justify-content:center;font-family:'Segoe UI',Arial;color:#fff;text-align:center;padding:24px;">
+  <div style="width:92%;max-width:340px">
+    <div id="rank-anim-league" style="font-size:11px;letter-spacing:4px;color:rgba(255,255,255,.35);margin-bottom:12px;text-transform:uppercase">ŞAMPİYONLAR LİGİ</div>
+    <div id="rank-anim-counter" style="font-size:72px;font-weight:900;color:#f5a623;margin-bottom:16px;line-height:1">#—</div>
+    <div id="rank-anim-list"></div>
+    <div id="rank-anim-msg" style="margin-top:20px;font-size:18px;font-weight:800;color:#44ee88;opacity:0;transition:opacity .4s;min-height:28px"></div>
+  </div>
 </div>
 </body>
 </html>
