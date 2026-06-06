@@ -542,8 +542,7 @@ function setLang(lang){
     el.style.color=active?'#f5a623':'rgba(255,255,255,.5)';
     el.style.borderColor=active?'rgba(255,255,255,.35)':'rgba(255,255,255,.15)';
   });
-  // RTL support for Arabic
-  document.body.style.direction=lang==='ar'?'rtl':'ltr';
+  // RTL kaldırıldı - sadece metin içeriği değişir, layout değişmez
   const set=(id,key)=>{const el=document.getElementById(id);if(el)el.textContent=T(key);};
   const setH=(id,key)=>{const el=document.getElementById(id);if(el)el.innerHTML=T(key);};
   const ph=(id,key)=>{const el=document.getElementById(id);if(el)el.placeholder=T(key);};
@@ -771,24 +770,15 @@ function setLang(lang){
 </style>
 
 <!-- WhatsApp bar — her zaman üstte -->
-<div id="wa-bar" style="width:100%;max-width:440px;display:flex;align-items:stretch;position:sticky;top:0;z-index:100;box-shadow:0 3px 16px rgba(0,0,0,.35);height:46px;">
-  <div onclick="shareWA()" style="flex:1;background:linear-gradient(90deg,#25D366,#128C7E);display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:13px;font-weight:800;color:#fff;letter-spacing:.3px;">
-    <span>📲</span> Arkadaşını Davet Et
-  </div>
-  <div style="width:1px;background:rgba(255,255,255,.25)"></div>
-  <div onclick="openChallenge()" style="flex:1;background:#1a237e;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:13px;font-weight:800;color:#fff;letter-spacing:.3px;">
-    ⚔️ Meydan Oku
-  </div>
-</div>
-<!-- Ses butonları - barın hemen altında -->
-<div style="width:100%;max-width:440px;display:flex;justify-content:space-between;align-items:center;gap:6px;padding:4px 8px;background:rgba(0,0,0,.2);position:sticky;top:46px;z-index:99;">
+<!-- Ses butonları -->
+<div style="width:100%;max-width:440px;display:flex;justify-content:space-between;align-items:center;gap:6px;padding:4px 8px;background:rgba(0,0,0,.2);position:sticky;top:0;z-index:99;">
   <div style="display:flex;gap:6px;">
-    <div class="store-btn" id="top-store-btn" onclick="openStore()" style="padding:4px 10px;font-size:13px;border-radius:20px;border:1.5px solid rgba(255,255,255,.2);background:rgba(0,0,0,.45);color:#fff;display:flex;align-items:center;gap:4px;cursor:pointer;">💎 <span style="font-size:10px">MAĞAZA</span></div>
-    <div id="top-mis-btn" onclick="openMissions()" style="padding:4px 10px;font-size:13px;border-radius:20px;border:1.5px solid rgba(255,255,255,.2);background:rgba(0,0,0,.45);color:#fff;display:flex;align-items:center;gap:4px;cursor:pointer;">📋 <span style="font-size:10px">GÖREV</span><span id="mis-badge" style="background:#e94560;color:#fff;border-radius:6px;padding:1px 4px;font-size:8px;display:none">!</span></div>
+    <div class="store-btn" id="top-store-btn" onclick="openStore()" style="padding:4px 10px;font-size:13px;border-radius:20px;border:1.5px solid rgba(255,255,255,.2);background:rgba(0,0,0,.45);color:#fff;display:flex;align-items:center;gap:4px;cursor:pointer;">💎 <span style="font-size:10px" id="lbl-store">MAĞAZA</span></div>
+    <div id="top-mis-btn" onclick="openMissions()" style="padding:4px 10px;font-size:13px;border-radius:20px;border:1.5px solid rgba(255,255,255,.2);background:rgba(0,0,0,.45);color:#fff;display:flex;align-items:center;gap:4px;cursor:pointer;">📋 <span style="font-size:10px" id="lbl-mission">GÖREV</span><span id="mis-badge" style="background:#e94560;color:#fff;border-radius:6px;padding:1px 4px;font-size:8px;display:none">!</span></div>
   </div>
   <div style="display:flex;gap:6px;">
-    <button id="mus-btn" onclick="toggleMusic()" title="Müzik" style="background:rgba(0,0,0,.45);border:1.5px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 10px;font-size:14px;cursor:pointer;color:#fff;display:flex;align-items:center;gap:4px;">🎵 <span style="font-size:10px">MÜZİK</span></button>
-    <button id="sfx-btn" onclick="toggleSfx()" title="Ses" style="background:rgba(0,0,0,.45);border:1.5px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 10px;font-size:14px;cursor:pointer;color:#fff;display:flex;align-items:center;gap:4px;">🔊 <span style="font-size:10px">SES</span></button>
+    <button id="mus-btn" onclick="toggleMusic()" title="Müzik" style="background:rgba(0,0,0,.45);border:1.5px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 10px;font-size:14px;cursor:pointer;color:#fff;display:flex;align-items:center;gap:4px;">🎵 <span style="font-size:10px" id="lbl-music">MÜZİK</span></button>
+    <button id="sfx-btn" onclick="toggleSfx()" title="Ses" style="background:rgba(0,0,0,.45);border:1.5px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 10px;font-size:14px;cursor:pointer;color:#fff;display:flex;align-items:center;gap:4px;">🔊 <span style="font-size:10px" id="lbl-sound">SES</span></button>
   </div>
 </div>
 
@@ -803,19 +793,19 @@ function setLang(lang){
   <div style="position:relative;z-index:1;width:100%;display:flex;flex-direction:column;align-items:center;padding-bottom:20px">
   <div class="brand">🍉</div>
   <div class="brand-name">KARPUZ</div>
-  <div class="brand-sub">Meyveleri birleştir · Sonsuz level · Şampiyona!</div>
+  <div class="brand-sub" id="brand-sub">Meyveleri birleştir · Sonsuz level · Şampiyona!</div>
 
   <!-- MOD A: Dönen kullanıcı -->
   <div id="u-return" style="display:none;width:100%;text-align:center">
-    <div style="font-size:13px;color:rgba(255,255,255,.5);letter-spacing:2px;margin-bottom:6px">HOŞ GELDİN</div>
+    <div style="font-size:13px;color:rgba(255,255,255,.5);letter-spacing:2px;margin-bottom:6px" id="welcome-lbl">HOŞ GELDİN</div>
     <div id="u-welcome" style="font-size:26px;font-weight:900;color:#f5a623;margin-bottom:18px">—</div>
-    <button class="btn-main" style="width:220px" onclick="continueUser()">🎮 YENİ OYUN</button>
+    <button class="btn-main" id="btn-new-game" style="width:220px" onclick="continueUser()">🎮 YENİ OYUN</button>
     <div id="u-continue-wrap" style="margin-top:10px;display:none">
-      <button class="btn-main" style="width:220px;background:linear-gradient(90deg,#22aa66,#1a7a4a);font-size:15px" onclick="resumeGame()">▶ Kaldığın Yerden Devam Et</button>
+      <button class="btn-main" id="btn-continue" style="width:220px;background:linear-gradient(90deg,#22aa66,#1a7a4a);font-size:15px" onclick="resumeGame()">▶ Kaldığın Yerden Devam Et</button>
       <div id="u-continue-info" style="font-size:11px;color:rgba(255,255,255,.4);margin-top:5px"></div>
     </div>
     <div style="margin-top:12px">
-      <button class="btn-out" style="font-size:12px;padding:8px 18px" onclick="showNewUser()">
+      <button class="btn-out" id="btn-new-user" style="font-size:12px;padding:8px 18px" onclick="showNewUser()">
         ✏️ Yeni Kullanıcı Adı Oluştur
       </button>
     </div>
@@ -826,9 +816,9 @@ function setLang(lang){
     <div class="input-lbl" id="u-new-lbl">YENİ KULLANICI ADI</div>
     <input id="uname" class="txt-in" type="text" maxlength="14" placeholder="Adını gir...">
     <div id="uname-err" style="color:#ff6688;font-size:12px;margin-bottom:8px;min-height:18px;font-weight:700"></div>
-    <button class="btn-main" style="width:220px" onclick="registerUser()">KAYDET & OYNA 🚀</button>
+    <button class="btn-main" id="btn-save-play" style="width:220px" onclick="registerUser()">KAYDET & OYNA 🚀</button>
     <div style="margin-top:10px" id="u-back-wrap" style="display:none">
-      <button class="btn-out" style="font-size:12px;padding:8px 18px" onclick="showReturn()">
+      <button class="btn-out" id="btn-back" style="font-size:12px;padding:8px 18px" onclick="showReturn()">
         ← Geri Dön
       </button>
     </div>
@@ -843,11 +833,15 @@ function setLang(lang){
       <button onclick="shareWA()" class="btn-out" style="flex:1;max-width:160px;padding:10px 6px;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:5px;background:rgba(37,211,102,.12);border-color:rgba(37,211,102,.4);color:#25D366"><span id="lbl-invite">📲 Arkadaşını Davet Et</span></button>
       <button onclick="openChallenge()" class="btn-out" style="flex:1;max-width:160px;padding:10px 6px;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:5px;background:rgba(90,120,255,.12);border-color:rgba(90,120,255,.4);color:#8899ff"><span id="lbl-challenge">⚔️ Meydan Oku</span></button>
     </div>
-    <div style="display:flex;gap:8px;justify-content:center;margin-top:2px;flex-wrap:wrap">
-      <button id="lang-tr" onclick="setLang('tr')" style="padding:5px 14px;border-radius:16px;border:1.5px solid rgba(255,255,255,.35);background:rgba(245,166,35,.25);color:#f5a623;font-size:12px;font-weight:800;cursor:pointer;letter-spacing:.5px">🇹🇷 TR</button>
-      <button id="lang-en" onclick="setLang('en')" style="padding:5px 14px;border-radius:16px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);font-size:12px;font-weight:800;cursor:pointer;letter-spacing:.5px">🇬🇧 EN</button>
-      <button id="lang-ru" onclick="setLang('ru')" style="padding:5px 14px;border-radius:16px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);font-size:12px;font-weight:800;cursor:pointer;letter-spacing:.5px">🇷🇺 RU</button>
-      <button id="lang-ar" onclick="setLang('ar')" style="padding:5px 14px;border-radius:16px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);font-size:12px;font-weight:800;cursor:pointer;letter-spacing:.5px">🇸🇦 AR</button>
+    <div style="display:flex;flex-direction:column;gap:6px;align-items:center;margin-top:2px">
+      <div style="display:flex;gap:8px;justify-content:center">
+        <button id="lang-tr" onclick="setLang('tr')" style="padding:5px 18px;border-radius:16px;border:1.5px solid rgba(255,255,255,.35);background:rgba(245,166,35,.25);color:#f5a623;font-size:12px;font-weight:800;cursor:pointer;letter-spacing:.5px">🇹🇷 TR</button>
+        <button id="lang-en" onclick="setLang('en')" style="padding:5px 18px;border-radius:16px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);font-size:12px;font-weight:800;cursor:pointer;letter-spacing:.5px">🇬🇧 EN</button>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:center">
+        <button id="lang-ru" onclick="setLang('ru')" style="padding:5px 18px;border-radius:16px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);font-size:12px;font-weight:800;cursor:pointer;letter-spacing:.5px">🇷🇺 RU</button>
+        <button id="lang-ar" onclick="setLang('ar')" style="padding:5px 18px;border-radius:16px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:rgba(255,255,255,.5);font-size:12px;font-weight:800;cursor:pointer;letter-spacing:.5px">🇸🇦 AR</button>
+      </div>
     </div>
   </div>
   </div>
@@ -857,285 +851,9 @@ function setLang(lang){
 <div class="mission-overlay" id="info-overlay">
   <div class="mission-card" style="max-height:80vh;overflow-y:auto">
     <div class="mission-title" id="lbl-guide-title">📖 OYUN REHBERİ</div>
-    <div style="font-size:12px;color:rgba(255,255,255,.7);margin-bottom:14px;line-height:1.7">
-      <span id="lbl-guide-desc">Aynı meyveleri birleştirerek level hedef meyvesine ulaş!<br>Alan taşarsa oyun biter. Güçlendirmeleri akıllıca kullan.</span>
-    </div>
-
-    <div style="font-size:13px;font-weight:800;color:#f5a623;margin-bottom:8px" id="lbl-guide-targets">🎯 LEVEL HEDEFLERİ</div>
-    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:14px">
-      <thead>
-        <tr style="background:rgba(255,255,255,.06);color:rgba(255,255,255,.45);font-size:10px;letter-spacing:1px">
-          <th style="padding:6px 8px;text-align:left" id="lbl-guide-col-levels">LEVELLAR</th>
-          <th style="padding:6px 8px;text-align:center" id="lbl-guide-col-target">HEDEF</th>
-          <th style="padding:6px 8px;text-align:right" id="lbl-guide-col-diff">ZORLUK</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr style="border-bottom:1px solid rgba(255,255,255,.07);">
-          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">1</td>
-          <td style="padding:8px 8px;text-align:center;font-size:16px">🥥 Hindistan Cevizi</td>
-          <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐</td>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(255,255,255,.07);">
-          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">2 – 3</td>
-          <td style="padding:8px 8px;text-align:center;font-size:16px">🎃 Balkabağı</td>
-          <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐</td>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(255,255,255,.07);">
-          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">4 – 5</td>
-          <td style="padding:8px 8px;text-align:center;font-size:16px">🧅 Soğan</td>
-          <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐</td>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(255,255,255,.07);">
-          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">6 – 7</td>
-          <td style="padding:8px 8px;text-align:center;font-size:16px">🍇 Üzüm</td>
-          <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐</td>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(255,255,255,.07);">
-          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">8 – 9</td>
-          <td style="padding:8px 8px;text-align:center;font-size:16px">🍋 Limon</td>
-          <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐</td>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(255,255,255,.07);">
-          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">10</td>
-          <td style="padding:8px 8px;text-align:center;font-size:16px">🍑 Şeftali</td>
-          <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐</td>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(255,255,255,.07);">
-          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">11</td>
-          <td style="padding:8px 8px;text-align:center;font-size:16px">🍌 Muz</td>
-          <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐</td>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(255,255,255,.07);">
-          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">12 – 13</td>
-          <td style="padding:8px 8px;text-align:center;font-size:16px">🍈 Kavun</td>
-          <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐⭐</td>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(255,255,255,.07);">
-          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">14 – 15</td>
-          <td style="padding:8px 8px;text-align:center;font-size:16px">🍏 Yeşil Elma</td>
-          <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐⭐</td>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(255,255,255,.07);">
-          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">16 – 17</td>
-          <td style="padding:8px 8px;text-align:center;font-size:16px">🫐 Yaban Mersini</td>
-          <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐⭐</td>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(255,255,255,.07);">
-          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">18 – 22</td>
-          <td style="padding:8px 8px;text-align:center;font-size:16px">🍅 Domates</td>
-          <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐⭐</td>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(255,255,255,.07);">
-          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">23 – 30</td>
-          <td style="padding:8px 8px;text-align:center;font-size:16px">🍊 Mandalina</td>
-          <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐⭐⭐</td>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(255,255,255,.07);">
-          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">31 – 40</td>
-          <td style="padding:8px 8px;text-align:center;font-size:16px">🌽 Mısır</td>
-          <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐⭐⭐</td>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(255,255,255,.07);">
-          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">41 – 50</td>
-          <td style="padding:8px 8px;text-align:center;font-size:16px">🍆 Patlıcan</td>
-          <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐⭐⭐⭐</td>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(255,255,255,.07);">
-          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">51 – 60</td>
-          <td style="padding:8px 8px;text-align:center;font-size:16px">🥕 Havuç</td>
-          <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐⭐⭐⭐</td>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(255,255,255,.07);">
-          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">61 – 70</td>
-          <td style="padding:8px 8px;text-align:center;font-size:16px">🌰 Kestane</td>
-          <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">⭐⭐⭐⭐⭐</td>
-        </tr>
-        <tr style="">
-          <td style="padding:8px 8px;color:rgba(255,255,255,.7)">71 – 99</td>
-          <td style="padding:8px 8px;text-align:center;font-size:16px">🍉 Karpuz</td>
-          <td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">🌟🌟</td>
-        </tr>
-      </tbody>
-    </table>
-
-    <div style="font-size:13px;font-weight:800;color:#f5a623;margin-bottom:8px;margin-top:4px" id="lbl-guide-titles">⭐ ÜNVAN SİSTEMİ</div>
-    <div style="background:rgba(0,0,0,.3);border-radius:12px;padding:10px 8px;margin-bottom:14px">
-      <div style="font-size:10px;color:rgba(255,255,255,.4);margin-bottom:10px;text-align:center" id="lbl-guide-titles-sub">Levelin yükseldikçe ünvanın artar</div>
-      <div style="display:flex;flex-direction:column;gap:6px">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:rgba(255,255,255,.05);border-radius:8px">
-          <span style="font-size:13px">⭐</span>
-          <span style="font-size:11px;color:rgba(255,255,255,.7)">1 Yıldız</span>
-          <span style="font-size:10px;color:rgba(255,255,255,.4)">Level 5+</span>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:rgba(68,204,102,.1);border-radius:8px">
-          <span style="font-size:13px">⭐⭐</span>
-          <span style="font-size:11px;color:#44cc66">2 Yıldız</span>
-          <span style="font-size:10px;color:rgba(255,255,255,.4)">Level 10+</span>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:rgba(245,166,35,.1);border-radius:8px">
-          <span style="font-size:13px">⭐⭐⭐</span>
-          <span style="font-size:11px;color:#f5a623">3 Yıldız</span>
-          <span style="font-size:10px;color:rgba(255,255,255,.4)">Level 15+</span>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:rgba(68,170,255,.1);border-radius:8px">
-          <span style="font-size:13px">⭐⭐⭐⭐</span>
-          <span style="font-size:11px;color:#44aaff">4 Yıldız</span>
-          <span style="font-size:10px;color:rgba(255,255,255,.4)">Level 20+</span>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:rgba(233,69,96,.1);border-radius:8px">
-          <span style="font-size:13px">⭐⭐⭐⭐⭐</span>
-          <span style="font-size:11px;color:#e94560">5 Yıldız</span>
-          <span style="font-size:10px;color:rgba(255,255,255,.4)">Level 30+</span>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:rgba(255,136,0,.1);border-radius:8px">
-          <span style="font-size:16px">🏅</span>
-          <span style="font-size:11px;color:#ff8800;font-weight:900">Üstad</span>
-          <span style="font-size:10px;color:rgba(255,255,255,.4)">Level 40+</span>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:rgba(204,68,255,.1);border-radius:8px">
-          <span style="font-size:16px">🤴</span>
-          <span style="font-size:11px;color:#cc44ff;font-weight:900">Kral</span>
-          <span style="font-size:10px;color:rgba(255,255,255,.4)">Level 50+</span>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:rgba(255,0,0,.15);border-radius:8px;border:1px solid rgba(255,0,0,.3)">
-          <span style="font-size:16px">👑</span>
-          <span style="font-size:11px;color:#ff0000;font-weight:900">KARPUZ REİS</span>
-          <span style="font-size:10px;color:rgba(255,255,255,.4)">Level 70+</span>
-        </div>
-      </div>
-    </div>
-
-    <div style="font-size:13px;font-weight:800;color:#f5a623;margin-bottom:8px;margin-top:4px">🔗 MEYVE ZİNCİRİ</div>
-    <div style="background:rgba(0,0,0,.3);border-radius:12px;padding:10px 8px;margin-bottom:14px">
-      <div style="font-size:10px;color:rgba(255,255,255,.4);margin-bottom:8px;text-align:center" id="lbl-guide-chain-sub">İki aynı meyve birleşince bir üstü oluşur</div>
-      <div style="display:flex;flex-direction:column;gap:4px">
-        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
-          <span>🍒</span><span style="color:rgba(255,255,255,.3)">+</span><span>🍒</span>
-          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
-          <span>🥝</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Kivi</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
-          <span>🥝</span><span style="color:rgba(255,255,255,.3)">+</span><span>🥝</span>
-          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
-          <span>🍓</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Çilek</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
-          <span>🍓</span><span style="color:rgba(255,255,255,.3)">+</span><span>🍓</span>
-          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
-          <span>🥑</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Avokado</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
-          <span>🥑</span><span style="color:rgba(255,255,255,.3)">+</span><span>🥑</span>
-          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
-          <span>🍍</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Ananas</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
-          <span>🍍</span><span style="color:rgba(255,255,255,.3)">+</span><span>🍍</span>
-          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
-          <span>🥥</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Hindistan Cevizi</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
-          <span>🥥</span><span style="color:rgba(255,255,255,.3)">+</span><span>🥥</span>
-          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
-          <span>🌶️</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Kırmızı Biber</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
-          <span>🌶️</span><span style="color:rgba(255,255,255,.3)">+</span><span>🌶️</span>
-          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
-          <span>🎃</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Balkabağı</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
-          <span>🎃</span><span style="color:rgba(255,255,255,.3)">+</span><span>🎃</span>
-          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
-          <span>🍐</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Armut</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
-          <span>🍐</span><span style="color:rgba(255,255,255,.3)">+</span><span>🍐</span>
-          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
-          <span>🧅</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Soğan</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
-          <span>🧅</span><span style="color:rgba(255,255,255,.3)">+</span><span>🧅</span>
-          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
-          <span>🍇</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Üzüm</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
-          <span>🍇</span><span style="color:rgba(255,255,255,.3)">+</span><span>🍇</span>
-          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
-          <span>🍋</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Limon</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
-          <span>🍋</span><span style="color:rgba(255,255,255,.3)">+</span><span>🍋</span>
-          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
-          <span>🍑</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Şeftali</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
-          <span>🍑</span><span style="color:rgba(255,255,255,.3)">+</span><span>🍑</span>
-          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
-          <span>🍌</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Muz</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
-          <span>🍌</span><span style="color:rgba(255,255,255,.3)">+</span><span>🍌</span>
-          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
-          <span>🍈</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Kavun</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
-          <span>🍈</span><span style="color:rgba(255,255,255,.3)">+</span><span>🍈</span>
-          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
-          <span>🍏</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Yeşil Elma</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
-          <span>🍏</span><span style="color:rgba(255,255,255,.3)">+</span><span>🍏</span>
-          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
-          <span>🫐</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Yaban Mersini</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
-          <span>🫐</span><span style="color:rgba(255,255,255,.3)">+</span><span>🫐</span>
-          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
-          <span>🍅</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Domates</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
-          <span>🍅</span><span style="color:rgba(255,255,255,.3)">+</span><span>🍅</span>
-          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
-          <span>🍊</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Mandalina</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
-          <span>🍊</span><span style="color:rgba(255,255,255,.3)">+</span><span>🍊</span>
-          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
-          <span>🌽</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Mısır</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
-          <span>🌽</span><span style="color:rgba(255,255,255,.3)">+</span><span>🌽</span>
-          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
-          <span>🍆</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Patlıcan</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
-          <span>🍆</span><span style="color:rgba(255,255,255,.3)">+</span><span>🍆</span>
-          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
-          <span>🥕</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Havuç</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
-          <span>🥕</span><span style="color:rgba(255,255,255,.3)">+</span><span>🥕</span>
-          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
-          <span>🌰</span><span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">Kestane</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:4px;font-size:13px">
-          <span>🌰</span><span style="color:rgba(255,255,255,.3)">+</span><span>🌰</span>
-          <span style="color:rgba(255,255,255,.3);font-size:10px">→</span>
-          <span style="font-size:16px">🍉</span><span style="font-size:10px;color:#f5a623;font-weight:800;margin-left:2px">KARPUZ! 🏆</span>
-        </div>
-      </div>
-    </div>
-
-    <div style="font-size:13px;font-weight:800;color:#f5a623;margin-bottom:8px" id="lbl-guide-tips">💡 İPUÇLARI</div>
-    <div style="font-size:12px;color:rgba(255,255,255,.65);line-height:1.9;margin-bottom:4px">
-      <span id="lbl-guide-tips-content">💣 <b>Bomba</b> — Seçilen meyveyi patlatır<br>❄️ <b>Dondur</b> — 3 saniye fizik durur<br>⚡ <b>2× Puan</b> — Puanlar 2 katına çıkar<br>⏸ <b>Duraklat</b> — Oyun kaydedilir<br>🏠 <b>Ana Sayfa</b> — Kaldığın yerden devam edebilirsin</span>
-    </div>
+    <div id="guide-dyn-content"></div>
   </div>
   <button class="btn-main" style="margin-top:14px" id="btn-info-close" onclick="closeInfo()">Kapat</button>
-</div>
-
 <!-- ══ TUTORIAL OVERLAY ══ -->
 <div id="tutorial-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.92);z-index:600;flex-direction:column;align-items:center;justify-content:center;font-family:'Segoe UI',Arial;color:#fff;text-align:center;padding:20px">
   <div style="font-size:48px;margin-bottom:8px">🍉</div>
@@ -1213,14 +931,14 @@ function setLang(lang){
     <div class="prog-bg"><div class="prog-fill" id="prog-f" style="width:0%"></div></div>
   </div>
   <div class="hud">
-    <div class="hud-box"><div class="hud-lbl">PUAN</div><div class="hud-val" id="h-sc">0</div></div>
-    <div class="hud-box"><div class="hud-lbl">TOPLAM</div><div class="hud-val" id="h-tot">0</div></div>
-    <div class="hud-box" id="tbox"><div class="hud-lbl">SÜRE</div><div class="hud-val" id="h-tm">0</div></div>
-    <div class="hud-box" style="background:rgba(34,170,68,.18)"><div class="hud-lbl">ÇARPAN</div><div class="hud-val" id="h-mult">×1.00</div></div>
+    <div class="hud-box"><div class="hud-lbl" id="lbl-score">PUAN</div><div class="hud-val" id="h-sc">0</div></div>
+    <div class="hud-box"><div class="hud-lbl" id="lbl-total">TOPLAM</div><div class="hud-val" id="h-tot">0</div></div>
+    <div class="hud-box" id="tbox"><div class="hud-lbl" id="lbl-time">SÜRE</div><div class="hud-val" id="h-tm">0</div></div>
+    <div class="hud-box" style="background:rgba(34,170,68,.18)"><div class="hud-lbl" id="lbl-mult">ÇARPAN</div><div class="hud-val" id="h-mult">×1.00</div></div>
     <div class="hud-box" style="background:rgba(255,80,80,.15);border:1.5px solid rgba(255,80,80,.3)"><div class="hud-lbl">HEDEF</div><div class="hud-val" style="font-size:20px" id="h-hedef-hud">🍉</div></div>
   </div>
   <div class="next-row">
-    <span style="font-size:11px">Sıradaki:</span>
+    <span style="font-size:11px" id="lbl-next">Sıradaki:</span>
     <span id="nxt" class="next-fruit-big">🍒</span>
     <span id="nxt2" style="font-size:18px;opacity:.6">🍒</span>
     <span id="nxt3" style="font-size:14px;opacity:.35">🍒</span>
@@ -1238,27 +956,27 @@ function setLang(lang){
   <div id="game-toast-area" style="width:100%;min-height:22px;text-align:center;margin:2px 0;font-size:12px;font-weight:700;color:#f5a623;opacity:0;transition:opacity .3s;"></div>
   <div style="display:flex;gap:6px;align-items:center;margin-bottom:4px;width:100%;justify-content:center;flex-wrap:wrap;">
     <button class="pu-btn" id="pu-bomb"   onclick="usePower('bomb')"   title="Bomba">
-      <span class="pu-icon">💣</span><span style="font-size:8px">BOMBA</span>
+      <span class="pu-icon">💣</span><span style="font-size:8px" id="lbl-bomb">BOMBA</span>
       <span class="pu-cnt" id="pu-bomb-cnt">0</span>
     </button>
     <button class="pu-btn" id="pu-freeze" onclick="usePower('freeze')" title="Dondurucu">
-      <span class="pu-icon">❄️</span><span style="font-size:8px">DONDUR</span>
+      <span class="pu-icon">❄️</span><span style="font-size:8px" id="lbl-freeze">DONDUR</span>
       <span class="pu-cnt" id="pu-freeze-cnt">0</span>
     </button>
     <button class="pu-btn" id="pu-x2"    onclick="usePower('x2')"    title="2× Puan">
-      <span class="pu-icon">⚡</span><span style="font-size:8px">2×PUAN</span>
+      <span class="pu-icon">⚡</span><span style="font-size:8px" id="lbl-x2">2×PUAN</span>
       <span class="pu-cnt" id="pu-x2-cnt">0</span>
     </button>
     <button class="pu-btn" id="pu-upgrade" onclick="usePower('upgrade')" title="Yükselt">
-      <span class="pu-icon">⬆️</span><span style="font-size:8px">YÜKSELT</span>
+      <span class="pu-icon">⬆️</span><span style="font-size:8px" id="lbl-upgrade">YÜKSELT</span>
       <span class="pu-cnt" id="pu-upgrade-cnt">0</span>
     </button>
     <button class="pu-btn" id="pu-storm" onclick="usePower('storm')" title="Fırtına">
-      <span class="pu-icon">🌪️</span><span style="font-size:8px">FIRTINA</span>
+      <span class="pu-icon">🌪️</span><span style="font-size:8px" id="lbl-storm">FIRTINA</span>
       <span class="pu-cnt" id="pu-storm-cnt">0</span>
     </button>
     <button class="pu-btn" id="pu-luck" onclick="usePower('luck')" title="Şans">
-      <span class="pu-icon">🔮</span><span style="font-size:8px">ŞANS</span>
+      <span class="pu-icon">🔮</span><span style="font-size:8px" id="lbl-luck">ŞANS</span>
       <span class="pu-cnt" id="pu-luck-cnt">0</span>
     </button>
     <div style="flex:1;min-width:8px"></div>
@@ -1280,12 +998,12 @@ function setLang(lang){
     <div class="stat-row">
       <div class="stat-box"><div class="stat-v" id="ok-sc">0</div><div class="stat-l">LEVEL PUAN</div></div>
       <div class="stat-box"><div class="stat-v" id="ok-bn">+0</div><div class="stat-l">SÜRE BONUS</div></div>
-      <div class="stat-box"><div class="stat-v" id="ok-tot">0</div><div class="stat-l">TOPLAM</div></div>
+      <div class="stat-box"><div class="stat-v" id="ok-tot">0</div><div class="stat-l" id="lbl-total">TOPLAM</div></div>
     </div>
     <div class="rank-badge" id="ok-rank">🏆 #1 Sıraya Girdin!</div>
   </div>
   <div class="btn-row">
-    <button class="btn-out" onclick="openLB()">🏆 Tablo</button>
+    <button class="btn-out" id="btn-lb-over" onclick="openLB()">🏆 Tablo</button>
     <button class="btn-main" id="ok-next" onclick="nextLv()">Level 2 →</button>
   </div>
 </div>
@@ -1293,8 +1011,8 @@ function setLang(lang){
 <!-- Pause touch blocker -->
 <div id="pause-block-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:150;background:rgba(0,0,0,.6);flex-direction:column;align-items:center;justify-content:center;cursor:pointer;" onclick="togglePause()">
   <div style="font-size:60px;margin-bottom:12px">⏸</div>
-  <div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:6px">DURAKLATILDI</div>
-  <div style="font-size:13px;color:rgba(255,255,255,.5);margin-bottom:24px">Ekrana bas ve devam et</div>
+  <div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:6px" id="lbl-paused">DURAKLATILDI</div>
+  <div style="font-size:13px;color:rgba(255,255,255,.5);margin-bottom:24px" id="lbl-tap-resume">Ekrana bas ve devam et</div>
   <div style="display:flex;gap:16px">
     <button onclick="event.stopPropagation();togglePause()" style="padding:14px 28px;border-radius:20px;border:none;background:linear-gradient(90deg,#e94560,#f5a623);color:#fff;font-size:16px;font-weight:800;cursor:pointer;">▶ Devam Et</button>
     <button onclick="event.stopPropagation();pauseAndHome()" style="padding:14px 28px;border-radius:20px;border:2px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;font-size:16px;font-weight:800;cursor:pointer;">🏠 Ana Sayfa</button>
@@ -1305,12 +1023,12 @@ function setLang(lang){
 <div id="s-over" class="screen">
   <div class="r-card">
     <div class="r-emoji" id="ov-emoji">💥</div>
-    <div class="r-title">OYUN BİTTİ</div>
+    <div class="r-title" id="over-title">OYUN BİTTİ</div>
     <div class="r-sub" id="ov-rsn">Alan taştı!</div>
     <div id="ov-close" style="font-size:13px;color:#f5a623;margin-bottom:10px;font-weight:700"></div>
     <div class="stat-row">
       <div class="stat-box"><div class="stat-v" id="ov-lv">1</div><div class="stat-l">LEVEL</div></div>
-      <div class="stat-box"><div class="stat-v" id="ov-sc">0</div><div class="stat-l">TOPLAM PUAN</div></div>
+      <div class="stat-box"><div class="stat-v" id="ov-sc">0</div><div class="stat-l" id="lbl-total-score">TOPLAM PUAN</div></div>
     </div>
     <div class="rank-badge" id="ov-rank">🎖 #3 Sırada!</div>
   </div>
@@ -1318,7 +1036,7 @@ function setLang(lang){
     <button class="btn-out" onclick="openLB()">🏆 Tablo</button>
     <button class="btn-main" onclick="retry()">🔄 Tekrar</button>
   </div>
-  <button class="btn-out" style="margin-top:10px;width:200px" onclick="home()">🏠 Ana Sayfa</button>
+  <button class="btn-out" style="margin-top:10px;width:200px" id="btn-home-over" onclick="home()">🏠 Ana Sayfa</button>
 </div>
 
 <!-- ⑤ LEADERBOARD -->
@@ -2876,8 +2594,35 @@ let _touchMoved=false;
 const TOUCH_MOVE_THRESHOLD=8;   /* px — titremede yanlış drop olmasın */
 const TOUCH_SENSITIVITY=1.25;   /* 1.25x — küçük hareketle geniş alan */
 
+/* ── Anti-cheat: Hızlı tıklama tespiti ── */
+let _tapTimes=[], _tapFrozen=false, _tapFreezeTimer=null, _tapAutoTimer=null;
+function checkRapidTap(){
+  if(_tapFrozen) return false;
+  const now=Date.now();
+  _tapTimes=_tapTimes.filter(t=>now-t<1000);
+  _tapTimes.push(now);
+  if(_tapTimes.length>=5){
+    _tapFrozen=true; _tapTimes=[];
+    /* Kırmızı uyarı */
+    showToast('⚠️ Çok hızlı! 5sn durakladın.');
+    /* 5sn boyunca otomatik düşür */
+    let autoCount=0;
+    _tapAutoTimer=setInterval(()=>{
+      if(!S.dead&&!S.dropping&&S.cfg) drop(S.dropX||S.cfg.cw/2);
+      autoCount++;
+      if(autoCount>=10){clearInterval(_tapAutoTimer);_tapFrozen=false;}
+    },500);
+    clearTimeout(_tapFreezeTimer);
+    _tapFreezeTimer=setTimeout(()=>{
+      clearInterval(_tapAutoTimer); _tapFrozen=false;
+    },5000);
+    return false;
+  }
+  return true;
+}
+
 CV.addEventListener('mousemove',e=>{if(!S.dead)S.dropX=clampX(e.clientX);});
-CV.addEventListener('click',    e=>{if(!S.dead&&!S.dropping)drop(clampX(e.clientX));});
+CV.addEventListener('click',    e=>{if(!S.dead&&!S.dropping&&checkRapidTap())drop(clampX(e.clientX));});
 
 CV.addEventListener('touchstart',e=>{
   e.preventDefault();
@@ -2940,7 +2685,7 @@ CV.addEventListener('touchend',e=>{
   e.preventDefault();
   if(S.dead) return;
   /* Tap da sürükleme de — her ikisinde de meyveyi düşür */
-  if(!S.dropping) drop(S.dropX);
+  if(!S.dropping && checkRapidTap()) drop(S.dropX);
   _touchStartX=null; _touchStartDropX=null; _touchMoved=false;
 },{passive:false});
 
@@ -3255,10 +3000,9 @@ function loop(ts){
     S.winPending=false;
     const wf=S.winFruit;
     /* Yerel sırayı hemen kullan — animasyon gecikmesin (Hata 4a fix) */
-    const localLB=getLB();
-    const localRank=(localLB.findIndex(e=>e.name===S.user)+1)||999;
+    const localRank=0; /* Gerçek rank LB'den async gelecek */
     S._winScore=S.totSc;
-    WA.start(wf.x, wf.y, {rank:localRank, score:S.totSc, lv:S.lv, elapsed:S.timeElapsed});
+    WA.start(wf.x, wf.y, {rank:0, score:S.totSc, lv:S.lv, elapsed:S.timeElapsed});
     /* Firebase'e gönder, rank güncellendikçe WA da güncellensin */
     submitLBFull(S.user,S.totSc,S.lv).then(result=>{
       S._winRank=result.rank; S._winEntries=result.entries;
@@ -3579,13 +3323,15 @@ function showToast(msg){
    GÜNLÜK GÖREVLER
 ══════════════════════════════════════════ */
 const MISSION_DEFS=[
-  {id:'m_merges',      icon:'🔀', name:'50 Birleşim Yap',    target:50,  reward:{type:'x2',n:1},     rewardTxt:'+1 ⚡'},
-  {id:'m_score',       icon:'🏆', name:'1000 Puan Kazan',   target:1000,reward:{type:'upgrade',n:1},rewardTxt:'+1 ⬆️'},
-  {id:'m_levels',      icon:'⬆️', name:'3 Level Geç',        target:3,   reward:{type:'freeze',n:1}, rewardTxt:'+1 ❄️'},
-  {id:'m_levels2',     icon:'🚀', name:'5 Level Geç',        target:5,   reward:{type:'storm',n:1},  rewardTxt:'+1 🌪️'},
-  {id:'m_merges2',     icon:'⚡', name:'100 Birleşim Yap',   target:100, reward:{type:'luck',n:1},   rewardTxt:'+1 🔮'},
-  {id:'m_score2',      icon:'💎', name:'5000 Puan Kazan',   target:5000,reward:{type:'bomb',n:1},   rewardTxt:'+1 💣'},
+  {id:'m_merges',  icon:'🔀', names:{tr:'50 Birleşim Yap',   en:'Make 50 Merges',      ru:'50 слияний',         ar:'اصنع 50 دمجاً'},    target:50,   reward:{type:'x2',n:1},      rewardTxt:'+1 ⚡'},
+  {id:'m_score',   icon:'🏆', names:{tr:'1000 Puan Kazan',   en:'Earn 1000 Points',    ru:'Набери 1000 очков',  ar:'اكسب 1000 نقطة'},   target:1000, reward:{type:'upgrade',n:1}, rewardTxt:'+1 ⬆️'},
+  {id:'m_levels',  icon:'⬆️', names:{tr:'3 Level Geç',       en:'Pass 3 Levels',       ru:'Пройди 3 уровня',    ar:'اجتز 3 مستويات'},   target:3,    reward:{type:'freeze',n:1},  rewardTxt:'+1 ❄️'},
+  {id:'m_levels2', icon:'🚀', names:{tr:'5 Level Geç',       en:'Pass 5 Levels',       ru:'Пройди 5 уровней',   ar:'اجتز 5 مستويات'},   target:5,    reward:{type:'storm',n:1},   rewardTxt:'+1 🌪️'},
+  {id:'m_merges2', icon:'⚡', names:{tr:'100 Birleşim Yap',  en:'Make 100 Merges',     ru:'100 слияний',        ar:'اصنع 100 دمج'},     target:100,  reward:{type:'luck',n:1},    rewardTxt:'+1 🔮'},
+  {id:'m_score2',  icon:'💎', names:{tr:'5000 Puan Kazan',   en:'Earn 5000 Points',    ru:'Набери 5000 очков',  ar:'اكسب 5000 نقطة'},   target:5000, reward:{type:'bomb',n:1},    rewardTxt:'+1 💣'},
 ];
+/* Mevcut dildeki görev adını döndür */
+function mName(def){ return (def.names&&def.names[_lang])||def.names.tr; }
 
 function getMissionState(){
   const today=new Date().toDateString();
@@ -3606,7 +3352,7 @@ function missionProgress(id,val){
   const def=MISSION_DEFS.find(m=>m.id===id);
   if(def && ms.progress[id]>=def.target && !ms.claimed[id]){
     document.getElementById('mis-badge').style.display='inline';
-    showToast(T('mission_done',{name:def.name,reward:def.rewardTxt}));
+    showToast(T('mission_done',{name:mName(def),reward:def.rewardTxt}));
   }
 }
 
@@ -3637,7 +3383,7 @@ function renderMissions(){
     div.innerHTML=`
       <span class="mission-icon">${def.icon}</span>
       <div class="mission-info">
-        <div class="mission-name">${def.name}</div>
+        <div class="mission-name">${mName(def)}</div>
         <div class="mission-prog"><div class="mission-fill" style="width:${(prog/def.target)*100}%"></div></div>
         <div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:2px">${prog}/${def.target}</div>
       </div>
@@ -4122,8 +3868,100 @@ function pauseAndHome(){
   home();
 }
 
-function openInfo(){document.getElementById('info-overlay').style.display='flex';}
-function closeInfo(){document.getElementById('info-overlay').style.display='none';}
+function renderGuide(){
+  const L=_lang;
+  const fruits={
+    tr:['Hindistan Cevizi','Balkabağı','Soğan','Üzüm','Limon','Şeftali','Muz','Kavun','Yeşil Elma','Yaban Mersini','Domates','Mandalina','Mısır','Patlıcan','Havuç','Kestane','Karpuz'],
+    en:['Coconut','Pumpkin','Onion','Grapes','Lemon','Peach','Banana','Melon','Green Apple','Blueberry','Tomato','Tangerine','Corn','Eggplant','Carrot','Chestnut','Watermelon'],
+    ru:['Кокос','Тыква','Лук','Виноград','Лимон','Персик','Банан','Дыня','Яблоко','Черника','Помидор','Мандарин','Кукуруза','Баклажан','Морковь','Каштан','Арбуз'],
+    ar:['جوز الهند','يقطين','بصل','عنب','ليمون','خوخ','موز','شمام','تفاحة خضراء','توت أزرق','طماطم','يوسفي','ذرة','باذنجان','جزر','كستناء','بطيخ'],
+  };
+  const fn=fruits[L]||fruits.tr;
+  const rows=[
+    ['1','🥥',fn[0],'⭐'],['2 – 3','🎃',fn[1],'⭐'],['4 – 5','🧅',fn[2],'⭐⭐'],
+    ['6 – 7','🍇',fn[3],'⭐⭐'],['8 – 9','🍋',fn[4],'⭐⭐'],['10','🍑',fn[5],'⭐⭐'],
+    ['11','🍌',fn[6],'⭐⭐'],['12 – 13','🍈',fn[7],'⭐⭐⭐'],['14 – 15','🍏',fn[8],'⭐⭐⭐'],
+    ['16 – 17','🫐',fn[9],'⭐⭐⭐'],['18 – 22','🍅',fn[10],'⭐⭐⭐'],['23 – 30','🍊',fn[11],'⭐⭐⭐⭐'],
+    ['31 – 40','🌽',fn[12],'⭐⭐⭐⭐'],['41 – 50','🍆',fn[13],'⭐⭐⭐⭐⭐'],['51 – 60','🥕',fn[14],'⭐⭐⭐⭐⭐'],
+    ['61 – 70','🌰',fn[15],'⭐⭐⭐⭐⭐'],['71 – 99','🍉',fn[16],'🌟🌟'],
+  ];
+  const titles={
+    tr:['1 Yıldız','2 Yıldız','3 Yıldız','4 Yıldız','5 Yıldız','Üstad','Kral','KARPUZ REİS'],
+    en:['1 Star','2 Stars','3 Stars','4 Stars','5 Stars','Master','King','WATERMELON KING'],
+    ru:['1 Звезда','2 Звезды','3 Звезды','4 Звезды','5 Звёзд','Мастер','Король','КОРОЛЬ АРБУЗА'],
+    ar:['نجمة واحدة','نجمتان','3 نجوم','4 نجوم','5 نجوم','أستاذ','ملك','ملك البطيخ'],
+  };
+  const tl=titles[L]||titles.tr;
+  const chain={
+    tr:['Kivi','Çilek','Kiraz','Mango','Elma','Portakal','Kavun','Karpuz'],
+    en:['Kiwi','Strawberry','Cherry','Mango','Apple','Orange','Melon','Watermelon'],
+    ru:['Киви','Клубника','Черешня','Манго','Яблоко','Апельсин','Дыня','Арбуз'],
+    ar:['كيوي','فراولة','كرز','مانجو','تفاح','برتقال','شمام','بطيخ'],
+  };
+  const cl=chain[L]||chain.tr;
+  const tips={
+    tr:'💣 <b>Bomba</b> — Seçilen meyveyi patlatır<br>❄️ <b>Dondur</b> — 3 saniye fizik durur<br>⚡ <b>2× Puan</b> — Puanlar 2 katına çıkar<br>⏸ <b>Duraklat</b> — Oyun kaydedilir<br>🏠 <b>Ana Sayfa</b> — Kaldığın yerden devam edebilirsin',
+    en:'💣 <b>Bomb</b> — Explodes selected fruit<br>❄️ <b>Freeze</b> — Stops physics for 3s<br>⚡ <b>2× Points</b> — Doubles your score<br>⏸ <b>Pause</b> — Game is saved<br>🏠 <b>Home</b> — Continue where you left off',
+    ru:'💣 <b>Бомба</b> — Взрывает фрукт<br>❄️ <b>Заморозка</b> — Физика стоп 3с<br>⚡ <b>2× Очки</b> — Удваивает очки<br>⏸ <b>Пауза</b> — Игра сохраняется<br>🏠 <b>Меню</b> — Можно продолжить',
+    ar:'💣 <b>قنبلة</b> — تفجير الفاكهة<br>❄️ <b>تجميد</b> — إيقاف الفيزياء 3ث<br>⚡ <b>2× نقاط</b> — مضاعفة النقاط<br>⏸ <b>توقف</b> — اللعبة محفوظة<br>🏠 <b>القائمة</b> — يمكن الاستمرار',
+  };
+  const secs={tr:{targets:'🎯 LEVEL HEDEFLERİ',levels:'LEVELLAR',target:'HEDEF',diff:'ZORLUK',titles:'⭐ ÜNVAN SİSTEMİ',titlesub:'Levelin yükseldikçe ünvanın artar',chain:'🔗 MEYVE ZİNCİRİ',chainsub:'İki aynı meyve birleşince bir üstü oluşur',tips:'💡 İPUÇLARI',desc:'Aynı meyveleri birleştirerek level hedef meyvesine ulaş!<br>Alan taşarsa oyun biter. Güçlendirmeleri akıllıca kullan.'},
+    en:{targets:'🎯 LEVEL TARGETS',levels:'LEVELS',target:'TARGET',diff:'DIFFICULTY',titles:'⭐ TITLE SYSTEM',titlesub:'Your title grows as you level up',chain:'🔗 FRUIT CHAIN',chainsub:'Two identical fruits merge into the next one',tips:'💡 TIPS',desc:'Merge matching fruits to reach the level target fruit!<br>Game ends if the field overflows. Use power-ups wisely.'},
+    ru:{targets:'🎯 ЦЕЛИ УРОВНЕЙ',levels:'УРОВНИ',target:'ЦЕЛЬ',diff:'СЛОЖНОСТЬ',titles:'⭐ СИСТЕМА ТИТУЛОВ',titlesub:'Твой титул растёт вместе с уровнем',chain:'🔗 ЦЕПОЧКА ФРУКТОВ',chainsub:'Два одинаковых фрукта превращаются в следующий',tips:'💡 СОВЕТЫ',desc:'Соединяй одинаковые фрукты, чтобы достичь цели уровня!<br>Игра заканчивается если поле переполнено.'},
+    ar:{targets:'🎯 أهداف المستويات',levels:'المستويات',target:'الهدف',diff:'الصعوبة',titles:'⭐ نظام الألقاب',titlesub:'يرتفع لقبك مع المستوى',chain:'🔗 سلسلة الفواكه',chainsub:'فاكهتان متطابقتان تنتجان الفاكهة التالية',tips:'💡 نصائح',desc:'ادمج الفواكه المتطابقة للوصول إلى هدف المستوى!<br>تنتهي اللعبة إذا امتلأ الحقل.'},
+  };
+  const s=secs[L]||secs.tr;
+  const chainEmojis=[['🍒','🥝'],['🥝','🍓'],['🍓','🍒'],['🥭','🍎'],['🍎','🍊'],['🍊','🍈'],['🍈','🍉']];
+  const titleData=[
+    {stars:'⭐',name:tl[0],color:'rgba(255,255,255,.7)',bg:'rgba(255,255,255,.05)',lv:'5+'},
+    {stars:'⭐⭐',name:tl[1],color:'#44cc66',bg:'rgba(68,204,102,.1)',lv:'10+'},
+    {stars:'⭐⭐⭐',name:tl[2],color:'#f5a623',bg:'rgba(245,166,35,.1)',lv:'15+'},
+    {stars:'⭐⭐⭐⭐',name:tl[3],color:'#44aaff',bg:'rgba(68,170,255,.1)',lv:'20+'},
+    {stars:'⭐⭐⭐⭐⭐',name:tl[4],color:'#e94560',bg:'rgba(233,69,96,.1)',lv:'30+'},
+    {stars:'🏅',name:tl[5],color:'#ff8800',bg:'rgba(255,136,0,.1)',lv:'40+'},
+    {stars:'🤴',name:tl[6],color:'#cc44ff',bg:'rgba(204,68,255,.1)',lv:'50+'},
+    {stars:'👑',name:tl[7],color:'#ff0000',bg:'rgba(255,0,0,.15)',lv:'70+',border:'1px solid rgba(255,0,0,.3)'},
+  ];
+
+  const html=`
+<div style="font-size:12px;color:rgba(255,255,255,.7);margin-bottom:14px;line-height:1.7">${s.desc}</div>
+<div style="font-size:13px;font-weight:800;color:#f5a623;margin-bottom:8px">${s.targets}</div>
+<table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:14px">
+  <thead><tr style="background:rgba(255,255,255,.06);color:rgba(255,255,255,.45);font-size:10px;letter-spacing:1px">
+    <th style="padding:6px 8px;text-align:left">${s.levels}</th>
+    <th style="padding:6px 8px;text-align:center">${s.target}</th>
+    <th style="padding:6px 8px;text-align:right">${s.diff}</th>
+  </tr></thead>
+  <tbody>${rows.map(([lv,em,nm,st])=>`<tr style="border-bottom:1px solid rgba(255,255,255,.07)"><td style="padding:8px 8px;color:rgba(255,255,255,.7)">${lv}</td><td style="padding:8px 8px;text-align:center;font-size:16px">${em} ${nm}</td><td style="padding:8px 8px;text-align:right;color:#f5a623;font-size:11px">${st}</td></tr>`).join('')}</tbody>
+</table>
+<div style="font-size:13px;font-weight:800;color:#f5a623;margin-bottom:8px;margin-top:4px">${s.titles}</div>
+<div style="background:rgba(0,0,0,.3);border-radius:12px;padding:10px 8px;margin-bottom:14px">
+  <div style="font-size:10px;color:rgba(255,255,255,.4);margin-bottom:10px;text-align:center">${s.titlesub}</div>
+  <div style="display:flex;flex-direction:column;gap:6px">
+    ${titleData.map(t=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:${t.bg};border-radius:8px${t.border?';border:'+t.border:''}"><span style="font-size:${t.stars.length>5?'16px':'13px'}">${t.stars}</span><span style="font-size:11px;color:${t.color};font-weight:900">${t.name}</span><span style="font-size:10px;color:rgba(255,255,255,.4)">Level ${t.lv}</span></div>`).join('')}
+  </div>
+</div>
+<div style="font-size:13px;font-weight:800;color:#f5a623;margin-bottom:8px">${s.chain}</div>
+<div style="background:rgba(0,0,0,.3);border-radius:12px;padding:10px 8px;margin-bottom:14px">
+  <div style="font-size:10px;color:rgba(255,255,255,.4);margin-bottom:8px;text-align:center">${s.chainsub}</div>
+  <div style="display:flex;flex-direction:column;gap:4px">
+    <div style="display:flex;align-items:center;gap:4px;font-size:13px">🍒<span style="color:rgba(255,255,255,.3)">+</span>🍒<span style="color:rgba(255,255,255,.3);font-size:10px">→</span>🥝<span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">${cl[0]}</span></div>
+    <div style="display:flex;align-items:center;gap:4px;font-size:13px">🥝<span style="color:rgba(255,255,255,.3)">+</span>🥝<span style="color:rgba(255,255,255,.3);font-size:10px">→</span>🍓<span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">${cl[1]}</span></div>
+    <div style="display:flex;align-items:center;gap:4px;font-size:13px">🍓<span style="color:rgba(255,255,255,.3)">+</span>🍓<span style="color:rgba(255,255,255,.3);font-size:10px">→</span>🍒<span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:2px">${cl[2]}</span></div>
+    <div style="display:flex;align-items:center;gap:4px;font-size:13px">…<span style="font-size:10px;color:rgba(255,255,255,.4);margin-left:4px">${L==='tr'?'ve devam eder':L==='ru'?'и так далее':L==='ar'?'وهكذا':'and so on'}</span></div>
+  </div>
+</div>
+<div style="font-size:13px;font-weight:800;color:#f5a623;margin-bottom:8px">${s.tips}</div>
+<div style="font-size:12px;color:rgba(255,255,255,.65);line-height:1.9;margin-bottom:4px">${tips[L]||tips.tr}</div>`;
+  const el=document.getElementById('guide-dyn-content');
+  if(el) el.innerHTML=html;
+}
+function openInfo(){
+  renderGuide();
+  set('lbl-guide-title','lbl_guide_title');
+  set('btn-info-close','btn_info_close');
+  document.getElementById('info-overlay').style.display='flex';
+}
 async function renderRivals(me){
   const el=document.getElementById('rival-tbl2');
   if(!el)return;
@@ -4173,7 +4011,13 @@ function toggleLBSection(id){
   el.style.display=open?'none':'block';
   if(arrow)arrow.textContent=open?'▶':'▼';
 }
-function openLB(){show('s-lb');renderLB(S.user);renderRivals(S.user);}
+function openLB(){
+  show('s-lb');
+  /* S.user henüz set olmamışsa localStorage'dan al */
+  const me = S.user || localStorage.getItem(UKEY) || '';
+  renderLB(me);
+  renderRivals(me);
+}
 
 /* ══════════════════════════════════════════
    TUTORIAL
