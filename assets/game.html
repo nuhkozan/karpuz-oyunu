@@ -118,6 +118,15 @@ canvas { display:block; cursor:crosshair; touch-action:none; border-radius:14px;
 @keyframes bgSnow{0%{transform:translateY(-60px) translateX(0) rotate(0deg);opacity:1}100%{transform:translateY(110vh) translateX(40px) rotate(540deg);opacity:0}}
 @keyframes bgOrbit{0%{transform:rotate(0deg) translateX(60px) rotate(0deg)}100%{transform:rotate(360deg) translateX(60px) rotate(-360deg)}}
 .bg-el{position:absolute;pointer-events:none;user-select:none;will-change:transform;}
+.ra-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;margin:4px 0;background:rgba(255,255,255,.05);font-size:13px;transition:all .3s;}
+.ra-me{background:rgba(245,166,35,.18)!important;border:1.5px solid rgba(245,166,35,.5);font-weight:900;}
+.ra-rank-num{min-width:36px;text-align:center;font-weight:800;color:#f5a623;}
+.ra-name-txt{flex:1;text-align:left;color:#fff;}
+.ra-score-txt{color:rgba(255,255,255,.5);font-size:11px;}
+.ra-empty{height:40px;}
+@keyframes raFlyUp{0%{transform:translateY(0);opacity:1;}60%{transform:translateY(-80px);opacity:.3;}100%{transform:translateY(-40px);opacity:0;}}
+@keyframes raPulse{0%,100%{box-shadow:0 0 0 0 rgba(245,166,35,.4);}50%{box-shadow:0 0 0 8px rgba(245,166,35,0);}}
+@keyframes raFadeIn{from{opacity:0;transform:scale(.92);}to{opacity:1;transform:scale(1);}}
 @keyframes canvasGlow{
   0%  {border-color:rgba(100,255,120,.6);box-shadow:0 0 18px rgba(100,255,120,.35);}
   25% {border-color:rgba(255,200,60,.6); box-shadow:0 0 18px rgba(255,200,60,.35);}
@@ -266,7 +275,7 @@ tr:{
   daily_title:'Günlük Ödül!',btn_daily_claim:'🎉 Al!',
   over_title:'OYUN BİTTİ',
   lbl_challenge_title:'ARKADAŞINA MEYDAN OKU!',btn_challenge_cancel:'Vazgeç',
-  lbl_invite:'📲 Arkadaşını Davet Et',lbl_challenge:'⚔️ Meydan Oku',
+  lbl_invite:'📲 Arkadaşını Davet Et',lbl_challenge:'⚔️ Meydan Oku',lbl_completed:'TAMAMLANDI',lbl_reward:'LEVEL ÖDÜLÜ',lbl_tap_resume:'Ekrana bas ve devam et',
 },
 en:{
   brand_sub:'Merge fruits · Endless levels · Championship!',
@@ -292,7 +301,7 @@ en:{
   daily_title:'Daily Reward!',btn_daily_claim:'🎉 Claim!',
   over_title:'GAME OVER',
   lbl_challenge_title:'CHALLENGE A FRIEND!',btn_challenge_cancel:'Cancel',
-  lbl_invite:'📲 Invite a Friend',lbl_challenge:'⚔️ Challenge',
+  lbl_invite:'📲 Invite a Friend',lbl_challenge:'⚔️ Challenge',lbl_completed:'COMPLETED',lbl_reward:'LEVEL REWARD',lbl_tap_resume:'Tap screen to resume',
 },
 ru:{
   brand_sub:'Соединяй · Бесконечные уровни · Чемпионат!',
@@ -318,7 +327,7 @@ ru:{
   daily_title:'Ежедневная награда!',btn_daily_claim:'🎉 Получить!',
   over_title:'ИГРА ОКОНЧЕНА',
   lbl_challenge_title:'ВЫЗОВ ДРУГУ!',btn_challenge_cancel:'Отмена',
-  lbl_invite:'📲 Пригласить друга',lbl_challenge:'⚔️ Вызов',
+  lbl_invite:'📲 Пригласить друга',lbl_challenge:'⚔️ Вызов',lbl_completed:'ЗАВЕРШЕНО',lbl_reward:'НАГРАДА УРОВНЯ',lbl_tap_resume:'Нажми чтобы продолжить',
 },
 ar:{
   brand_sub:'ادمج الفواكه · مستويات لا نهائية · بطولة!',
@@ -344,7 +353,7 @@ ar:{
   daily_title:'المكافأة اليومية!',btn_daily_claim:'🎉 احصل عليها!',
   over_title:'انتهت اللعبة',
   lbl_challenge_title:'تحدى صديقاً!',btn_challenge_cancel:'إلغاء',
-  lbl_invite:'📲 دعوة صديق',lbl_challenge:'⚔️ تحدي',
+  lbl_invite:'📲 دعوة صديق',lbl_challenge:'⚔️ تحدي',lbl_completed:'مكتمل',lbl_reward:'مكافأة المستوى',lbl_tap_resume:'اضغط للمتابعة',
 }};
 
 function T(key,vars){
@@ -423,6 +432,19 @@ function setLang(lang){
   // Invite/Challenge
   s('lbl-invite','lbl_invite'); s('lbl-challenge','lbl_challenge');
   ph('uname', lang==='tr'?'Adını gir...':lang==='en'?'Enter your name...':lang==='ru'?'Введи имя...':'أدخل اسمك...');
+  // New IDs
+  s('lbl-tap-resume','lbl_tap_resume');
+  s('lbl-completed','lbl_completed'); s('lbl-reward-title','lbl_reward');
+  var challDesc=document.getElementById('lbl-challenge-desc');
+  if(challDesc)challDesc.textContent=lang==='en'?'Enter your rival\'s username':lang==='ru'?'Введи имя соперника':lang==='ar'?'أدخل اسم منافسك':'Rakibinin kullanıcı adını gir';
+  var challSend=document.getElementById('btn-challenge-send');
+  if(challSend)challSend.textContent=lang==='en'?'⚔️ Challenge!':lang==='ru'?'⚔️ Вызов!':lang==='ar'?'⚔️ تحدي!':'⚔️ Meydan Oku!';
+  var challCh=document.getElementById('btn-challenge-check');
+  if(challCh)challCh.textContent=lang==='en'?'🔄 Any Challenges?':lang==='ru'?'🔄 Есть вызовы?':lang==='ar'?'🔄 هل هناك تحديات؟':'🔄 Meydan Okuma Var Mı?';
+  var chalPh=document.getElementById('chal-input');
+  if(chalPh)chalPh.placeholder=lang==='en'?'Username...':lang==='ru'?'Имя пользователя...':lang==='ar'?'اسم المستخدم...':'Kullanıcı adı...';
+  var hedefRow=document.getElementById('lbl-hedef-row');
+  if(hedefRow)hedefRow.textContent=lang==='en'?'TARGET:':lang==='ru'?'ЦЕЛЬ:':lang==='ar'?'الهدف:':'HEDEF:';
 }
 </script>
 </head>
@@ -545,7 +567,7 @@ function setLang(lang){
   font-family:'Segoe UI',Arial,sans-serif; color:#fff; text-align:center;
   animation:lvIn .3s ease;">
   <div id="lv-fruit" style="font-size:72px;margin-bottom:4px;animation:fruitPop .5s ease">🍉</div>
-  <div style="font-size:13px;letter-spacing:3px;color:rgba(255,255,255,.5);margin-bottom:2px">TAMAMLANDI</div>
+  <div style="font-size:13px;letter-spacing:3px;color:rgba(255,255,255,.5);margin-bottom:2px" id="lbl-completed">TAMAMLANDI</div>
   <div style="font-size:34px;font-weight:900;letter-spacing:2px" id="lv-done">LEVEL 1</div>
   <div id="lv-newrecord" style="display:none;background:linear-gradient(90deg,#f5a623,#e94560);border-radius:20px;padding:4px 16px;font-size:12px;font-weight:800;margin:6px 0" data-tr="🏆 YENİ REKOR!" data-en="🏆 NEW RECORD!" data-ru="🏆 НОВЫЙ РЕКОРД!" data-ar="🏆 رقم قياسي!">🏆 YENİ REKOR!</div>
   <div style="width:180px;height:2px;background:linear-gradient(90deg,#e94560,#f5a623);margin:10px auto;border-radius:2px"></div>
@@ -554,7 +576,7 @@ function setLang(lang){
   <div style="margin-top:6px;font-size:11px;color:rgba(255,255,255,.4)" id="lv-stats"></div>
   <div style="margin-top:10px;font-size:13px;color:rgba(255,255,255,.4);letter-spacing:1px" id="lv-next">LEVEL 2 BAŞLIYOR…</div>
   <div id="lv-reward" style="margin-top:10px;background:linear-gradient(90deg,rgba(69,160,73,.35),rgba(245,166,35,.35));border:1.5px solid rgba(255,255,255,.25);border-radius:16px;padding:8px 22px;display:none">
-    <div style="font-size:9px;letter-spacing:2px;opacity:.6;margin-bottom:2px">LEVEL ÖDÜLÜ</div>
+    <div style="font-size:9px;letter-spacing:2px;opacity:.6;margin-bottom:2px" id="lbl-reward-title">LEVEL ÖDÜLÜ</div>
     <div id="lv-reward-txt" style="font-size:22px;font-weight:900">💣 +1 Bomba</div>
   </div>
   <div style="margin-top:12px;width:160px;height:3px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden">
@@ -732,11 +754,11 @@ function setLang(lang){
   <div style="font-size:48px;margin-bottom:8px">⚔️</div>
   <div style="font-size:20px;font-weight:900;color:#f5a623;margin-bottom:16px" id="lbl-challenge-title">ARKADAŞINA MEYDAN OKU!</div>
   <div style="background:#1a1a2e;border-radius:18px;padding:20px;width:90%;max-width:300px;margin-bottom:14px">
-    <div style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:10px">Rakibinin kullanıcı adını gir</div>
-    <input id="challenge-nick" type="text" placeholder="Kullanıcı adı..." style="width:100%;padding:12px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-size:16px;font-weight:700;text-align:center;outline:none;margin-bottom:12px">
-    <button onclick="sendChallenge()" style="width:100%;padding:12px;border-radius:12px;border:none;background:linear-gradient(90deg,#e94560,#f5a623);color:#fff;font-size:14px;font-weight:800;cursor:pointer;">⚔️ Meydan Oku!</button>
+    <div style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:10px" id="lbl-challenge-desc">Rakibinin kullanıcı adını gir</div>
+    <input id="challenge-nick" type="text" id="chal-input" placeholder="Kullanıcı adı..." style="width:100%;padding:12px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-size:16px;font-weight:700;text-align:center;outline:none;margin-bottom:12px">
+    <button id="btn-challenge-send" onclick="sendChallenge()" style="width:100%;padding:12px;border-radius:12px;border:none;background:linear-gradient(90deg,#e94560,#f5a623);color:#fff;font-size:14px;font-weight:800;cursor:pointer;">⚔️ Meydan Oku!</button>
   </div>
-  <button onclick="_checkIncomingChallenge()" class="btn-out" style="margin-bottom:8px;font-size:12px">🔄 Meydan Okuma Var Mı?</button>
+  <button id="btn-challenge-check" onclick="_checkIncomingChallenge()" class="btn-out" style="margin-bottom:8px;font-size:12px">🔄 Meydan Okuma Var Mı?</button>
   <button id="btn-challenge-cancel" onclick="closeChallenge()" class="btn-out">Vazgeç</button>
 </div>
 
@@ -770,7 +792,7 @@ function setLang(lang){
     <span id="nxt2" style="font-size:18px;opacity:.6">🍒</span>
     <span id="nxt3" style="font-size:14px;opacity:.35">🍒</span>
     <span style="flex:1"></span>
-    <span style="font-size:11px;opacity:.7;font-weight:700;letter-spacing:.5px">HEDEF:</span> <span id="h-hedef" style="color:#ffdd44;font-weight:900;font-size:22px;text-shadow:0 0 10px rgba(255,200,50,.6);animation:hedefPulse 2s ease-in-out infinite">🍉</span>
+    <span style="font-size:11px;opacity:.7;font-weight:700;letter-spacing:.5px" id="lbl-hedef-row">HEDEF:</span> <span id="h-hedef" style="color:#ffdd44;font-weight:900;font-size:22px;text-shadow:0 0 10px rgba(255,200,50,.6);animation:hedefPulse 2s ease-in-out infinite">🍉</span>
     <span id="ubadge" style="font-size:11px;opacity:.5;margin-left:8px"></span>
   </div>
   <!-- Canvas -->
@@ -839,7 +861,7 @@ function setLang(lang){
 <div id="pause-block-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:150;background:rgba(0,0,0,.6);flex-direction:column;align-items:center;justify-content:center;cursor:pointer;" onclick="togglePause()">
   <div style="font-size:60px;margin-bottom:12px">⏸</div>
   <div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:6px" id="lbl-paused">DURAKLATILDI</div>
-  <div style="font-size:13px;color:rgba(255,255,255,.5);margin-bottom:24px">Ekrana bas ve devam et</div>
+  <div style="font-size:13px;color:rgba(255,255,255,.5);margin-bottom:24px" id="lbl-tap-resume">Ekrana bas ve devam et</div>
   <div style="display:flex;gap:16px">
     <button id="btn-resume" onclick="event.stopPropagation();togglePause()" style="padding:14px 28px;border-radius:20px;border:none;background:linear-gradient(90deg,#e94560,#f5a623);color:#fff;font-size:16px;font-weight:800;cursor:pointer;">▶ Devam Et</button>
     <button id="btn-pause-home" onclick="event.stopPropagation();pauseAndHome()" style="padding:14px 28px;border-radius:20px;border:2px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;font-size:16px;font-weight:800;cursor:pointer;">🏠 Ana Sayfa</button>
@@ -1507,16 +1529,17 @@ const WA={
     ctx.textAlign='center';
     ctx.fillStyle='#f5a623';
     ctx.font='bold 13px Segoe UI,Arial';
-    ctx.fillText(`🏆  #${ri.rank}. Sıradasın`,W/2,py+22);
+    ctx.fillText(`🏆  #${ri.rank}. `+(_lang==='en'?'Ranked':_lang==='ru'?'Место':_lang==='ar'?'المركز':'Sıradasın'),W/2,py+22);
     /* Puan */
     ctx.fillStyle='#ffffff';
     ctx.font='bold 22px Segoe UI,Arial';
-    ctx.fillText(ri.score.toLocaleString()+' puan',W/2,py+46);
+    ctx.fillText(ri.score.toLocaleString()+' '+(_lang==='en'?'pts':_lang==='ru'?'очк':_lang==='ar'?'نقطة':'puan'),W/2,py+46);
     /* Süre + level */
     const mult=Math.max(10,Math.round(100*100/(100+ri.elapsed)));
     ctx.fillStyle='rgba(255,255,255,0.52)';
     ctx.font='11px Segoe UI,Arial';
-    ctx.fillText(`${ri.elapsed}s'de tamamlandı  ·  Puan çarpanı %${mult}`,W/2,py+66);
+    const statTxt=_lang==='en'?`${ri.elapsed}s · Mult %${mult}`:_lang==='ru'?`${ri.elapsed}с · Множитель %${mult}`:_lang==='ar'?`${ri.elapsed}ث · مضاعف %${mult}`:`${ri.elapsed}s'de · Çarpan %${mult}`;
+    ctx.fillText(statTxt,W/2,py+66);
     ctx.restore();
   },
 
@@ -1555,7 +1578,7 @@ const WA={
       ctx.fillStyle='#ffff00';
       ctx.shadowColor='transparent';ctx.shadowBlur=0;
       ctx.textAlign='center';ctx.textBaseline='middle';
-      ctx.fillText(`🎉 ${tgtEmoji} YAPTIN! 🎉`,W/2,this.y-110);
+      ctx.fillText(`🎉 ${tgtEmoji} `+(_lang==='en'?'YOU DID IT!':_lang==='ru'?'СДЕЛАЛ!':_lang==='ar'?'أنجزت!':'YAPTIN!')+` 🎉`,W/2,this.y-110);
       ctx.restore();
       this._drawInfoPanel(W,H,Math.min(1,this.timer*1.5));
 
@@ -2417,7 +2440,29 @@ const TOUCH_MOVE_THRESHOLD=8;   /* px — titremede yanlış drop olmasın */
 const TOUCH_SENSITIVITY=1.25;   /* 1.25x — küçük hareketle geniş alan */
 
 CV.addEventListener('mousemove',e=>{if(!S.dead)S.dropX=clampX(e.clientX);});
-CV.addEventListener('click',    e=>{if(!S.dead&&!S.dropping)drop(clampX(e.clientX));});
+/* ── Anti-cheat: Hızlı tıklama tespiti ── */
+let _tapTimes=[], _tapFrozen=false, _tapFreezeTimer=null, _tapAutoTimer=null;
+function checkRapidTap(){
+  if(_tapFrozen) return false;
+  const now=Date.now();
+  _tapTimes=_tapTimes.filter(t=>now-t<1000);
+  _tapTimes.push(now);
+  if(_tapTimes.length>=5){
+    _tapFrozen=true; _tapTimes=[];
+    showToast(_lang==='en'?'⚠️ Too fast! 5s freeze':_lang==='ru'?'⚠️ Слишком быстро! 5с':_lang==='ar'?'⚠️ سريع جداً! 5ث':'⚠️ Çok hızlı! 5sn durakladın');
+    clearTimeout(_tapFreezeTimer);
+    let autoCount=0;
+    _tapAutoTimer=setInterval(()=>{
+      if(!S.dead&&!S.dropping&&S.cfg) drop(S.dropX||S.cfg.cw/2);
+      if(++autoCount>=10){ clearInterval(_tapAutoTimer); _tapFrozen=false; }
+    },500);
+    _tapFreezeTimer=setTimeout(()=>{ clearInterval(_tapAutoTimer); _tapFrozen=false; },5000);
+    return false;
+  }
+  return true;
+}
+
+CV.addEventListener('click',    e=>{if(!S.dead&&!S.dropping&&checkRapidTap())drop(clampX(e.clientX));});
 
 CV.addEventListener('touchstart',e=>{
   e.preventDefault();
@@ -2479,8 +2524,7 @@ CV.addEventListener('touchmove',e=>{
 CV.addEventListener('touchend',e=>{
   e.preventDefault();
   if(S.dead) return;
-  /* Tap da sürükleme de — her ikisinde de meyveyi düşür */
-  if(!S.dropping) drop(S.dropX);
+  if(!S.dropping && checkRapidTap()) drop(S.dropX);
   _touchStartX=null; _touchStartDropX=null; _touchMoved=false;
 },{passive:false});
 
@@ -2905,15 +2949,16 @@ function drawSparks(){
    ROZET (BADGE) SİSTEMİ
 ══════════════════════════════════════════ */
 const BADGES=[
-  {lv:5,  icon:'⭐',               title:'⭐',               name:'1 Yıldız',    color:'#aaaaaa'},
-  {lv:10, icon:'⭐⭐',             title:'⭐⭐',             name:'2 Yıldız',    color:'#44cc66'},
-  {lv:15, icon:'⭐⭐⭐',           title:'⭐⭐⭐',           name:'3 Yıldız',    color:'#f5a623'},
-  {lv:20, icon:'⭐⭐⭐⭐',         title:'⭐⭐⭐⭐',         name:'4 Yıldız',    color:'#44aaff'},
-  {lv:30, icon:'⭐⭐⭐⭐⭐',       title:'⭐⭐⭐⭐⭐',       name:'5 Yıldız',    color:'#e94560'},
-  {lv:40, icon:'🏅',               title:'🏅 Üstad',         name:'Üstad',       color:'#ff8800'},
-  {lv:50, icon:'🤴',               title:'🤴 Kral',          name:'Kral',        color:'#cc44ff'},
-  {lv:70, icon:'👑',               title:'👑 KARPUZ REİS',   name:'KARPUZ REİS', color:'#ff0000'},
+  {lv:5,  icon:'⭐',         title:'⭐',         names:{tr:'1 Yıldız',en:'1 Star',ru:'1 Звезда',ar:'نجمة واحدة'},color:'#aaaaaa'},
+  {lv:10, icon:'⭐⭐',       title:'⭐⭐',       names:{tr:'2 Yıldız',en:'2 Stars',ru:'2 Звезды',ar:'نجمتان'},color:'#44cc66'},
+  {lv:15, icon:'⭐⭐⭐',     title:'⭐⭐⭐',     names:{tr:'3 Yıldız',en:'3 Stars',ru:'3 Звезды',ar:'3 نجوم'},color:'#f5a623'},
+  {lv:20, icon:'⭐⭐⭐⭐',   title:'⭐⭐⭐⭐',   names:{tr:'4 Yıldız',en:'4 Stars',ru:'4 Звезды',ar:'4 نجوم'},color:'#44aaff'},
+  {lv:30, icon:'⭐⭐⭐⭐⭐', title:'⭐⭐⭐⭐⭐', names:{tr:'5 Yıldız',en:'5 Stars',ru:'5 Звёзд',ar:'5 نجوم'},color:'#e94560'},
+  {lv:40, icon:'🏅',         title:'🏅 Üstad',   names:{tr:'Üstad',en:'Master',ru:'Мастер',ar:'أستاذ'},color:'#ff8800'},
+  {lv:50, icon:'🤴',         title:'🤴 Kral',    names:{tr:'Kral',en:'King',ru:'Король',ar:'ملك'},color:'#cc44ff'},
+  {lv:70, icon:'👑',         title:'👑 REİS',    names:{tr:'KARPUZ REİS',en:'WATERMELON KING',ru:'КОРОЛЬ АРБУЗА',ar:'ملك البطيخ'},color:'#ff0000'},
 ];
+function bdName(bd){ return (bd.names&&bd.names[_lang])||bd.names.tr; }
 function getBadge(lv){
   let b=null;
   for(const bd of BADGES){ if(lv>=bd.lv)b=bd; }
@@ -2931,29 +2976,32 @@ function checkBadgeUnlock(prevLv,newLv){
 function showBadgeCelebration(bd, lv){
   const idx=BADGES.findIndex(b=>b.lv===bd.lv);
   const next=BADGES[idx+1]||null;
-  const nextMsg=next
-    ? `Sonraki hedef: ${next.icon} <b>${next.name}</b> (Level ${next.lv})`
-    : '🎊 En yüksek ünvana ulaştın!';
-
-  const praises=[
-    'Harika oynuyorsun! Gerçek bir meyve ustasısın!',
-    'İnanılmaz ilerleme! Şampiyonlar seni izliyor!',
-    'Muhteşem bir performans! Durdurulamaz sın!',
-    'Efsanevi bir oyuncu olma yolundasın!',
-  ];
-  const praise=praises[Math.floor(Math.random()*praises.length)];
+  const L=_lang;
+  const nextLabel={tr:'Sonraki hedef:',en:'Next goal:',ru:'Следующая цель:',ar:'الهدف التالي:'}[L]||'Sonraki hedef:';
+  const topMsg={tr:'En yüksek ünvana ulaştın!',en:'You reached the highest title!',ru:'Ты достиг высшего титула!',ar:'وصلت إلى أعلى لقب!'}[L];
+  const nextMsg=next?`${nextLabel} ${next.icon} <b>${bdName(next)}</b> (Level ${next.lv})`:`🎊 ${topMsg}`;
+  const praises={
+    tr:['Harika oynuyorsun! Gerçek bir meyve ustasısın!','İnanılmaz ilerleme! Şampiyonlar seni izliyor!','Muhteşem bir performans! Durdurulamaz sın!','Efsanevi bir oyuncu olma yolundasın!'],
+    en:['You are playing great! A true fruit master!','Incredible progress! Champions are watching!','Amazing performance! You are unstoppable!','You are on your way to becoming a legend!'],
+    ru:['Ты играешь великолепно! Настоящий мастер!','Невероятный прогресс! Чемпионы следят за тобой!','Потрясающее выступление! Тебя не остановить!','Ты на пути к легенде!'],
+    ar:['أنت تلعب بشكل رائع! أستاذ حقيقي!','تقدم مذهل! الأبطال يراقبونك!','أداء مثير للإعجاب! لا شيء يوقفك!','أنت في طريقك لتصبح أسطورة!']
+  };
+  const praise=(praises[L]||praises.tr)[Math.floor(Math.random()*4)];
+  const titleLbl={tr:'🏆 YENİ ÜNVAN KAZANILDI!',en:'🏆 NEW TITLE EARNED!',ru:'🏆 НОВЫЙ ТИТУЛ!',ar:'🏆 لقب جديد!'}[L]||'🏆 YENİ ÜNVAN KAZANILDI!';
+  const levelLbl={tr:`Level ${lv} ile kazanıldı`,en:`Earned at Level ${lv}`,ru:`Получен на уровне ${lv}`,ar:`حصلت عليه في المستوى ${lv}`}[L];
+  const continueLbl={tr:'Devam Et 🚀',en:'Continue 🚀',ru:'Продолжить 🚀',ar:'تابع 🚀'}[L];
 
   const ov=document.createElement('div');
   ov.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.95);z-index:700;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:Segoe UI,Arial;color:#fff;text-align:center;padding:20px;';
   ov.innerHTML=`
-    <div style="font-size:13px;letter-spacing:3px;color:rgba(255,255,255,.5);margin-bottom:12px">🏆 YENİ ÜNVAN KAZANILDI!</div>
+    <div style="font-size:13px;letter-spacing:3px;color:rgba(255,255,255,.5);margin-bottom:12px">${titleLbl}</div>
     <div style="font-size:52px;animation:fruitPop .6s ease;margin-bottom:6px">${bd.icon}</div>
-    <div style="font-size:28px;font-weight:900;color:${bd.color};margin-bottom:4px;letter-spacing:1px">${bd.name}</div>
-    <div style="font-size:13px;color:rgba(255,255,255,.5);margin-bottom:16px">Level ${lv} ile kazanıldı</div>
+    <div style="font-size:28px;font-weight:900;color:${bd.color};margin-bottom:4px;letter-spacing:1px">${bdName(bd)}</div>
+    <div style="font-size:13px;color:rgba(255,255,255,.5);margin-bottom:16px">${levelLbl}</div>
     <div style="width:200px;height:2px;background:linear-gradient(90deg,${bd.color},transparent);margin:0 auto 16px;border-radius:2px"></div>
     <div style="font-size:13px;color:rgba(255,255,255,.7);max-width:280px;line-height:1.7;margin-bottom:16px">${praise}</div>
     <div style="background:rgba(255,255,255,.06);border-radius:14px;padding:12px 20px;margin-bottom:20px;font-size:12px;color:rgba(255,255,255,.6)">🎯 ${nextMsg}</div>
-    <button onclick="this.parentElement.remove()" style="padding:12px 36px;border-radius:22px;border:none;background:linear-gradient(90deg,${bd.color},#f5a623);color:#fff;font-size:15px;font-weight:800;cursor:pointer;">Devam Et 🚀</button>
+    <button onclick="this.parentElement.remove()" style="padding:12px 36px;border-radius:22px;border:none;background:linear-gradient(90deg,${bd.color},#f5a623);color:#fff;font-size:15px;font-weight:800;cursor:pointer;">${continueLbl}</button>
   `;
   document.body.appendChild(ov);
   setTimeout(()=>{if(ov.parentElement)ov.remove();},8000);
@@ -3515,7 +3563,8 @@ async function winLevel(){
   const nrEl=document.getElementById('lv-newrecord');
   if(nrEl) nrEl.style.display=isNewRecord?'block':'none';
   const statsEl=document.getElementById('lv-stats');
-  if(statsEl) statsEl.textContent=`${S.timeElapsed}s'de tamamlandı · ${S.lvSc.toLocaleString()} level puanı`;
+  const lvCompl={tr:`${S.timeElapsed}s'de tamamlandı · ${S.lvSc.toLocaleString()} level puanı`,en:`Completed in ${S.timeElapsed}s · ${S.lvSc.toLocaleString()} level pts`,ru:`Завершено за ${S.timeElapsed}с · ${S.lvSc.toLocaleString()} очков`,ar:`أكملت في ${S.timeElapsed}ث · ${S.lvSc.toLocaleString()} نقطة`};
+  if(statsEl) statsEl.textContent=lvCompl[_lang]||lvCompl.tr;
   ov.style.display = 'flex';
   requestAnimationFrame(()=>{ document.getElementById('lv-bar').style.width='100%'; });
 
@@ -3733,13 +3782,19 @@ function toggleLBSection(id){
   el.style.display=open?'none':'block';
   if(arrow)arrow.textContent=open?'▶':'▼';
 }
-function openLB(){show('s-lb');renderLB(S.user);renderRivals(S.user);}
+function openLB(){
+  show('s-lb');
+  const me=S.user||localStorage.getItem(UKEY)||'';
+  renderLB(me);
+  renderRivals(me);
+}
 
 /* ══════════════════════════════════════════
    TUTORIAL
 ══════════════════════════════════════════ */
 let tutStep=0;
 function showTutorial(){
+  setLang(_lang);
   const tgt=getLevelTarget(1);
   const el=document.getElementById('tut-target');
   if(el)el.textContent=FR[tgt][0];
@@ -3809,11 +3864,14 @@ function checkDailyReward(){
 
   /* Streak yazısı */
   const stEl=document.getElementById('daily-streak');
-  if(stEl) stEl.textContent=isSpecial?`🌟 ${streak}. GÜN — ÖZEL ÖDÜL!`:`${streak}. gün streaki 🔥`;
+  const drSpec={tr:`🌟 ${streak}. GÜN — ÖZEL ÖDÜL!`,en:`🌟 Day ${streak} — SPECIAL!`,ru:`🌟 День ${streak} — ОСОБАЯ!`,ar:`🌟 اليوم ${streak} — خاص!`};
+  const drNorm={tr:`${streak}. gün streaki 🔥`,en:`Day ${streak} streak 🔥`,ru:`Серия ${streak} дней 🔥`,ar:`سلسلة ${streak} يوم 🔥`};
+  if(stEl) stEl.textContent=isSpecial?(drSpec[_lang]||drSpec.tr):(drNorm[_lang]||drNorm.tr);
 
   /* Başlık */
   const ttEl=document.getElementById('daily-title');
-  if(ttEl) ttEl.textContent=isSpecial?'🌟 Özel Günlük Ödül!':'Günlük Ödül!';
+  const drTSpec={tr:'🌟 Özel Günlük Ödül!',en:'🌟 Special Daily Reward!',ru:'🌟 Особая награда!',ar:'🌟 مكافأة خاصة!'};
+  if(ttEl) ttEl.textContent=isSpecial?(drTSpec[_lang]||drTSpec.tr):((LANGS[_lang]||LANGS.tr).daily_title);
   const icEl=document.getElementById('daily-icon');
   if(icEl) icEl.textContent=isSpecial?'⭐':'🎁';
 
@@ -3841,7 +3899,15 @@ function claimDailyReward(){
   rewards.forEach(r=>PU.add(r.type,r.n));
   document.getElementById('daily-overlay').style.display='none';
   if(rewards.length){
-    const names={bomb:'💣 Bomba',freeze:'❄️ Dondur',x2:'⚡ 2× Puan',upgrade:'⬆️ Yükselt',storm:'🌪️ Fırtına',luck:'🔮 Şans'};
+    const _pn=_lang||'tr';
+    const names={
+      bomb:'💣 '+({tr:'Bomba',en:'Bomb',ru:'Бомба',ar:'قنبلة'}[_pn]||'Bomba'),
+      freeze:'❄️ '+({tr:'Dondur',en:'Freeze',ru:'Заморозка',ar:'تجميد'}[_pn]||'Dondur'),
+      x2:'⚡ '+({tr:'2× Puan',en:'2× Points',ru:'2× Очки',ar:'2× نقاط'}[_pn]||'2× Puan'),
+      upgrade:'⬆️ '+({tr:'Yükselt',en:'Upgrade',ru:'Улучшить',ar:'ترقية'}[_pn]||'Yükselt'),
+      storm:'🌪️ '+({tr:'Fırtına',en:'Storm',ru:'Буря',ar:'عاصفة'}[_pn]||'Fırtına'),
+      luck:'🔮 '+({tr:'Şans',en:'Luck',ru:'Удача',ar:'حظ'}[_pn]||'Şans')
+    };
     showToast('🎁 Ödül: '+rewards.map(r=>`${r.n}× ${names[r.type]}`).join(', '));
   }
 }
@@ -4121,5 +4187,13 @@ window.addEventListener('pagehide',()=>{
   try{if(S.cfg&&!S.dead)saveGameState();}catch(e){}
 });
 </script>
+
+<!-- ══ RANK ANİMASYON OVERLAY ══ -->
+<div id="rank-anim-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.92);z-index:600;flex-direction:column;align-items:center;justify-content:center;font-family:'Segoe UI',Arial;color:#fff;text-align:center;padding:20px;transition:opacity .3s">
+  <div style="font-size:11px;letter-spacing:3px;color:rgba(255,255,255,.4);margin-bottom:8px;text-transform:uppercase" id="rank-anim-league">Şampiyonlar Ligi</div>
+  <div id="rank-anim-counter" style="font-size:52px;font-weight:900;color:#f5a623;margin-bottom:12px;text-shadow:0 0 30px rgba(245,166,35,.5)">#—</div>
+  <div id="rank-anim-list" style="width:92%;max-width:310px"></div>
+  <div id="rank-anim-msg" style="margin-top:18px;font-size:20px;font-weight:900;color:#44ff88;opacity:0;transition:opacity .4s;text-shadow:0 0 20px rgba(68,255,136,.4)"></div>
+</div>
 </body>
 </html>
