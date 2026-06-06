@@ -1746,6 +1746,7 @@ async function submitLBFull(name,score,lv){
     }
   }catch(e){}
 
+  try{localStorage.setItem('karpuz_lastrank_'+name, localRank);}catch(e){}
   return {rank:localRank, entries:lb};
 }
 
@@ -2587,8 +2588,8 @@ function physics(dt){
   for(const f of S.fruits){
     if(f.merged)continue;
     f.vy+=c.gravity*dt;f.y+=f.vy*dt;f.age+=dt;
-    /* Zigzag: sadece çok küçük meyveler için, kısa süre */
-    if(f.age<0.25 && f.r<22){
+    /* Zigzag devre dışı */
+    if(false){
       f.vx=Math.sin(f.age*f.zzFreq)*f.zzAmp*(1-f.age/0.25)*0.5;
     }else{
       f.vx*=0.82; /* yatay sönüm */
@@ -3694,12 +3695,14 @@ async function winLevel(){
   S.totSc = S._winScore ?? S.totSc;
 
   /* Eski sıra — WA başlamadan önce yakalandı */
-  const oldRank=S._winOldRank||0;
-  S._winOldRank=0; S._winEntries=null;
+  const oldRank    = S._winOldRank  || 0;
+  const _savedRank = S._winRank     || 0;
+  const _savedEntr = S._winEntries  || null;
+  S._winOldRank=0; S._winEntries=null; S._winRank=0;
 
   /* Yeni sıra + tüm liste */
-  const lbResult = S._winRank
-    ? {rank:S._winRank, entries:S._winEntries||getLB()}
+  const lbResult = _savedRank
+    ? {rank:_savedRank, entries:_savedEntr||getLB()}
     : await submitLBFull(S.user,S.totSc,S.lv);
   const rank = lbResult.rank;
   const lbEntries = lbResult.entries;
