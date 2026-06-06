@@ -2154,7 +2154,7 @@ async function registerUser(){
     }
   }catch(e){
     if(btn){btn.textContent=T('btn_save_play');btn.disabled=false;}
-    errEl.innerHTML='⚠️ Sunucuya bağlanılamadı.<br><small style="color:rgba(255,255,255,.5)">İnternet bağlantını kontrol et veya</small><br><button onclick="forceRegister(\''+n+'\')" style="margin-top:6px;padding:6px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;font-size:12px;cursor:pointer;">Yine de Gir (çevrimdışı)</button>';
+    errEl.textContent='⚠️ Sunucuya bağlanılamadı. İnternet bağlantını kontrol et.';
     return;
   }
   if(btn){btn.textContent=T('btn_save_play');btn.disabled=false;}
