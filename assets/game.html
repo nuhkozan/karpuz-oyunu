@@ -2112,22 +2112,22 @@ window._regCb=function(id,taken){
   }
 };
 
-function checkAndRegister(name){
-  return new Promise((resolve,reject)=>{
-    if(!window.FlutterRegister){reject(new Error('kanal yok'));return;}
-    const id='reg_'+Date.now()+'_'+Math.random().toString(36).slice(2);
-    window._regCallbacks[id]=(taken)=>{
-      if(taken===null)reject(new Error('hata'));
-      else resolve(taken);
-    };
-    FlutterRegister.postMessage(JSON.stringify({id,name}));
-    setTimeout(()=>{
-      if(window._regCallbacks[id]){
-        delete window._regCallbacks[id];
-        reject(new Error('zaman aşımı'));
-      }
-    },15000);
-  });
+async function checkAndRegister(name){
+  const key=name.replace(/[.#$\[\]/]/g,'_');
+  /* FlutterFetch kanalını kullan — zaten leaderboard için çalışıyor */
+  try{
+    const resp=await flutterFetch(`${FB_URL}/leaderboard/${key}.json`,'GET');
+    const data=await resp.json();
+    const taken=!!(data && typeof data==='object' && data.name);
+    if(!taken){
+      /* Fire and forget — ismi kaydet */
+      flutterFetch(`${FB_URL}/leaderboard/${key}/reg.json`,'PUT',
+        JSON.stringify({reg:true,t:Date.now()})).catch(()=>{});
+    }
+    return taken;
+  }catch(e){
+    throw new Error('fetch_hata');
+  }
 }
 
 async function registerUser(){
