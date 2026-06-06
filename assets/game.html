@@ -435,6 +435,8 @@ function setLang(lang){
   // New IDs
   s('lbl-tap-resume','lbl_tap_resume');
   s('lbl-completed','lbl_completed'); s('lbl-reward-title','lbl_reward');
+  var dw=document.getElementById('lbl-danger-warn');
+  if(dw)dw.textContent='⚠️ '+({tr:'ÇİZGİ HAREKET EDIYOR',en:'LINE IS MOVING',ru:'ЛИНИЯ ДВИЖЕТСЯ',ar:'الخط يتحرك'}[lang]||'ÇİZGİ HAREKET EDIYOR');
   var challDesc=document.getElementById('lbl-challenge-desc');
   if(challDesc)challDesc.textContent=lang==='en'?'Enter your rival\'s username':lang==='ru'?'Введи имя соперника':lang==='ar'?'أدخل اسم منافسك':'Rakibinin kullanıcı adını gir';
   var challSend=document.getElementById('btn-challenge-send');
@@ -452,7 +454,7 @@ function setLang(lang){
 <div id="bg-anim" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;overflow:hidden"></div>
 <div id="danger-countdown" style="display:none;position:absolute;left:50%;transform:translateX(-50%);z-index:100;pointer-events:none;text-align:center">
   <div id="danger-countdown-num" style="font-size:72px;font-weight:900;color:#ff2222;text-shadow:0 0 30px rgba(255,0,0,.8);animation:dangerPulse .8s ease-in-out infinite"></div>
-  <div style="font-size:12px;color:rgba(255,100,100,.9);letter-spacing:2px;margin-top:-8px">⚠️ ÇİZGİ HAREKET EDIYOR</div>
+  <div style="font-size:12px;color:rgba(255,100,100,.9);letter-spacing:2px;margin-top:-8px" id="lbl-danger-warn">⚠️ ÇİZGİ HAREKET EDIYOR</div>
 </div>
 
 <!-- ══ GÖREV OVERLAY ══ -->
@@ -1701,7 +1703,7 @@ function flutterFetch(url, method='GET', body=null){
   });
 }
 
-async function submitLB(name,score,lv){
+async function submitLBFull(name,score,lv){
   /* Lokal fallback */
   const lb=getLB();
   const i=lb.findIndex(e=>e.name===name);
@@ -1726,11 +1728,16 @@ async function submitLB(name,score,lv){
       const all=Object.values(data).filter(e=>e&&e.score!=null);
       all.sort((a,b)=>b.score-a.score);
       const rank=all.findIndex(e=>e.name===name)+1;
-      return rank>0?rank:localRank;
+      return {rank:rank>0?rank:localRank, entries:all};
     }
   }catch(e){}
 
-  return localRank;
+  return {rank:localRank, entries:lb};
+}
+
+async function submitLB(name,score,lv){
+  const r=await submitLBFull(name,score,lv);
+  return r.rank;
 }
 
 async function renderLB(me){
@@ -2454,8 +2461,8 @@ function checkRapidTap(){
     let autoCount=0;
     _tapAutoTimer=setInterval(()=>{
       if(!S.dead&&!S.dropping&&S.cfg) drop(S.dropX||S.cfg.cw/2);
-      if(++autoCount>=10){ clearInterval(_tapAutoTimer); _tapFrozen=false; }
-    },500);
+      if(++autoCount>=3){ clearInterval(_tapAutoTimer); _tapFrozen=false; }
+    },1600);
     _tapFreezeTimer=setTimeout(()=>{ clearInterval(_tapAutoTimer); _tapFrozen=false; },5000);
     return false;
   }
@@ -3507,9 +3514,10 @@ function checkContinueButton(){
   if(st && st.user === localStorage.getItem(UKEY)){
     wrap.style.display = 'block';
     const ago = Math.round((Date.now()-st.savedAt)/60000);
-    const agoTxt = ago < 1 ? 'Az önce' : ago < 60 ? ago+'dk önce' : Math.round(ago/60)+'sa önce';
+    const _pvlbl={tr:'puan',en:'pts',ru:'очков',ar:'نقطة'}[_lang]||'puan';
+    const _agoTxt=ago<1?({tr:'Az önce',en:'Just now',ru:'Только что',ar:'للتو'}[_lang]||'Az önce'):ago<60?ago+' '+({tr:'dk önce',en:'min ago',ru:'мин назад',ar:'د مضت'}[_lang]||'dk önce'):Math.round(ago/60)+' '+({tr:'sa önce',en:'hr ago',ru:'ч назад',ar:'س مضت'}[_lang]||'sa önce');
     document.getElementById('u-continue-info').textContent =
-      `Level ${st.lv} · ${st.totSc.toLocaleString()} puan · ${agoTxt}`;
+      `Level ${st.lv} · ${st.totSc.toLocaleString()} ${_pvlbl} · ${_agoTxt}`;
   } else {
     wrap.style.display = 'none';
   }
@@ -3538,10 +3546,127 @@ function togglePause(){
   }
 }
 
+async function showRankAnim(oldRank, newRank, entries, playerName){
+  if(!entries||entries.length<1)return;
+  if(newRank<=0)return;
+  /* Yeni oyuncu için oldRank=0 kabul et, animasyonu yine de göster */
+  const isNew=(oldRank<=0||oldRank<=newRank);
+  const diff=isNew?0:oldRank-newRank;
+
+  const overlay=document.getElementById('rank-anim-overlay');
+  const list=document.getElementById('rank-anim-list');
+  const counter=document.getElementById('rank-anim-counter');
+  const msg=document.getElementById('rank-anim-msg');
+  if(!overlay||!list||!counter||!msg)return;
+
+  const lbl=document.getElementById('rank-anim-league');
+  if(lbl)lbl.textContent=_lang==='en'?'Champions League':_lang==='ru'?'Лига чемпионов':_lang==='ar'?'دوري الأبطال':'Şampiyonlar Ligi';
+
+  const getEntry=(rank)=>rank>=1&&rank<=entries.length?entries[rank-1]:null;
+  const me=entries.find(e=>e.name===playerName)||{name:playerName,score:0};
+
+  const makeRow=(rank,entry,isMe)=>{
+    if(!entry&&!isMe)return'<div class="ra-row ra-empty"></div>';
+    const e=entry||(isMe?me:null);
+    if(!e)return'<div class="ra-row ra-empty"></div>';
+    const medal=rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':`#${rank}`;
+    return`<div class="ra-row${isMe?' ra-me':''}">
+      <span class="ra-rank-num">${medal}</span>
+      <span class="ra-name-txt">${e.name}</span>
+      <span class="ra-score-txt">${(e.score||0).toLocaleString()}</span>
+    </div>`;
+  };
+
+  /* 5 satır: 2 üst + ben + 2 alt */
+  const makeRows=(centerRank)=>[
+    makeRow(centerRank-2,getEntry(centerRank-2),false),
+    makeRow(centerRank-1,getEntry(centerRank-1),false),
+    makeRow(centerRank,  getEntry(centerRank),  true),
+    makeRow(centerRank+1,getEntry(centerRank+1),false),
+    makeRow(centerRank+2,getEntry(centerRank+2),false),
+  ].join('');
+
+  overlay.style.opacity='0';
+  overlay.style.display='flex';
+  msg.style.opacity='0';
+  msg.textContent='';
+  setTimeout(()=>{overlay.style.opacity='1';},20);
+
+  if(isNew){
+    /* Yeni oyuncu — direkt yeni sırayı göster */
+    counter.textContent=`#${newRank}`;
+    list.style.opacity='1';
+    list.innerHTML=makeRows(newRank);
+    const newMe=list.querySelector('.ra-me');
+    if(newMe)newMe.style.animation='raFadeIn .5s ease forwards, raPulse 1s ease .5s infinite';
+    msg.textContent=_lang==='en'?`🎉 You are #${newRank}!`:_lang==='ru'?`🎉 Вы на #${newRank} месте!`:_lang==='ar'?`🎉 أنت في المركز #${newRank}!`:`🎉 #${newRank}. Sıradasın!`;
+    await new Promise(r=>setTimeout(r,400));
+    msg.style.opacity='1';
+    await new Promise(r=>setTimeout(r,2000));
+  } else {
+    /* Rank yükselen oyuncu */
+    counter.textContent=`#${oldRank}`;
+    list.style.opacity='1';
+    list.innerHTML=makeRows(oldRank);
+
+    await new Promise(r=>setTimeout(r,1000));
+
+    /* Uçuş animasyonu */
+    const meRow=list.querySelector('.ra-me');
+    if(meRow)meRow.style.animation='raFlyUp .8s ease forwards';
+
+    const dur=Math.min(1400,diff*60+500);
+    const t0=performance.now();
+    await new Promise(resolve=>{
+      const tick=(now)=>{
+        const p=Math.min((now-t0)/dur,1);
+        const ease=1-Math.pow(1-p,3);
+        counter.textContent=`#${Math.round(oldRank-(oldRank-newRank)*ease)}`;
+        if(p<1)requestAnimationFrame(tick);
+        else resolve();
+      };
+      requestAnimationFrame(tick);
+    });
+
+    /* Yeni pozisyon */
+    list.style.transition='opacity .25s';
+    list.style.opacity='0';
+    await new Promise(r=>setTimeout(r,250));
+
+    counter.textContent=`#${newRank}`;
+    list.innerHTML=makeRows(newRank);
+    const newMe2=list.querySelector('.ra-me');
+    if(newMe2)newMe2.style.animation='raFadeIn .5s ease forwards, raPulse 1s ease .5s infinite';
+    list.style.opacity='1';
+    await new Promise(r=>setTimeout(r,400));
+
+    const riseMsg=_lang==='en'?`⬆ ${diff} places up! 🚀`:_lang==='ru'?`⬆ +${diff} позиций! 🚀`:_lang==='ar'?`⬆ ارتفعت ${diff} مراكز! 🚀`:`⬆ ${diff} sıra yükseldin! 🚀`;
+    msg.textContent=riseMsg;
+    msg.style.opacity='1';
+    await new Promise(r=>setTimeout(r,1600));
+  }
+
+  overlay.style.opacity='0';
+  await new Promise(r=>setTimeout(r,300));
+  overlay.style.display='none';
+  msg.style.opacity='0';
+}
+
 async function winLevel(){
   if(S.dead)return; stop();
   S.totSc = S._winScore ?? S.totSc;
-  const rank = S._winRank || await submitLB(S.user,S.totSc,S.lv);
+
+  /* Eski sırayı kaydet (güncelleme öncesi) */
+  const oldLB=getLB();
+  const oldIdx=oldLB.findIndex(e=>e.name===S.user);
+  const oldRank=oldIdx>=0?oldIdx+1:0;
+
+  /* Yeni sıra + tüm liste */
+  const lbResult = S._winRank
+    ? {rank:S._winRank, entries:getLB()}
+    : await submitLBFull(S.user,S.totSc,S.lv);
+  const rank = lbResult.rank;
+  const lbEntries = lbResult.entries;
   const nextLvNum = S.lv + 1;
 
   /* Yeni rekor kontrolü */
@@ -3556,7 +3681,7 @@ async function winLevel(){
   const lvFruit=document.getElementById('lv-fruit');
   if(lvFruit){ lvFruit.textContent=tgtEmoji; lvFruit.style.animation='none'; requestAnimationFrame(()=>{lvFruit.style.animation='fruitPop .5s ease';}); }
   document.getElementById('lv-done').textContent  = `LEVEL ${S.lv} ✓`;
-  document.getElementById('lv-score').textContent = S.totSc.toLocaleString() + ' puan';
+  document.getElementById('lv-score').textContent = S.totSc.toLocaleString() + ' ' + ({tr:'puan',en:'pts',ru:'очков',ar:'نقطة'}[_lang]||'puan');
   document.getElementById('lv-rank').textContent  = '🏆 #'+rank+(_lang==='en'?'. Ranked':_lang==='ru'?'. Место':_lang==='ar'?'. المركز':'. Sıradasın');
   document.getElementById('lv-next').textContent  = nextLvNum<=99?'LEVEL '+nextLvNum+(_lang==='en'?' STARTING…':_lang==='ru'?' НАЧИНАЕТСЯ…':_lang==='ar'?' يبدأ…':' BAŞLIYOR…'):'TÜM LEVELLAR TAMAMLANDI! 👑';
   document.getElementById('lv-bar').style.width   = '0%';
@@ -3568,16 +3693,20 @@ async function winLevel(){
   ov.style.display = 'flex';
   requestAnimationFrame(()=>{ document.getElementById('lv-bar').style.width='100%'; });
 
-  if(isNewRecord) showToast('🏆 YENİ REKOR! '+S.totSc.toLocaleString()+' puan!');
+  if(isNewRecord){const _rk={tr:'🏆 YENİ REKOR! ',en:'🏆 NEW RECORD! ',ru:'🏆 НОВЫЙ РЕКОРД! ',ar:'🏆 رقم قياسي! '};showToast((_rk[_lang]||_rk.tr)+S.totSc.toLocaleString());}
+
+  /* Rank animasyonu — 1sn sonra başlat */
+  setTimeout(()=>showRankAnim(oldRank, rank, lbEntries, S.user), 1000);
 
   /* Level ödülü ver */
+  const _rn=_lang||'tr';
   const rewardTypes=[
-    {type:'bomb',   emoji:'💣',name:'Bomba'},
-    {type:'freeze', emoji:'❄️',name:'Dondur'},
-    {type:'x2',    emoji:'⚡',name:'2× Puan'},
-    {type:'upgrade',emoji:'⬆️',name:'Yükselt'},
-    {type:'storm',  emoji:'🌪️',name:'Fırtına'},
-    {type:'luck',   emoji:'🔮',name:'Şans'},
+    {type:'bomb',   emoji:'💣',name:{tr:'Bomba',en:'Bomb',ru:'Бомба',ar:'قنبلة'}[_rn]||'Bomba'},
+    {type:'freeze', emoji:'❄️',name:{tr:'Dondur',en:'Freeze',ru:'Заморозка',ar:'تجميد'}[_rn]||'Dondur'},
+    {type:'x2',    emoji:'⚡',name:{tr:'2× Puan',en:'2× Points',ru:'2× Очки',ar:'2× نقاط'}[_rn]||'2× Puan'},
+    {type:'upgrade',emoji:'⬆️',name:{tr:'Yükselt',en:'Upgrade',ru:'Улучшить',ar:'ترقية'}[_rn]||'Yükselt'},
+    {type:'storm',  emoji:'🌪️',name:{tr:'Fırtına',en:'Storm',ru:'Буря',ar:'عاصفة'}[_rn]||'Fırtına'},
+    {type:'luck',   emoji:'🔮',name:{tr:'Şans',en:'Luck',ru:'Удача',ar:'حظ'}[_rn]||'Şans'},
   ];
   const ri=rewardTypes[(S.lv-1)%6];
   /* Nadir ödül — her 10 levelda 1 ekstra, normal levelda sadece 1 */
@@ -3812,7 +3941,7 @@ function updateTutStep(){
   const prev=document.getElementById('tut-prev');
   const next=document.getElementById('tut-next');
   if(prev)prev.style.display=tutStep>0?'block':'none';
-  if(next)next.textContent=tutStep<2?'Devam →':'Oynamaya Başla! 🚀';
+  if(next)next.textContent=tutStep<2?T('btn_tut_next'):T('btn_tut_start');
 }
 function tutNext(){
   if(tutStep<2){tutStep++;updateTutStep();}
