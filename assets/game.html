@@ -2560,6 +2560,7 @@ function drop(x){
   S.autoT=1.25; /* reset auto-drop timer */
   const f=new Fruit(x,S.cfg.dangerY-FR[S.curType][1]-4,S.curType);
   f.vy=280;
+  f.vx=(Math.random()-0.5)*60; /* küçük rastgele yatay hız — yığılmayı önler */
   S.fruits.push(f);
   snd(S.curType,false);
   setTimeout(()=>{
@@ -2588,10 +2589,8 @@ function physics(dt){
   for(const f of S.fruits){
     if(f.merged)continue;
     f.vy+=c.gravity*dt;f.y+=f.vy*dt;f.age+=dt;
-    /* Zigzag devre dışı */
-    if(false){
-      f.vx=Math.sin(f.age*f.zzFreq)*f.zzAmp*(1-f.age/0.25)*0.5;
-    }else{
+    /* Yatay sönüm — titreşim yok ama sürtünme var */
+    if(true){
       f.vx*=0.82; /* yatay sönüm */
       f.vy*=0.995; /* dikey hafif sönüm — sonsuz zıplamayı önler */
       if(Math.abs(f.vx)<0.5) f.vx=0;
@@ -2649,7 +2648,7 @@ function physics(dt){
       const nx=dx/d,ny=dy/d,ov=(md-d)*.5;
       a.x-=nx*ov*.5;a.y-=ny*ov*.5;b.x+=nx*ov*.5;b.y+=ny*ov*.5;
       const rv=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;
-      if(rv<0){const im=rv*.18;a.vx+=im*nx;a.vy+=im*ny;b.vx-=im*nx;b.vy-=im*ny;}
+      if(rv<0){const im=rv*.25;a.vx+=im*nx;a.vy+=im*ny;b.vx-=im*nx;b.vy-=im*ny;}
     }
   }
   S.fruits=S.fruits.filter(f=>!f.merged);
