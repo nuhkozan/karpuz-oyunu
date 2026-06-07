@@ -1741,12 +1741,10 @@ async function submitLBFull(name,score,lv){
       all.sort((a,b)=>b.score-a.score);
       const rank=all.findIndex(e=>e.name===name)+1;
       const finalRank=rank>0?rank:localRank;
-      try{localStorage.setItem('karpuz_lastrank_'+name, finalRank);}catch(e){}
       return {rank:finalRank, entries:all};
     }
   }catch(e){}
 
-  try{localStorage.setItem('karpuz_lastrank_'+name, localRank);}catch(e){}
   return {rank:localRank, entries:lb};
 }
 
@@ -2861,12 +2859,9 @@ function loop(ts){
     S.winPending=false;
     const wf=S.winFruit;
     /* Animasyonu hemen başlat, LB async gelince rank güncellenir */
-    /* Son bilinen sırayı localStorage'dan al — local LB sadece top50 */
+    /* Son bilinen Firebase sırasını al — local LB yetersiz */
     const _lastRankStr=localStorage.getItem('karpuz_lastrank_'+S.user);
-    const _localLB=getLB();
-    const _localIdx=_localLB.findIndex(e=>e.name===S.user);
-    S._winOldRank=_localIdx>=0?(_localIdx+1)
-      :(_lastRankStr?parseInt(_lastRankStr):0);
+    S._winOldRank=_lastRankStr?parseInt(_lastRankStr):0;
     WA.start(wf.x, wf.y, {rank:0, score:S.totSc, lv:S.lv, elapsed:S.timeElapsed});
     submitLBFull(S.user,S.totSc,S.lv).then(result=>{
       S._winRank=result.rank; S._winScore=S.totSc;
@@ -3734,7 +3729,10 @@ async function winLevel(){
   if(isNewRecord){const _rk={tr:'🏆 YENİ REKOR! ',en:'🏆 NEW RECORD! ',ru:'🏆 НОВЫЙ РЕКОРД! ',ar:'🏆 رقم قياسي! '};showToast((_rk[_lang]||_rk.tr)+S.totSc.toLocaleString());}
 
   /* Rank animasyonu — 1sn sonra başlat */
-  setTimeout(()=>showRankAnim(oldRank, rank, lbEntries, S.user), 1000);
+  setTimeout(async()=>{
+    await showRankAnim(oldRank, rank, lbEntries, S.user);
+    try{localStorage.setItem('karpuz_lastrank_'+S.user, rank);}catch(e){}
+  }, 1000);
 
   /* Level ödülü ver */
   const _rn=_lang||'tr';
