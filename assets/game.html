@@ -3574,10 +3574,15 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
   const lbl    =document.getElementById('rank-anim-league');
   if(!overlay||!list||!counter||!msg)return;
 
-  if(lbl)lbl.textContent=_lang==='en'?'CHAMPIONS LEAGUE':_lang==='ru'?'\u041b\u0418\u0413\u0410 \u0427\u0415\u041c\u041f\u0418\u041e\u041d\u041e\u0412':_lang==='ar'?'\u062f\u0648\u0631\u064a \u0627\u0644\u0623\u0628\u0637\u0627\u043b':'\u015eAMP\u0130YONLAR L\u0130G\u0130';
+  if(lbl)lbl.textContent=_lang==='en'?'CHAMPIONS LEAGUE'
+    :_lang==='ru'?'\u041b\u0418\u0413\u0410 \u0427\u0415\u041c\u041f\u0418\u041e\u041d\u041e\u0412'
+    :_lang==='ar'?'\u062f\u0648\u0631\u064a \u0627\u0644\u0623\u0628\u0637\u0627\u0644'
+    :'\u015eAMP\u0130YONLAR L\u0130G\u0130';
 
   const getEntry=(rank)=>rank>=1&&rank<=entries.length?entries[rank-1]:null;
   const me=entries.find(e=>e.name===playerName)||{name:playerName,score:S.totSc||0};
+  const improved=newRank<oldRank;
+  const diff=improved?oldRank-newRank:0;
 
   const makeRow=(rank,entry,isMe)=>{
     const e=isMe?me:(entry||null);
@@ -3591,8 +3596,12 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
     '</div>';
   };
 
-  const improved=newRank<oldRank;
-  const diff=improved?oldRank-newRank:0;
+  const showRows=(centerRank)=>
+    makeRow(centerRank-2,getEntry(centerRank-2),false)+
+    makeRow(centerRank-1,getEntry(centerRank-1),false)+
+    makeRow(centerRank,  getEntry(centerRank),  true)+
+    makeRow(centerRank+1,getEntry(centerRank+1),false)+
+    makeRow(centerRank+2,getEntry(centerRank+2),false);
 
   overlay.style.opacity='0';
   overlay.style.display='flex';
@@ -3601,62 +3610,58 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
 
   if(!improved){
     counter.textContent='#'+newRank;
-    list.innerHTML=makeRow(newRank-2,getEntry(newRank-2),false)+makeRow(newRank-1,getEntry(newRank-1),false)+makeRow(newRank,getEntry(newRank),true)+makeRow(newRank+1,getEntry(newRank+1),false)+makeRow(newRank+2,getEntry(newRank+2),false);
+    list.style.opacity='1'; list.style.transition='';
+    list.innerHTML=showRows(newRank);
     const meEl=list.querySelector('.ra-me');
     if(meEl)meEl.style.animation='raFadeIn .4s ease forwards, raPulse 1.2s ease .4s infinite';
     await new Promise(r=>setTimeout(r,600));
-    const unchanged=oldRank>0;
-    msg.textContent=unchanged?(_lang==='en'?'\uD83D\uDCCC Rank unchanged':_lang==='ru'?'\uD83D\uDCCC \u041c\u0435\u0441\u0442\u043e \u043d\u0435 \u0438\u0437\u043c\u0435\u043d\u0438\u043b\u043e\u0441\u044c':_lang==='ar'?'\uD83D\uDCCC \u0627\u043b\u043c\u0440\u043a\u0632 \u043b\u043c \u064a\u062a\u063a\u064a\u0631':'\uD83D\uDCCC S\u0131ra de\u011Fi\u015Fmedi')
+    const txt=oldRank>0
+      ?(_lang==='en'?'\uD83D\uDCCC Rank unchanged':_lang==='ru'?'\uD83D\uDCCC \u041c\u0435\u0441\u0442\u043e \u043d\u0435 \u0438\u0437\u043c\u0435\u043d\u0438\u043b\u043e\u0441\u044c':_lang==='ar'?'\uD83D\uDCCC \u0627\u0644\u0645\u0631\u0643\u0632 \u0644\u0645 \u064a\u062a\u063a\u064a\u0631':'\uD83D\uDCCC S\u0131ra de\u011Fi\u015Fmedi')
       :(_lang==='en'?'\uD83C\uDF89 Welcome to the league!':_lang==='ru'?'\uD83C\uDF89 \u0414\u043e\u0431\u0440\u043e \u043f\u043e\u0436\u0430\u043b\u043e\u0432\u0430\u0442\u044c!':_lang==='ar'?'\uD83C\uDF89 \u0645\u0631\u062d\u0628\u0627!':'\uD83C\uDF89 Ligaya ho\u015F geldin!');
-    msg.style.opacity='1';
+    msg.textContent=txt; msg.style.opacity='1';
     await new Promise(r=>setTimeout(r,2200));
   } else {
-    /* === UÇUŞ ANİMASYONU === */
-    /* Faz 1: Başlangıç pozisyonu göster */
+    /* ── Faz 1: Kalkış pozisyonu ── */
     counter.textContent='#'+oldRank;
-    list.innerHTML=makeRow(oldRank-2,getEntry(oldRank-2),false)+makeRow(oldRank-1,getEntry(oldRank-1),false)+makeRow(oldRank,getEntry(oldRank),true)+makeRow(oldRank+1,getEntry(oldRank+1),false)+makeRow(oldRank+2,getEntry(oldRank+2),false);
-    list.style.opacity='1'; list.style.transform='';
-    await new Promise(r=>setTimeout(r,1200));
+    list.style.opacity='1'; list.style.transition='';
+    list.innerHTML=showRows(oldRank);
+    await new Promise(r=>setTimeout(r,1000));
 
-    /* Faz 2: Kaydırmalı uçuş — geçilen kişileri göster */
-    /* Kaç adım göstereceğiz? Max 6, diff büyükse atla */
-    const steps=Math.min(diff,6);
-    const stepSize=Math.ceil(diff/steps);
-    const stepDelay=Math.max(160, Math.min(400, 2000/steps));
+    /* ── Faz 2: raFlyUp — "me" satırı uçar, sayaç easing ile geri sayar ── */
+    const meRow=list.querySelector('.ra-me');
+    if(meRow) meRow.style.animation='raFlyUp 1s ease forwards';
 
-    for(let s=1;s<=steps;s++){
-      const curRank=Math.max(newRank, oldRank-s*stepSize);
-      counter.textContent='#'+curRank;
-      /* Liste kayar: içerik güncelle, kayma efekti */
-      list.style.transition='transform .12s ease, opacity .12s ease';
-      list.style.transform='translateY(-16px)';
-      list.style.opacity='0.4';
-      await new Promise(r=>setTimeout(r,120));
-      list.innerHTML=makeRow(curRank-2,getEntry(curRank-2),false)+makeRow(curRank-1,getEntry(curRank-1),false)+makeRow(curRank,getEntry(curRank),true)+makeRow(curRank+1,getEntry(curRank+1),false)+makeRow(curRank+2,getEntry(curRank+2),false);
-      list.style.transform='translateY(10px)';
-      list.style.opacity='0.8';
-      await new Promise(r=>setTimeout(r,30));
-      list.style.transform='translateY(0)';
-      list.style.opacity='1';
-      if(curRank<=newRank)break;
-      await new Promise(r=>setTimeout(r,stepDelay));
-    }
-    list.style.transition='';
+    /* Easing ile sayaç */
+    const dur=Math.min(1600, diff*80+600);
+    const t0=performance.now();
+    await new Promise(resolve=>{
+      const tick=(now)=>{
+        const p=Math.min((now-t0)/dur,1);
+        const ease=1-Math.pow(1-p,3);
+        counter.textContent='#'+Math.round(oldRank-(oldRank-newRank)*ease);
+        if(p<1) requestAnimationFrame(tick); else resolve();
+      };
+      requestAnimationFrame(tick);
+    });
 
-    /* Faz 3: Varış — final pozisyon vurgu */
+    /* ── Faz 3: Varış pozisyonu — fade in ── */
+    list.style.transition='opacity .3s';
+    list.style.opacity='0';
+    await new Promise(r=>setTimeout(r,300));
     counter.textContent='#'+newRank;
-    list.innerHTML=makeRow(newRank-2,getEntry(newRank-2),false)+makeRow(newRank-1,getEntry(newRank-1),false)+makeRow(newRank,getEntry(newRank),true)+makeRow(newRank+1,getEntry(newRank+1),false)+makeRow(newRank+2,getEntry(newRank+2),false);
+    list.innerHTML=showRows(newRank);
+    list.style.opacity='1';
     const newMe=list.querySelector('.ra-me');
-    if(newMe)newMe.style.animation='raFadeIn .4s ease forwards, raPulse 1s ease .4s infinite';
+    if(newMe) newMe.style.animation='raFadeIn .5s ease forwards, raPulse 1s ease .5s infinite';
+    list.style.transition='';
     await new Promise(r=>setTimeout(r,500));
 
-    /* Faz 4: Mesaj */
+    /* ── Faz 4: Mesaj ── */
     const riseMsg=_lang==='en'?('\u2B06 '+diff+' ranks up! \uD83D\uDE80')
       :_lang==='ru'?('\u2B06 +'+diff+' \u043f\u043e\u0437\u0438\u0446\u0438\u0439! \uD83D\uDE80')
-      :_lang==='ar'?('\u2B06 \u0627\u0631\u062a\u0641\u0639\u062a '+diff+' \u0645\u0631\u0430\u043a\u0632! \uD83D\uDE80')
+      :_lang==='ar'?('\u2B06 \u0627\u0631\u062a\u0641\u0639\u062a '+diff+' \u0645\u0440\u0430\u043a\u0437! \uD83D\uDE80')
       :('\u2191 '+diff+' s\u0131ra y\u00FCkseldin! \uD83D\uDE80');
-    msg.textContent=riseMsg;
-    msg.style.opacity='1';
+    msg.textContent=riseMsg; msg.style.opacity='1';
     await new Promise(r=>setTimeout(r,1800));
   }
 
@@ -3666,7 +3671,7 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
   overlay.style.display='none';
   overlay.style.transition='';
   msg.style.opacity='0';
-  list.style.transform=''; list.style.transition='';
+  list.style.transition=''; list.style.opacity='1';
 }
 
 async function winLevel(){
