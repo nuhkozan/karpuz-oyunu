@@ -127,7 +127,7 @@ canvas { display:block; cursor:crosshair; touch-action:none; border-radius:14px;
 .ra-me .ra-score-txt{color:#f5a623;}
 .ra-empty{height:52px;background:rgba(255,255,255,.03);border-radius:14px;margin:5px 0;}
 #rank-anim-list{position:relative;overflow:visible;}
-@keyframes raFlyOver{0%{transform:translateY(0) scale(1);opacity:1;}20%{transform:translateY(-20px) scale(1.05);opacity:1;}80%{transform:translateY(-260px) scale(1.08);opacity:.5;}100%{transform:translateY(-300px) scale(1.05);opacity:0;}}
+@keyframes raFlyOver{0%{transform:translateY(0) scale(1);opacity:1;z-index:50;}15%{transform:translateY(-25px) scale(1.07);opacity:1;z-index:50;}85%{transform:translateY(-320px) scale(1.1);opacity:.3;z-index:50;}100%{transform:translateY(-360px) scale(1.05);opacity:0;z-index:50;}}
 @keyframes raPulse{0%,100%{box-shadow:0 0 0 0 rgba(245,166,35,.5);}50%{box-shadow:0 0 0 8px rgba(245,166,35,0);}}
 @keyframes raFadeIn{from{opacity:0;transform:translateY(20px) scale(.96);}to{opacity:1;transform:translateY(0) scale(1);}}
 @keyframes canvasGlow{
@@ -3628,16 +3628,13 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
     list.innerHTML=showRows(oldRank);
     await new Promise(r=>setTimeout(r,1000));
 
-    /* ── Faz 2: raFlyOver — "me" satırı üsttekilerin ÜSTÜNDEN uçar ── */
+    /* ── Faz 2: Uçuş — "me" satırı yukarı uçar, sayaç geri sayar ── */
     const meRow=list.querySelector('.ra-me');
     if(meRow){
-      meRow.style.position='absolute';
-      meRow.style.width='100%';
-      meRow.style.zIndex='50';
-      meRow.style.animation='raFlyOver 1.2s ease forwards';
+      meRow.style.animation='raFlyOver 1.4s ease forwards';
     }
 
-    /* Easing ile sayaç */
+    /* Sayaç ile eş zamanlı — fark ne kadar büyükse o kadar sürer */
     const dur=Math.min(1800, diff*90+700);
     const t0=performance.now();
     await new Promise(resolve=>{
