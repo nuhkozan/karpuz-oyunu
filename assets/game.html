@@ -2590,13 +2590,13 @@ function physics(dt){
     f.vy+=c.gravity*dt;f.y+=f.vy*dt;f.age+=dt;
     /* Yatay sönüm — titreşim yok ama sürtünme var */
     if(true){
-      f.vx*=0.85; /* yatay sönüm */
+      f.vx*=0.90; /* yatay sönüm */
       f.vy*=0.992;
-      if(Math.abs(f.vx)<1.0)f.vx=0; /* dikey hafif sönüm — sonsuz zıplamayı önler */
+      if(Math.abs(f.vx)<0.8)f.vx=0; /* dikey hafif sönüm — sonsuz zıplamayı önler */
       if(Math.abs(f.vx)<0.5) f.vx=0;
     }
     f.x+=f.vx*dt;
-    if(f.y+f.r>c.floor){f.y=c.floor-f.r;f.vy=-Math.abs(f.vy)*.18;f.vx*=.62;if(Math.abs(f.vy)<22)f.vy=0;}
+    if(f.y+f.r>c.floor){f.y=c.floor-f.r;f.vy=-Math.abs(f.vy)*.20;f.vx*=.68;if(Math.abs(f.vy)<20)f.vy=0;}
     if(f.x-f.r<c.wL){f.x=c.wL+f.r;f.vx=Math.abs(f.vx)*.18;}
     if(f.x+f.r>c.wR){f.x=c.wR-f.r;f.vx=-Math.abs(f.vx)*.18;}
   }
@@ -2646,14 +2646,19 @@ function physics(dt){
         continue outer;
       }
       const nx=dx/d,ny=dy/d,ov=(md-d)*.5;
-      /* Pozisyon düzeltme — minimal, titreşim önler */
-      const corr=Math.min(ov*.30, 4.0);
-      a.x-=nx*corr;a.y-=ny*corr;b.x+=nx*corr;b.y+=ny*corr;
+      /* Pozisyon düzeltme: slop ile (küçük overlap tolere et, büyükleri düzelt) */
+      const slop=0.4, bias=0.45;
+      const corr=Math.max(0, ov-slop)*bias;
+      a.x-=nx*corr; a.y-=ny*corr; b.x+=nx*corr; b.y+=ny*corr;
+      /* Velocity impulse: yaklaşma varsa momentum transfer et */
       const rv=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;
-      /* Impulse sadece belirgin yaklaşmada */
-      if(rv<-0.2){const im=rv*.28;a.vx+=im*nx;a.vy+=im*ny;b.vx-=im*nx;b.vy-=im*ny;}
-      /* Sıkışma: sadece çok büyük overlap ise hafif sönüm */
-      if(ov>6){const damp=0.88;a.vx*=damp;a.vy*=damp;b.vx*=damp;b.vy*=damp;}
+      if(rv<0){
+        const im=rv*.35;
+        a.vx+=im*nx; a.vy+=im*ny; b.vx-=im*nx; b.vy-=im*ny;
+        /* Resting damping: düşük hızda sıkışmayı önle */
+        const spd=Math.abs(rv);
+        if(spd<3){const d=0.82; a.vx*=d;a.vy*=d;b.vx*=d;b.vy*=d;}
+      }
     }
   }
   S.fruits=S.fruits.filter(f=>!f.merged);
