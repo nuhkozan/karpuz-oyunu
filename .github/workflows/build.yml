@@ -12,15 +12,25 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '17'
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: gradle-
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.29.0'
           channel: 'stable'
-          cache: false
+          cache: true
       - name: Setup
         run: |
           flutter create --org com.nuhkozan --project-name karpuz tmp_project
           rm -rf android && cp -r tmp_project/android . && rm -rf tmp_project
+          # Gradle wrapper Ã¶nbellek iÃ§in bin (all yerine) kullan
+          sed -i 's/-all\.zip/-bin.zip/g' android/gradle/wrapper/gradle-wrapper.properties
           perl -i -pe 's/targetSdk = flutter\.targetSdkVersion/targetSdk = 35/' android/app/build.gradle.kts
           perl -i -pe 's/compileSdk = flutter\.compileSdkVersion/compileSdk = 35/' android/app/build.gradle.kts
           perl -i -pe 's/ndkVersion = "[^"]+"/ndkVersion = "27.0.12077973"/' android/app/build.gradle.kts
