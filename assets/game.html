@@ -2646,12 +2646,14 @@ function physics(dt){
         continue outer;
       }
       const nx=dx/d,ny=dy/d,ov=(md-d)*.5;
-      /* Pozisyon düzeltme: küçük overlap ise hafif it, büyükse daha fazla */
-      const corr=Math.min(ov*.28, 3.0);
+      /* Pozisyon düzeltme — minimal, titreşim önler */
+      const corr=Math.min(ov*.12, 1.2);
       a.x-=nx*corr;a.y-=ny*corr;b.x+=nx*corr;b.y+=ny*corr;
       const rv=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;
-      /* Sadece birbirine yaklaşıyorlarsa ve hız yeterliyse impulse uygula */
-      if(rv<-0.5){const im=rv*.10;a.vx+=im*nx;a.vy+=im*ny;b.vx-=im*nx;b.vy-=im*ny;}
+      /* Impulse sadece belirgin yaklaşmada */
+      if(rv<-1.0){const im=rv*.08;a.vx+=im*nx;a.vy+=im*ny;b.vx-=im*nx;b.vy-=im*ny;}
+      /* Sıkışma damping: overlap büyükse hız sön */
+      if(ov>2){const damp=0.85;a.vx*=damp;a.vy*=damp;b.vx*=damp;b.vy*=damp;}
     }
   }
   S.fruits=S.fruits.filter(f=>!f.merged);
@@ -3682,7 +3684,7 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
 
     /* Faz 2: Rulet — me sabit ortada, sayaç + etraf kayar */
     var totalSteps=Math.min(10,diff);
-    var stepDur=Math.max(160, Math.min(280, 1800/totalSteps));
+    var stepDur=Math.max(130, Math.min(220, 1500/totalSteps));
 
     for(var step=1;step<=totalSteps;step++){
       var progress=step/totalSteps;
@@ -3716,7 +3718,7 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
       :_lang==='ar'?('\u2b06 \u0627\u0440\u062a\u0641\u0639\u062a '+diff+' \u0645\u0440\u0627\u043a\u0632! \uD83D\uDE80')
       :('\u2191 '+diff+' s\u0131ra y\u00FCkseldin! \uD83D\uDE80');
     msg.textContent=riseMsg; msg.style.opacity='1';
-    await new Promise(r=>setTimeout(r,1000));
+    await new Promise(r=>setTimeout(r,800));
   }
 
   overlay.style.transition='opacity .3s';
@@ -3768,20 +3770,7 @@ async function winLevel(){
   if(statsEl) statsEl.textContent=lvCompl[_lang]||lvCompl.tr;
   ov.style.display = 'flex';
   requestAnimationFrame(()=>{ document.getElementById('lv-bar').style.width='100%'; });
-
   if(isNewRecord){const _rk={tr:'🏆 YENİ REKOR! ',en:'🏆 NEW RECORD! ',ru:'🏆 НОВЫЙ РЕКОРД! ',ar:'🏆 رقم قياسي! '};showToast((_rk[_lang]||_rk.tr)+S.totSc.toLocaleString());}
-
-  /* Rank animasyonu, badge ve reklam — sırayla */
-  (async()=>{
-    await new Promise(r=>setTimeout(r,800));
-    await showRankAnim(oldRank, rank, lbEntries, S.user);
-    try{localStorage.setItem('karpuz_lastrank_'+S.user, rank);}catch(e){}
-    await new Promise(r=>setTimeout(r,2000)); /* level overlay'i oku */
-    ov.style.display='none';
-    await checkBadgeUnlock(prevLv, S.lv);
-    if(isAdLevel(prevLv) && !isAdFree()) await showAdPromise();
-    beginLevel();
-  })();
 
   /* Level ödülü ver */
   const _rn=_lang||'tr';
@@ -3794,28 +3783,38 @@ async function winLevel(){
     {type:'luck',   emoji:'🔮',name:{tr:'Şans',en:'Luck',ru:'Удача',ar:'حظ'}[_rn]||'Şans'},
   ];
   const ri=rewardTypes[(S.lv-1)%6];
-  /* Nadir ödül — her 10 levelda 1 ekstra, normal levelda sadece 1 */
   const rAmt=S.lv%10===0?2:1;
   PU.add(ri.type,rAmt);
   const rvEl=document.getElementById('lv-reward');
   const rvTxt=document.getElementById('lv-reward-txt');
-  if(rvEl&&rvTxt){
-    rvTxt.textContent=`${ri.emoji} +${rAmt} ${ri.name}`;
-    rvEl.style.display='block';
-  }
-  /* Meydan okuma durumu göster */
+  if(rvEl&&rvTxt){ rvTxt.textContent=`${ri.emoji} +${rAmt} ${ri.name}`; rvEl.style.display='block'; }
   setTimeout(()=>showChallengeStatus(),500);
 
+  /* prevLv IIFE'den ÖNCE tanımla */
   const prevLv=S.lv;
   S.lv = nextLvNum;
-  checkBadgeUnlock(prevLv, S.lv);
   missionProgress('m_levels',1);
   missionProgress('m_levels2',1);
   clearSavedGame();
-  /* Hemen yeni level state'i kaydet — araya çıkılırsa devam etsin */
   try{saveGameState();}catch(e){}
 
+  /* SIRAYLA: overlay(2sn) → rank anim → overlay kapat → badge → reklam → beginLevel */
+  (async()=>{
+    try{
+      await new Promise(r=>setTimeout(r,2000));     /* 1. Overlay okunsin */
+      await showRankAnim(oldRank, rank, lbEntries, S.user); /* 2. Rank animasyonu */
+      try{localStorage.setItem('karpuz_lastrank_'+S.user, rank);}catch(e){}
+      ov.style.display='none';                       /* 3. Overlay kapat */
+      await checkBadgeUnlock(prevLv, S.lv);          /* 4. Badge */
+      if(isAdLevel(prevLv)&&!isAdFree()) await showAdPromise(); /* 5. Reklam */
+      beginLevel();                                  /* 6. Yeni level */
+    }catch(err){
+      ov.style.display='none';
+      beginLevel();
+    }
+  })();
 }
+
 
 async function killGame(rsn){
   if(S.dead)return; stop();
