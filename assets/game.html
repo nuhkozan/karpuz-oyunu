@@ -3577,7 +3577,7 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
 
   if(lbl)lbl.textContent=_lang==='en'?'CHAMPIONS LEAGUE'
     :_lang==='ru'?'\u041b\u0418\u0413\u0410 \u0427\u0415\u041c\u041f\u0418\u041e\u041d\u041e\u0412'
-    :_lang==='ar'?'\u062f\u0648\u0631\u064a \u0627\u043b\u0623\u0628\u0637\u0627\u043b'
+    :_lang==='ar'?'\u062f\u0648\u0631\u064a \u0627\u0644\u0623\u0628\u0637\u0627\u0644'
     :'\u015eAMP\u0130YONLAR L\u0130G\u0130';
 
   const getEntry=(rank)=>rank>=1&&rank<=entries.length?entries[rank-1]:null;
@@ -3585,27 +3585,59 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
   const improved=newRank<oldRank;
   const diff=improved?oldRank-newRank:0;
 
-  /* Satır oluşturucu */
-  const makeRow=(rank,entry,isMe,blurPx)=>{
-    const fe=isMe?me:(entry||null);
-    if(!fe&&!isMe)return'<div style="height:52px;margin:4px 0;border-radius:14px;background:rgba(255,255,255,.04)"></div>';
-    const e=fe||me;
+  const makeMeRow=(rank)=>{
     const num=rank===1?'\uD83E\uDD47':rank===2?'\uD83E\uDD48':rank===3?'\uD83E\uDD49':'#'+rank;
-    const bs=blurPx?('filter:blur('+blurPx+'px);opacity:'+(blurPx>2?0.35:0.65)+';'):'';
-    return'<div class="ra-row'+(isMe?' ra-me':'')+'" style="'+bs+'">'+
+    return'<div class="ra-row ra-me" id="ra-me-fixed">'+
       '<span class="ra-rank-num">'+num+'</span>'+
-      '<span class="ra-name-txt">'+e.name+'</span>'+
-      '<span class="ra-score-txt">'+((e.score||0).toLocaleString())+'</span>'+
+      '<span class="ra-name-txt">'+me.name+'</span>'+
+      '<span class="ra-score-txt">'+((me.score||0).toLocaleString())+'</span>'+
     '</div>';
   };
 
-  /* 5 satır — me her zaman ortada sabit */
-  const renderFrame=(aroundRank,blurPx,final)=>{
-    return makeRow(aroundRank-2,getEntry(aroundRank-2),false,final?0:blurPx)
-      +makeRow(aroundRank-1,getEntry(aroundRank-1),false,final?0:blurPx)
-      +makeRow(newRank,null,true,0)   /* ME — her zaman ortada, hiç blur yok */
-      +makeRow(aroundRank+1,getEntry(aroundRank+1),false,final?0:blurPx)
-      +makeRow(aroundRank+2,getEntry(aroundRank+2),false,final?0:blurPx);
+  const makeSurroundRow=(rank,entry,blur)=>{
+    if(!entry)return'<div style="height:52px;margin:4px 0;border-radius:14px;background:rgba(255,255,255,.04)"></div>';
+    const num=rank===1?'\uD83E\uDD47':rank===2?'\uD83E\uDD48':rank===3?'\uD83E\uDD49':'#'+rank;
+    const bs=blur?'filter:blur(3.5px);opacity:0.38;':'';
+    return'<div class="ra-row" style="'+bs+'">'+
+      '<span class="ra-rank-num">'+num+'</span>'+
+      '<span class="ra-name-txt">'+entry.name+'</span>'+
+      '<span class="ra-score-txt">'+((entry.score||0).toLocaleString())+'</span>'+
+    '</div>';
+  };
+
+  /* Liste oluştur: üst2, ME, alt2 */
+  const buildList=(aroundRank,meRank,blur,slideDir)=>{
+    const sd=slideDir?'transform:translateY('+slideDir+'px);opacity:0;':'';
+    return'<div class="ra-surround-wrap" style="'+sd+'">'+
+      makeSurroundRow(aroundRank-2,getEntry(aroundRank-2),blur)+
+      makeSurroundRow(aroundRank-1,getEntry(aroundRank-1),blur)+
+    '</div>'+
+    makeMeRow(meRank)+
+    '<div class="ra-surround-wrap" style="'+sd+'">'+
+      makeSurroundRow(aroundRank+1,getEntry(aroundRank+1),blur)+
+      makeSurroundRow(aroundRank+2,getEntry(aroundRank+2),blur)+
+    '</div>';
+  };
+
+  /* Yumuşak geçiş: mevcut satırlar yukarı kayar, yenileri alttan gelir */
+  const smoothTransition=async(fromRank,toRank,meRank,blur)=>{
+    const wraps=list.querySelectorAll('.ra-surround-wrap');
+    wraps.forEach(w=>{
+      w.style.transition='transform 0.22s ease, opacity 0.22s ease';
+      w.style.transform='translateY(-48px)';
+      w.style.opacity='0';
+    });
+    await new Promise(r=>setTimeout(r,220));
+    /* Yeni içerik — alttan girer */
+    list.innerHTML=buildList(toRank,meRank,blur,48);
+    await new Promise(r=>setTimeout(r,10));
+    const newWraps=list.querySelectorAll('.ra-surround-wrap');
+    newWraps.forEach(w=>{
+      w.style.transition='transform 0.22s ease, opacity 0.22s ease';
+      w.style.transform='translateY(0)';
+      w.style.opacity='1';
+    });
+    await new Promise(r=>setTimeout(r,220));
   };
 
   overlay.style.opacity='0';
@@ -3615,63 +3647,60 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
 
   if(!improved){
     counter.textContent='#'+newRank;
-    list.style.opacity='1'; list.style.transition='';
-    list.innerHTML=renderFrame(newRank,0,true);
-    var meEl=list.querySelector('.ra-me');
+    list.innerHTML=buildList(newRank,newRank,false,0);
+    var meEl=document.getElementById('ra-me-fixed');
     if(meEl)meEl.style.animation='raFadeIn .4s ease forwards, raPulse 1.2s ease .4s infinite';
     await new Promise(r=>setTimeout(r,600));
     var txt=oldRank>0
-      ?(_lang==='en'?'\uD83D\uDCCC Rank unchanged':_lang==='ru'?'\uD83D\uDCCC \u041c\u0435\u0441\u0442\u043e \u043d\u0435 \u0438\u0437\u043c\u0435\u043d\u0438\u043b\u043e\u0441\u044c':_lang==='ar'?'\uD83D\uDCCC \u0627\u0644\u0645\u0631\u0643\u0632 \u0644\u0645 \u064a\u062a\u063a\u064a\u0631':'\uD83D\uDCCC S\u0131ra de\u011fi\u015fmedi')
+      ?(_lang==='en'?'\uD83D\uDCCC Rank unchanged':_lang==='ru'?'\uD83D\uDCCC \u041c\u0435\u0441\u0442\u043e \u043d\u0435 \u0438\u0437\u043c\u0435\u043d\u0438\u043b\u043e\u0441\u044c':_lang==='ar'?'\uD83D\uDCCC \u0627\u043b\u0645\u0631\u0643\u0632 \u0644\u0645 \u064a\u062a\u063a\u064a\u0631':'\uD83D\uDCCC S\u0131ra de\u011fi\u015fmedi')
       :(_lang==='en'?'\uD83C\uDF89 Welcome!':_lang==='ru'?'\uD83C\uDF89 \u0414\u043e\u0431\u0440\u043e \u043f\u043e\u0436\u0430\u043b\u043e\u0432\u0430\u0442\u044c!':_lang==='ar'?'\uD83C\uDF89 \u0645\u0631\u062d\u0628\u0627!':'\uD83C\uDF89 Ligaya ho\u015f geldin!');
     msg.textContent=txt; msg.style.opacity='1';
     await new Promise(r=>setTimeout(r,2200));
 
   } else {
-    /* ── SLOT MAKİNESİ UÇUŞU ── */
+    /* ── RULET ANIMASYONU ── */
 
-    /* Faz 1: Kalkış noktası (1.2sn) */
+    /* Faz 1: Kalkış (1.2sn) — me satırı oldRank numarasıyla */
     counter.textContent='#'+oldRank;
-    list.style.opacity='1'; list.style.transition='';
-    list.innerHTML=renderFrame(oldRank,0,false);
-    /* Me satırı kalkış yerinde gösterilir */
-    list.querySelectorAll('.ra-row:not(.ra-me)')[0] &&
-      (list.querySelectorAll('.ra-row:not(.ra-me)').forEach(r=>{r.style.filter='none';r.style.opacity='1';}));
-    /* Kalkış yerindeki me satırını özel göster */
-    var meStart=list.querySelector('.ra-me');
-    if(meStart){meStart.style.animation='raPulse 0.8s ease infinite';}
+    list.innerHTML=buildList(oldRank,oldRank,false,0);
+    var meS=document.getElementById('ra-me-fixed');
+    if(meS)meS.style.animation='raPulse 0.8s ease infinite';
     await new Promise(r=>setTimeout(r,1200));
 
-    /* Faz 2: Uçuş — slot makinesi (me sabit ortada, etraf kayar) */
+    /* Faz 2: Rulet — me sabit ortada, sayaç + etraf kayar */
     var totalSteps=Math.min(10,diff);
-    var stepTime=Math.max(180, Math.min(350, 2000/totalSteps));
+    var stepDur=Math.max(260, Math.min(460, 2800/totalSteps));
 
     for(var step=1;step<=totalSteps;step++){
       var progress=step/totalSteps;
-      var ease=1-Math.pow(1-progress,2);
-      var showRank=Math.round(oldRank-(oldRank-newRank)*ease);
-      counter.textContent='#'+showRank;
-
-      /* Hızlı geçiş: blur ile etraftaki isimleri güncelle */
-      list.style.transition='opacity .08s';
-      list.style.opacity='0';
-      await new Promise(r=>setTimeout(r,80));
-      list.innerHTML=renderFrame(showRank,step<totalSteps?4:0,step===totalSteps);
-      list.style.opacity='1';
-      if(step===totalSteps) break;
-      await new Promise(r=>setTimeout(r,stepTime-80));
+      var ease=progress<0.5?(2*progress*progress):(1-Math.pow(-2*progress+2,2)/2);
+      var curRank=Math.round(oldRank-(oldRank-newRank)*ease);
+      counter.textContent='#'+curRank;
+      /* Me satırı numarası da güncellenir */
+      var meFixed=document.getElementById('ra-me-fixed');
+      if(meFixed){
+        var rn=curRank===1?'\uD83E\uDD47':curRank===2?'\uD83E\uDD48':curRank===3?'\uD83E\uDD49':'#'+curRank;
+        meFixed.querySelector('.ra-rank-num').textContent=rn;
+      }
+      var isFinal=step===totalSteps;
+      await smoothTransition(
+        Math.round(oldRank-(oldRank-newRank)*((step-1)/totalSteps)),
+        curRank, curRank, !isFinal
+      );
+      if(isFinal)break;
+      await new Promise(r=>setTimeout(r,stepDur-440));
     }
 
     /* Faz 3: Varış vurgu */
     counter.textContent='#'+newRank;
-    list.style.transition='';
-    var newMe=list.querySelector('.ra-me');
-    if(newMe) newMe.style.animation='raFadeIn .4s ease forwards, raPulse 1s ease .4s infinite';
+    var finalMe=document.getElementById('ra-me-fixed');
+    if(finalMe) finalMe.style.animation='raFadeIn .4s ease forwards, raPulse 1s ease .4s infinite';
     await new Promise(r=>setTimeout(r,500));
 
     /* Faz 4: Mesaj */
     var riseMsg=_lang==='en'?('\u2b06 '+diff+' ranks up! \uD83D\uDE80')
       :_lang==='ru'?('\u2b06 +'+diff+' \u043f\u043e\u0437\u0438\u0446\u0438\u0439! \uD83D\uDE80')
-      :_lang==='ar'?('\u2b06 \u0627\u0440\u062a\u0641\u0639\u062a '+diff+' \u0645\u0631\u0627\u0643\u0632! \uD83D\uDE80')
+      :_lang==='ar'?('\u2b06 \u0627\u0440\u062a\u0641\u0639\u062a '+diff+' \u0645\u0440\u0627\u043a\u0632! \uD83D\uDE80')
       :('\u2191 '+diff+' s\u0131ra y\u00FCkseldin! \uD83D\uDE80');
     msg.textContent=riseMsg; msg.style.opacity='1';
     await new Promise(r=>setTimeout(r,1800));
@@ -3683,7 +3712,6 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
   overlay.style.display='none';
   overlay.style.transition='';
   msg.style.opacity='0';
-  list.style.transition=''; list.style.opacity='1';
 }
 
 async function winLevel(){
