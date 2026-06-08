@@ -3622,14 +3622,15 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
   /* Yumuşak geçiş: mevcut satırlar yukarı kayar, yenileri alttan gelir */
   const smoothTransition=async(fromRank,toRank,meRank,blur)=>{
     const wraps=list.querySelectorAll('.ra-surround-wrap');
+    /* Mevcut satırlar AŞAĞI kayar (sıra iyileşince rakamlar yukarıdan geliyor) */
     wraps.forEach(w=>{
       w.style.transition='transform 0.22s ease, opacity 0.22s ease';
-      w.style.transform='translateY(-48px)';
+      w.style.transform='translateY(48px)';
       w.style.opacity='0';
     });
     await new Promise(r=>setTimeout(r,220));
-    /* Yeni içerik — alttan girer */
-    list.innerHTML=buildList(toRank,meRank,blur,48);
+    /* Yeni içerik — YUKARIDAN girer */
+    list.innerHTML=buildList(toRank,meRank,blur,-48);
     await new Promise(r=>setTimeout(r,10));
     const newWraps=list.querySelectorAll('.ra-surround-wrap');
     newWraps.forEach(w=>{
