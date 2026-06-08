@@ -2590,13 +2590,13 @@ function physics(dt){
     f.vy+=c.gravity*dt;f.y+=f.vy*dt;f.age+=dt;
     /* Yatay sönüm — titreşim yok ama sürtünme var */
     if(true){
-      f.vx*=0.72; /* yatay sönüm */
+      f.vx*=0.85; /* yatay sönüm */
       f.vy*=0.992;
-      if(Math.abs(f.vx)<2.5)f.vx=0; /* dikey hafif sönüm — sonsuz zıplamayı önler */
+      if(Math.abs(f.vx)<1.0)f.vx=0; /* dikey hafif sönüm — sonsuz zıplamayı önler */
       if(Math.abs(f.vx)<0.5) f.vx=0;
     }
     f.x+=f.vx*dt;
-    if(f.y+f.r>c.floor){f.y=c.floor-f.r;f.vy=-Math.abs(f.vy)*.12;f.vx*=.50;if(Math.abs(f.vy)<32)f.vy=0;}
+    if(f.y+f.r>c.floor){f.y=c.floor-f.r;f.vy=-Math.abs(f.vy)*.18;f.vx*=.62;if(Math.abs(f.vy)<22)f.vy=0;}
     if(f.x-f.r<c.wL){f.x=c.wL+f.r;f.vx=Math.abs(f.vx)*.18;}
     if(f.x+f.r>c.wR){f.x=c.wR-f.r;f.vx=-Math.abs(f.vx)*.18;}
   }
@@ -2647,13 +2647,13 @@ function physics(dt){
       }
       const nx=dx/d,ny=dy/d,ov=(md-d)*.5;
       /* Pozisyon düzeltme — minimal, titreşim önler */
-      const corr=Math.min(ov*.08, 0.8);
+      const corr=Math.min(ov*.30, 4.0);
       a.x-=nx*corr;a.y-=ny*corr;b.x+=nx*corr;b.y+=ny*corr;
       const rv=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;
       /* Impulse sadece belirgin yaklaşmada */
-      if(rv<-1.0){const im=rv*.08;a.vx+=im*nx;a.vy+=im*ny;b.vx-=im*nx;b.vy-=im*ny;}
-      /* Sıkışma: overlap büyükse güçlü sönüm */
-      if(ov>1.5){const damp=0.72;a.vx*=damp;a.vy*=damp;b.vx*=damp;b.vy*=damp;}
+      if(rv<-0.2){const im=rv*.28;a.vx+=im*nx;a.vy+=im*ny;b.vx-=im*nx;b.vy-=im*ny;}
+      /* Sıkışma: sadece çok büyük overlap ise hafif sönüm */
+      if(ov>6){const damp=0.88;a.vx*=damp;a.vy*=damp;b.vx*=damp;b.vy*=damp;}
     }
   }
   S.fruits=S.fruits.filter(f=>!f.merged);
@@ -3665,7 +3665,7 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
     list.innerHTML=buildList(newRank,newRank,false,0);
     var meEl=document.getElementById('ra-me-fixed');
     if(meEl)meEl.style.animation='raFadeIn .4s ease forwards, raPulse 1.2s ease .4s infinite';
-    await new Promise(r=>setTimeout(r,600));
+    await new Promise(r=>setTimeout(r,200));
     var txt=oldRank>0
       ?(_lang==='en'?'\uD83D\uDCCC Rank unchanged':_lang==='ru'?'\uD83D\uDCCC \u041c\u0435\u0441\u0442\u043e \u043d\u0435 \u0438\u0437\u043c\u0435\u043d\u0438\u043b\u043e\u0441\u044c':_lang==='ar'?'\uD83D\uDCCC \u0627\u043b\u0645\u0631\u0643\u0632 \u0644\u0645 \u064a\u062a\u063a\u064a\u0631':'\uD83D\uDCCC S\u0131ra de\u011fi\u015fmedi')
       :(_lang==='en'?'\uD83C\uDF89 Welcome!':_lang==='ru'?'\uD83C\uDF89 \u0414\u043e\u0431\u0440\u043e \u043f\u043e\u0436\u0430\u043b\u043e\u0432\u0430\u0442\u044c!':_lang==='ar'?'\uD83C\uDF89 \u0645\u0631\u062d\u0628\u0627!':'\uD83C\uDF89 Ligaya ho\u015f geldin!');
@@ -3680,11 +3680,11 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
     list.innerHTML=buildList(oldRank,oldRank,false,0);
     var meS=document.getElementById('ra-me-fixed');
     if(meS)meS.style.animation='raPulse 0.8s ease infinite';
-    await new Promise(r=>setTimeout(r,450));
+    await new Promise(r=>setTimeout(r,300));
 
     /* Faz 2: Rulet — me sabit ortada, sayaç + etraf kayar */
-    var totalSteps=Math.min(10,diff);
-    var stepDur=Math.max(110, Math.min(180, 1200/totalSteps));
+    var totalSteps=Math.min(6,diff);
+    var stepDur=Math.max(90, Math.min(140, 900/totalSteps));
 
     for(var step=1;step<=totalSteps;step++){
       var progress=step/totalSteps;
@@ -3710,7 +3710,7 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
     counter.textContent='#'+newRank;
     var finalMe=document.getElementById('ra-me-fixed');
     if(finalMe) finalMe.style.animation='raFadeIn .4s ease forwards, raPulse 1s ease .4s infinite';
-    await new Promise(r=>setTimeout(r,500));
+    await new Promise(r=>setTimeout(r,200));
 
     /* Faz 4: Mesaj */
     var riseMsg=_lang==='en'?('\u2b06 '+diff+' ranks up! \uD83D\uDE80')
@@ -3718,12 +3718,12 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
       :_lang==='ar'?('\u2b06 \u0627\u0440\u062a\u0641\u0639\u062a '+diff+' \u0645\u0440\u0627\u043a\u0632! \uD83D\uDE80')
       :('\u2191 '+diff+' s\u0131ra y\u00FCkseldin! \uD83D\uDE80');
     msg.textContent=riseMsg; msg.style.opacity='1';
-    await new Promise(r=>setTimeout(r,600));
+    await new Promise(r=>setTimeout(r,500));
   }
 
-  overlay.style.transition='opacity .3s';
+  overlay.style.transition='opacity .2s';
   overlay.style.opacity='0';
-  await new Promise(r=>setTimeout(r,300));
+  await new Promise(r=>setTimeout(r,200));
   overlay.style.display='none';
   overlay.style.transition='';
   msg.style.opacity='0';
