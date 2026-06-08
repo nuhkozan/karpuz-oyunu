@@ -3577,7 +3577,7 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
 
   if(lbl)lbl.textContent=_lang==='en'?'CHAMPIONS LEAGUE'
     :_lang==='ru'?'\u041b\u0418\u0413\u0410 \u0427\u0415\u041c\u041f\u0418\u041e\u041d\u041e\u0412'
-    :_lang==='ar'?'\u062f\u0648\u0631\u064a \u0627\u0644\u0623\u0628\u0637\u0627\u043b'
+    :_lang==='ar'?'\u062f\u0648\u0631\u064a \u0627\u043b\u0623\u0628\u0637\u0627\u043b'
     :'\u015eAMP\u0130YONLAR L\u0130G\u0130';
 
   const getEntry=(rank)=>rank>=1&&rank<=entries.length?entries[rank-1]:null;
@@ -3585,25 +3585,27 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
   const improved=newRank<oldRank;
   const diff=improved?oldRank-newRank:0;
 
-  const makeRow=(rank,entry,isMe,blur)=>{
-    const e=isMe?me:(entry||null);
-    if(!e&&!isMe)return'<div style="height:52px;margin:4px 0;border-radius:14px;background:rgba(255,255,255,.04)"></div>';
-    const fe=e||me;
+  /* Satır oluşturucu */
+  const makeRow=(rank,entry,isMe,blurPx)=>{
+    const fe=isMe?me:(entry||null);
+    if(!fe&&!isMe)return'<div style="height:52px;margin:4px 0;border-radius:14px;background:rgba(255,255,255,.04)"></div>';
+    const e=fe||me;
     const num=rank===1?'\uD83E\uDD47':rank===2?'\uD83E\uDD48':rank===3?'\uD83E\uDD49':'#'+rank;
-    const blurStyle=blur?'filter:blur(3px);opacity:.45;pointer-events:none;':'';
-    return'<div class="ra-row'+(isMe?' ra-me':'')+'" style="'+blurStyle+'">'+
+    const bs=blurPx?('filter:blur('+blurPx+'px);opacity:'+(blurPx>2?0.35:0.65)+';'):'';
+    return'<div class="ra-row'+(isMe?' ra-me':'')+'" style="'+bs+'">'+
       '<span class="ra-rank-num">'+num+'</span>'+
-      '<span class="ra-name-txt">'+fe.name+'</span>'+
-      '<span class="ra-score-txt">'+((fe.score||0).toLocaleString())+'</span>'+
+      '<span class="ra-name-txt">'+e.name+'</span>'+
+      '<span class="ra-score-txt">'+((e.score||0).toLocaleString())+'</span>'+
     '</div>';
   };
 
-  const showRows=(centerRank,blur)=>{
-    var rows='';
-    for(var r=centerRank-2;r<=centerRank+2;r++){
-      rows+=makeRow(r,getEntry(r),r===centerRank,blur);
-    }
-    return rows;
+  /* 5 satır — me her zaman ortada sabit */
+  const renderFrame=(aroundRank,blurPx,final)=>{
+    return makeRow(aroundRank-2,getEntry(aroundRank-2),false,final?0:blurPx)
+      +makeRow(aroundRank-1,getEntry(aroundRank-1),false,final?0:blurPx)
+      +makeRow(newRank,null,true,0)   /* ME — her zaman ortada, hiç blur yok */
+      +makeRow(aroundRank+1,getEntry(aroundRank+1),false,final?0:blurPx)
+      +makeRow(aroundRank+2,getEntry(aroundRank+2),false,final?0:blurPx);
   };
 
   overlay.style.opacity='0';
@@ -3614,74 +3616,62 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
   if(!improved){
     counter.textContent='#'+newRank;
     list.style.opacity='1'; list.style.transition='';
-    list.innerHTML=showRows(newRank,false);
+    list.innerHTML=renderFrame(newRank,0,true);
     var meEl=list.querySelector('.ra-me');
     if(meEl)meEl.style.animation='raFadeIn .4s ease forwards, raPulse 1.2s ease .4s infinite';
     await new Promise(r=>setTimeout(r,600));
     var txt=oldRank>0
-      ?(_lang==='en'?'\uD83D\uDCCC Rank unchanged':_lang==='ru'?'\uD83D\uDCCC \u041c\u0435\u0441\u0442\u043e \u043d\u0435 \u0438\u0437\u043c\u0435\u043d\u0438\u043b\u043e\u0441\u044c':_lang==='ar'?'\uD83D\uDCCC \u0627\u043b\u0645\u0631\u0643\u0632 \u043b\u0645 \u064a\u062a\u063a\u064a\u0631':'\uD83D\uDCCC S\u0131ra de\u011fi\u015fmedi')
-      :(_lang==='en'?'\uD83C\uDF89 Welcome to the league!':_lang==='ru'?'\uD83C\uDF89 \u0414\u043e\u0431\u0440\u043e \u043f\u043e\u0436\u0430\u043b\u043e\u0432\u0430\u0442\u044c!':_lang==='ar'?'\uD83C\uDF89 \u0645\u0631\u062d\u0628\u0627!':'\uD83C\uDF89 Ligaya ho\u015f geldin!');
+      ?(_lang==='en'?'\uD83D\uDCCC Rank unchanged':_lang==='ru'?'\uD83D\uDCCC \u041c\u0435\u0441\u0442\u043e \u043d\u0435 \u0438\u0437\u043c\u0435\u043d\u0438\u043b\u043e\u0441\u044c':_lang==='ar'?'\uD83D\uDCCC \u0627\u0644\u0645\u0631\u0643\u0632 \u0644\u0645 \u064a\u062a\u063a\u064a\u0631':'\uD83D\uDCCC S\u0131ra de\u011fi\u015fmedi')
+      :(_lang==='en'?'\uD83C\uDF89 Welcome!':_lang==='ru'?'\uD83C\uDF89 \u0414\u043e\u0431\u0440\u043e \u043f\u043e\u0436\u0430\u043b\u043e\u0432\u0430\u0442\u044c!':_lang==='ar'?'\uD83C\uDF89 \u0645\u0631\u062d\u0628\u0627!':'\uD83C\uDF89 Ligaya ho\u015f geldin!');
     msg.textContent=txt; msg.style.opacity='1';
     await new Promise(r=>setTimeout(r,2200));
 
   } else {
-    /* ── UÇUŞ ANİMASYONU ── */
+    /* ── SLOT MAKİNESİ UÇUŞU ── */
 
-    /* Faz 1: Kalkış (1sn) */
+    /* Faz 1: Kalkış noktası (1.2sn) */
     counter.textContent='#'+oldRank;
     list.style.opacity='1'; list.style.transition='';
-    list.innerHTML=showRows(oldRank,false);
-    await new Promise(r=>setTimeout(r,1000));
+    list.innerHTML=renderFrame(oldRank,0,false);
+    /* Me satırı kalkış yerinde gösterilir */
+    list.querySelectorAll('.ra-row:not(.ra-me)')[0] &&
+      (list.querySelectorAll('.ra-row:not(.ra-me)').forEach(r=>{r.style.filter='none';r.style.opacity='1';}));
+    /* Kalkış yerindeki me satırını özel göster */
+    var meStart=list.querySelector('.ra-me');
+    if(meStart){meStart.style.animation='raPulse 0.8s ease infinite';}
+    await new Promise(r=>setTimeout(r,1200));
 
-    /* Faz 2: Kalkış — "me" uçar, diğerleri blur'a döner */
-    var meRow=list.querySelector('.ra-me');
-    if(meRow) meRow.style.animation='raFlyOver 1.4s ease forwards';
+    /* Faz 2: Uçuş — slot makinesi (me sabit ortada, etraf kayar) */
+    var totalSteps=Math.min(10,diff);
+    var stepTime=Math.max(180, Math.min(350, 2000/totalSteps));
 
-    /* Diğer satırları blur yap — geçilen kişi hissi */
-    list.querySelectorAll('.ra-row:not(.ra-me)').forEach(function(row){
-      row.style.transition='filter .4s, opacity .4s';
-      row.style.filter='blur(4px)';
-      row.style.opacity='0.3';
-    });
+    for(var step=1;step<=totalSteps;step++){
+      var progress=step/totalSteps;
+      var ease=1-Math.pow(1-progress,2);
+      var showRank=Math.round(oldRank-(oldRank-newRank)*ease);
+      counter.textContent='#'+showRank;
 
-    /* Sayaç easing ile geri sayar */
-    var dur=Math.min(1800, diff*90+700);
-    var t0=performance.now();
-    await new Promise(function(resolve){
-      function tick(now){
-        var p=Math.min((now-t0)/dur,1);
-        var ease=1-Math.pow(1-p,3);
-        counter.textContent='#'+Math.round(oldRank-(oldRank-newRank)*ease);
-        if(p<1) requestAnimationFrame(tick); else resolve();
-      }
-      requestAnimationFrame(tick);
-    });
+      /* Hızlı geçiş: blur ile etraftaki isimleri güncelle */
+      list.style.transition='opacity .08s';
+      list.style.opacity='0';
+      await new Promise(r=>setTimeout(r,80));
+      list.innerHTML=renderFrame(showRank,step<totalSteps?4:0,step===totalSteps);
+      list.style.opacity='1';
+      if(step===totalSteps) break;
+      await new Promise(r=>setTimeout(r,stepTime-80));
+    }
 
-    /* Faz 3: Varış — ghost satırları göster (orta nokta) */
-    var midRank=Math.round((oldRank+newRank)/2);
-    list.style.transition='opacity .2s';
-    list.style.opacity='0';
-    await new Promise(r=>setTimeout(r,200));
-    list.innerHTML=showRows(midRank,true); /* blur'lu ara pozisyon */
-    list.style.opacity='1';
-    await new Promise(r=>setTimeout(r,250));
-
-    /* Faz 4: Varış noktası — net */
-    list.style.transition='opacity .25s';
-    list.style.opacity='0';
-    await new Promise(r=>setTimeout(r,250));
+    /* Faz 3: Varış vurgu */
     counter.textContent='#'+newRank;
-    list.innerHTML=showRows(newRank,false);
-    list.style.opacity='1';
     list.style.transition='';
     var newMe=list.querySelector('.ra-me');
-    if(newMe) newMe.style.animation='raFadeIn .5s ease forwards, raPulse 1s ease .5s infinite';
+    if(newMe) newMe.style.animation='raFadeIn .4s ease forwards, raPulse 1s ease .4s infinite';
     await new Promise(r=>setTimeout(r,500));
 
-    /* Faz 5: Mesaj */
+    /* Faz 4: Mesaj */
     var riseMsg=_lang==='en'?('\u2b06 '+diff+' ranks up! \uD83D\uDE80')
       :_lang==='ru'?('\u2b06 +'+diff+' \u043f\u043e\u0437\u0438\u0446\u0438\u0439! \uD83D\uDE80')
-      :_lang==='ar'?('\u2b06 \u0627\u0631\u062a\u0641\u0639\u062a '+diff+' \u0645\u0631\u0430\u043a\u0437! \uD83D\uDE80')
+      :_lang==='ar'?('\u2b06 \u0627\u0440\u062a\u0641\u0639\u062a '+diff+' \u0645\u0631\u0627\u0643\u0632! \uD83D\uDE80')
       :('\u2191 '+diff+' s\u0131ra y\u00FCkseldin! \uD83D\uDE80');
     msg.textContent=riseMsg; msg.style.opacity='1';
     await new Promise(r=>setTimeout(r,1800));
@@ -3694,7 +3684,6 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
   overlay.style.transition='';
   msg.style.opacity='0';
   list.style.transition=''; list.style.opacity='1';
-  list.style.transform='';
 }
 
 async function winLevel(){
