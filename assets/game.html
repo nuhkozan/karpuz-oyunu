@@ -2590,14 +2590,15 @@ function physics(dt){
     f.vy+=c.gravity*dt;f.y+=f.vy*dt;f.age+=dt;
     /* Yatay sönüm — titreşim yok ama sürtünme var */
     if(true){
-      f.vx*=0.82; /* yatay sönüm */
-      f.vy*=0.995; /* dikey hafif sönüm — sonsuz zıplamayı önler */
+      f.vx*=0.78; /* yatay sönüm */
+      f.vy*=0.992;
+      if(Math.abs(f.vx)<1)f.vx=0; /* dikey hafif sönüm — sonsuz zıplamayı önler */
       if(Math.abs(f.vx)<0.5) f.vx=0;
     }
     f.x+=f.vx*dt;
-    if(f.y+f.r>c.floor){f.y=c.floor-f.r;f.vy=-Math.abs(f.vy)*.22;f.vx*=.65;if(Math.abs(f.vy)<20)f.vy=0;}
-    if(f.x-f.r<c.wL){f.x=c.wL+f.r;f.vx=Math.abs(f.vx)*.25;}
-    if(f.x+f.r>c.wR){f.x=c.wR-f.r;f.vx=-Math.abs(f.vx)*.25;}
+    if(f.y+f.r>c.floor){f.y=c.floor-f.r;f.vy=-Math.abs(f.vy)*.15;f.vx*=.55;if(Math.abs(f.vy)<25)f.vy=0;}
+    if(f.x-f.r<c.wL){f.x=c.wL+f.r;f.vx=Math.abs(f.vx)*.18;}
+    if(f.x+f.r>c.wR){f.x=c.wR-f.r;f.vx=-Math.abs(f.vx)*.18;}
   }
 
   /* Freeze aktifse birleşim fizik durdur */
@@ -2647,7 +2648,7 @@ function physics(dt){
       const nx=dx/d,ny=dy/d,ov=(md-d)*.5;
       a.x-=nx*ov*.5;a.y-=ny*ov*.5;b.x+=nx*ov*.5;b.y+=ny*ov*.5;
       const rv=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;
-      if(rv<0){const im=rv*.25;a.vx+=im*nx;a.vy+=im*ny;b.vx-=im*nx;b.vy-=im*ny;}
+      if(rv<0){const im=rv*.12;a.vx+=im*nx;a.vy+=im*ny;b.vx-=im*nx;b.vy-=im*ny;}
     }
   }
   S.fruits=S.fruits.filter(f=>!f.merged);
@@ -2989,11 +2990,11 @@ function getBadge(lv){
   for(const bd of BADGES){ if(lv>=bd.lv)b=bd; }
   return b;
 }
-function checkBadgeUnlock(prevLv,newLv){
+async function checkBadgeUnlock(prevLv,newLv){
   for(const bd of BADGES){
     if(prevLv<bd.lv && newLv>=bd.lv){
-      setTimeout(()=>showBadgeCelebration(bd, newLv), 800);
       if(navigator.vibrate)navigator.vibrate([100,50,100,50,200]);
+      await showBadgeCelebration(bd, newLv);
     }
   }
 }
@@ -3028,8 +3029,13 @@ function showBadgeCelebration(bd, lv){
     <div style="background:rgba(255,255,255,.06);border-radius:14px;padding:12px 20px;margin-bottom:20px;font-size:12px;color:rgba(255,255,255,.6)">🎯 ${nextMsg}</div>
     <button onclick="this.parentElement.remove()" style="padding:12px 36px;border-radius:22px;border:none;background:linear-gradient(90deg,${bd.color},#f5a623);color:#fff;font-size:15px;font-weight:800;cursor:pointer;">${continueLbl}</button>
   `;
-  document.body.appendChild(ov);
-  setTimeout(()=>{if(ov.parentElement)ov.remove();},8000);
+  return new Promise(resolve=>{
+    const btn=ov.querySelector('button');
+    const finish=()=>{if(ov.parentElement)ov.remove();resolve();};
+    if(btn)btn.onclick=finish;
+    setTimeout(finish,8000);
+    document.body.appendChild(ov);
+  });
 }
 
 function showBadgeToast(bd){
@@ -3380,6 +3386,9 @@ window.showFallbackAd=function(){
   });
 };
 
+function showAdPromise(){
+  return new Promise(resolve=>showAd(resolve));
+}
 function showAd(onDone){
   /* Gercek AdMob (Flutter icinde) */
   try{
@@ -3666,11 +3675,11 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
     list.innerHTML=buildList(oldRank,oldRank,false,0);
     var meS=document.getElementById('ra-me-fixed');
     if(meS)meS.style.animation='raPulse 0.8s ease infinite';
-    await new Promise(r=>setTimeout(r,1200));
+    await new Promise(r=>setTimeout(r,900));
 
     /* Faz 2: Rulet — me sabit ortada, sayaç + etraf kayar */
     var totalSteps=Math.min(10,diff);
-    var stepDur=Math.max(260, Math.min(460, 2800/totalSteps));
+    var stepDur=Math.max(200, Math.min(360, 2200/totalSteps));
 
     for(var step=1;step<=totalSteps;step++){
       var progress=step/totalSteps;
@@ -3704,7 +3713,7 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
       :_lang==='ar'?('\u2b06 \u0627\u0440\u062a\u0641\u0639\u062a '+diff+' \u0645\u0440\u0627\u043a\u0632! \uD83D\uDE80')
       :('\u2191 '+diff+' s\u0131ra y\u00FCkseldin! \uD83D\uDE80');
     msg.textContent=riseMsg; msg.style.opacity='1';
-    await new Promise(r=>setTimeout(r,1800));
+    await new Promise(r=>setTimeout(r,1400));
   }
 
   overlay.style.transition='opacity .3s';
@@ -3759,11 +3768,16 @@ async function winLevel(){
 
   if(isNewRecord){const _rk={tr:'🏆 YENİ REKOR! ',en:'🏆 NEW RECORD! ',ru:'🏆 НОВЫЙ РЕКОРД! ',ar:'🏆 رقم قياسي! '};showToast((_rk[_lang]||_rk.tr)+S.totSc.toLocaleString());}
 
-  /* Rank animasyonu — 1sn sonra başlat */
-  setTimeout(async()=>{
+  /* Rank animasyonu, badge ve reklam — sırayla */
+  (async()=>{
+    await new Promise(r=>setTimeout(r,800));
     await showRankAnim(oldRank, rank, lbEntries, S.user);
     try{localStorage.setItem('karpuz_lastrank_'+S.user, rank);}catch(e){}
-  }, 1000);
+    ov.style.display='none';
+    await checkBadgeUnlock(prevLv, S.lv);
+    if(isAdLevel(prevLv) && !isAdFree()) await showAdPromise();
+    beginLevel();
+  })();
 
   /* Level ödülü ver */
   const _rn=_lang||'tr';
@@ -3797,14 +3811,6 @@ async function winLevel(){
   /* Hemen yeni level state'i kaydet — araya çıkılırsa devam etsin */
   try{saveGameState();}catch(e){}
 
-  setTimeout(()=>{
-    ov.style.display='none';
-    if(isAdLevel(prevLv) && !isAdFree()){
-      showAd(()=>beginLevel());
-    } else {
-      beginLevel();
-    }
-  }, 4800);
 }
 
 async function killGame(rsn){
