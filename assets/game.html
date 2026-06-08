@@ -73,9 +73,9 @@ body {
   width:100%; display:grid; grid-template-columns:repeat(5,1fr);
   gap:4px; margin-bottom:5px;
 }
-.hud-box { background:rgba(0,0,0,.38); border-radius:8px; padding:5px 3px; text-align:center; }
-.hud-lbl { font-size:9px; color:rgba(255,255,255,.45); letter-spacing:1px; margin-bottom:1px; }
-.hud-val { font-size:15px; font-weight:800; }
+.hud-box { background:linear-gradient(135deg,rgba(20,20,40,.82),rgba(10,10,30,.75)); border-radius:10px; padding:6px 3px; text-align:center; border:1px solid rgba(255,255,255,.1); box-shadow:0 2px 8px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.08); }
+.hud-lbl { font-size:9px; color:rgba(255,255,255,.55); letter-spacing:1.5px; margin-bottom:2px; text-shadow:0 1px 3px rgba(0,0,0,.8); }
+.hud-val { font-size:15px; font-weight:900; text-shadow:0 0 12px currentColor,0 1px 3px rgba(0,0,0,.9); }
 .hud-time { background:rgba(233,69,96,.22); }
 .hud-time.warn { background:rgba(233,69,96,.65); animation:pulse .5s infinite; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.55} }
@@ -98,7 +98,7 @@ body {
 .prog-bg   { height:5px; background:rgba(255,255,255,.1); border-radius:3px; overflow:hidden; }
 .prog-fill { height:100%; background:linear-gradient(90deg,#e94560,#f5a623); border-radius:3px; transition:width .35s; }
 
-canvas { display:block; cursor:crosshair; touch-action:none; border-radius:14px; border:3px solid rgba(100,255,120,.5); width:100% !important; }
+canvas { display:block; cursor:crosshair; touch-action:none; border-radius:14px; border:2.5px solid rgba(120,255,140,.7); width:100% !important; box-shadow:0 0 18px rgba(80,255,100,.2); }
 #c { animation:canvasGlow 4s linear infinite; }
 @keyframes dangerPulse{
   0%,100%{transform:scale(1);opacity:1;}
@@ -1263,7 +1263,7 @@ function ensureAC(){
 
 /* Meyve sesi */
 function snd(type,merge){
-  if(!AC||!sfxOn)return;
+  ensureAC(); if(!AC||!sfxOn)return;
   try{
     const f=FR[Math.min(type,FR.length-1)];
     const freq=f[3]*(merge?1.55:1);
@@ -1480,7 +1480,20 @@ const WA={
       });
     }
     /* Dans/dans sesi */
-    if(sfxOn) snd(9,true);
+    if(sfxOn){
+      snd(9,true);
+      /* Patlama sesi — hemen */
+      setTimeout(()=>{
+        if(!AC||!sfxOn)return;
+        const t=AC.currentTime;
+        /* Boom: düşük frekanslı patlama */
+        try{const o=AC.createOscillator(),g=AC.createGain();o.connect(g);g.connect(AC.destination);o.type='sine';o.frequency.setValueAtTime(180,t);o.frequency.exponentialRampToValueAtTime(40,t+0.4);g.gain.setValueAtTime(0.6,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.5);o.start(t);o.stop(t+0.55);}catch(e){}
+        /* Crackle */
+        try{const b=AC.createBuffer(1,Math.floor(AC.sampleRate*.12),AC.sampleRate);const d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.exp(-i/(AC.sampleRate*0.02));const s=AC.createBufferSource(),g=AC.createGain();s.buffer=b;s.connect(g);g.connect(AC.destination);g.gain.setValueAtTime(0.7,t);s.start(t);}catch(e){}
+        /* Yüksek tiz konfeti sesi */
+        try{const o=AC.createOscillator(),g=AC.createGain();o.connect(g);g.connect(AC.destination);o.type='square';o.frequency.setValueAtTime(900,t+0.05);o.frequency.linearRampToValueAtTime(1400,t+0.15);g.gain.setValueAtTime(0.15,t+0.05);g.gain.linearRampToValueAtTime(0,t+0.3);o.start(t+0.05);o.stop(t+0.35);}catch(e){}
+      },50);
+    }
     /* Hedef meyveye özel patlama sesi */
     const tgtIdx = S.cfg ? S.cfg.target : 23;
     setTimeout(()=>playTargetSound(tgtIdx), 2500);
@@ -2193,6 +2206,7 @@ function animateTargetIntro(emoji){
 }
 
 function beginLevel(){
+  S._winAborted=false; S._winSeqId=(S._winSeqId||0)+1;
   ensureAC();
   _paused=false;
   const pauseIcon=document.getElementById('pause-icon');
@@ -3444,12 +3458,25 @@ function saveGameState(){
     })),
     curType: S.curType,
     nxtType: S.nxtType,
+    nxt2Type: S.nxt2Type,
+    nxt3Type: S.nxt3Type,
     dropX: S.dropX,
     pu: {...PU.stock},
     winPending: S.winPending || WA.active,
     savedAt: Date.now()
   };
-  try{ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }catch(e){}
+  /* LocalStorage'a 2 deneme */
+  const _sdata=JSON.stringify(state);
+  let _saved=false;
+  try{ localStorage.setItem(SAVE_KEY, _sdata); _saved=true; }catch(e){}
+  if(!_saved){
+    /* Yer yoksa en eski diğer verileri temizle ve tekrar dene */
+    try{
+      const _sk=['karpuz_lb','karpuz_missions','karpuz_daily'];
+      _sk.forEach(k=>{try{localStorage.removeItem(k);}catch(e){}});
+      localStorage.setItem(SAVE_KEY, _sdata);
+    }catch(e){}
+  }
 }
 
 function loadGameState(){
@@ -3497,6 +3524,8 @@ function resumeGame(){
   S.dangerLineY = S.dangerLineMoving ? (cfg.ch*0.5) : cfg.dangerY;
   S.curType = st.curType;
   S.nxtType = st.nxtType;
+  S.nxt2Type = st.nxt2Type || rndDrop();
+  S.nxt3Type = st.nxt3Type || rndDrop();
   S.dropX = st.dropX || (cfg.wL+cfg.wR)/2;
 
   /* Meyveleri geri yükle */
@@ -3640,24 +3669,19 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
 
   /* Yumuşak geçiş: mevcut satırlar yukarı kayar, yenileri alttan gelir */
   const smoothTransition=async(fromRank,toRank,meRank,blur)=>{
+    /* Yağ gibi kayış: opacity YOK, sadece translateY */
     const wraps=list.querySelectorAll('.ra-surround-wrap');
-    /* Mevcut satırlar AŞAĞI kayar (sıra iyileşince rakamlar yukarıdan geliyor) */
     wraps.forEach(w=>{
-      w.style.transition='transform 0.16s ease, opacity 0.16s ease';
-      w.style.transform='translateY(40px)';
-      w.style.opacity='0';
+      w.style.transition='transform 0.13s linear';
+      w.style.transform='translateY(38px)';
     });
-    await new Promise(r=>setTimeout(r,220));
-    /* Yeni içerik — YUKARIDAN girer */
-    list.innerHTML=buildList(toRank,meRank,blur,-48);
-    await new Promise(r=>setTimeout(r,10));
-    const newWraps=list.querySelectorAll('.ra-surround-wrap');
-    newWraps.forEach(w=>{
-      w.style.transition='transform 0.16s ease, opacity 0.16s ease';
-      w.style.transform='translateY(0)';
-      w.style.opacity='1';
-    });
-    await new Promise(r=>setTimeout(r,160));
+    await new Promise(r=>setTimeout(r,65));
+    list.innerHTML=buildList(toRank,meRank,blur,-38);
+    const nw=list.querySelectorAll('.ra-surround-wrap');
+    nw.forEach(w=>{ w.style.transition='none'; w.style.transform='translateY(-38px)'; });
+    await new Promise(r=>setTimeout(r,8));
+    nw.forEach(w=>{ w.style.transition='transform 0.13s linear'; w.style.transform='translateY(0)'; });
+    await new Promise(r=>setTimeout(r,65));
   };
 
   overlay.style.opacity='0';
@@ -3801,21 +3825,36 @@ async function winLevel(){
   missionProgress('m_levels',1);
   missionProgress('m_levels2',1);
   clearSavedGame();
-  try{saveGameState();}catch(e){}
+  /* Kritik: level geçişinde mutlaka kaydet */
+  for(let _i=0;_i<3;_i++){
+    try{saveGameState();break;}catch(e){}
+  }
 
   /* SIRAYLA: overlay(2sn) → KAPAT → rank anim → badge → reklam → beginLevel */
+  S._winSeqId = (S._winSeqId||0)+1;
+  const _thisSeq = S._winSeqId;
+  const _iifeSafe = ()=> _thisSeq===S._winSeqId && !S._winAborted;
   (async()=>{
     try{
-      await new Promise(r=>setTimeout(r,2000));          /* 1. Overlay 2sn */
-      ov.style.display='none';                           /* 2. Overlay KAPAT (animasyon öncesi) */
-      await showRankAnim(oldRank, rank, lbEntries, S.user); /* 3. Rank animasyonu */
+      await new Promise(r=>setTimeout(r,2000));
+      if(!_iifeSafe()){return;}
+      /* Geçiş boşluğu olmadan rank-anim overlay hemen aç */
+      const raOv=document.getElementById('rank-anim-overlay');
+      if(raOv){raOv.style.opacity='0';raOv.style.display='flex';}
+      ov.style.display='none';
+      if(raOv){await new Promise(r=>setTimeout(r,20));raOv.style.opacity='1';}
+      if(!_iifeSafe()){if(raOv)raOv.style.display='none';return;}
+      await showRankAnim(oldRank, rank, lbEntries, S.user);
       try{localStorage.setItem('karpuz_lastrank_'+S.user, rank);}catch(e){}
-      await checkBadgeUnlock(prevLv, S.lv);              /* 4. Badge */
-      if(isAdLevel(prevLv)&&!isAdFree()) await showAdPromise(); /* 5. Reklam */
-      beginLevel();                                      /* 6. Yeni level */
+      if(!_iifeSafe())return;
+      await checkBadgeUnlock(prevLv, S.lv);
+      if(!_iifeSafe())return;
+      if(isAdLevel(prevLv)&&!isAdFree()) await showAdPromise();
+      if(!_iifeSafe())return;
+      beginLevel();
     }catch(err){
       ov.style.display='none';
-      beginLevel();
+      if(_iifeSafe()) beginLevel();
     }
   })();
 }
@@ -3874,7 +3913,7 @@ async function killGame(rsn){
 ══════════════════════════════════════════ */
 function nextLv(){if(S.lv>=99){S.lv=1;S.totSc=0;}else S.lv++;clearSavedGame();beginLevel();}
 function retry(){clearSavedGame();S.lvSc=0;beginLevel();}/* Aynı leveli yeniden başlat */
-function home(){saveGameState();stop();initUserScreen();show('s-user');setTimeout(startHomeAnim,100);}
+function home(){S._winAborted=true;saveGameState();stop();initUserScreen();show('s-user');setTimeout(startHomeAnim,100);}
 function backGame(){if(S.cfg)show('s-game');else show('s-user');}
 function pauseAndHome(){
   clearInterval(ambientInterval);
@@ -4386,6 +4425,7 @@ setInterval(()=>{if(S.cfg&&!S.dead&&!_paused)saveGameState();},5000);
 
 /* Uygulama kapanınca/arka plana geçince kaydet */
 document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden){ensureAC();if(MUS.playing&&!MUS.muted)setTimeout(()=>MUS.play(),300);}
   if(document.visibilityState==='hidden'){
     try{
       if(S.cfg && !S.dead) saveGameState();
