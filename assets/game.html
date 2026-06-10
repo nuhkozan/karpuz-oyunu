@@ -2206,7 +2206,7 @@ function animateTargetIntro(emoji){
 }
 
 function beginLevel(){
-  S._winAborted=false; S._winSeqId=(S._winSeqId||0)+1;
+  S._winAborted=false;
   ensureAC();
   _paused=false;
   const pauseIcon=document.getElementById('pause-icon');
@@ -3809,43 +3809,36 @@ async function winLevel(){
   }
 
   /* SIRAYLA: overlay → rank anim → badge → reklam → beginLevel */
-  S._winSeqId = (S._winSeqId||0)+1;
-  const _thisSeq = S._winSeqId;
-  const _iifeSafe = ()=> _thisSeq===S._winSeqId && !S._winAborted;
+  /* _blCalled: beginLevel sadece 1 kez çağrılsın */
+  let _blCalled=false;
+  const _doBeginLevel=()=>{
+    if(_blCalled)return; _blCalled=true;
+    const ro=document.getElementById('rank-anim-overlay');if(ro)ro.style.display='none';
+    ov.style.display='none';
+    beginLevel();
+  };
 
-  /* Güvenlik: 10sn içinde bitmezse zorla geç */
-  const _safetyTimer=setTimeout(()=>{
-    if(_iifeSafe()){
-      const ro=document.getElementById('rank-anim-overlay');if(ro)ro.style.display='none';
-      const lo=document.getElementById('lv-overlay');if(lo)lo.style.display='none';
-      beginLevel();
-    }
-  }, 10000);
+  /* Güvenlik: 12sn içinde bitmezse zorla geç */
+  const _safetyTimer=setTimeout(_doBeginLevel, 12000);
 
-  /* 2sn sonra otomatik geç */
+  /* 2sn overlay → rank anim → badge → reklam → beginLevel */
   (async()=>{
     try{
       await new Promise(r=>setTimeout(r,2000));
-      if(!_iifeSafe())return;
-      ov.onclick=null; ov.style.display='none';
-      /* Rank animasyonu */
-      if(_iifeSafe()) await showRankAnim(oldRank, rank, lbEntries, S.user);
+      if(!S._winAborted) ov.style.display='none';
+      if(S._winAborted){clearTimeout(_safetyTimer);return;}
+      await showRankAnim(oldRank, rank, lbEntries, S.user);
       try{localStorage.setItem('karpuz_lastrank_'+S.user, rank);}catch(e){}
-      if(!_iifeSafe())return;
-      /* Badge */
+      if(S._winAborted){clearTimeout(_safetyTimer);return;}
       await checkBadgeUnlock(prevLv, S.lv);
-      if(!_iifeSafe())return;
-      /* Reklam */
+      if(S._winAborted){clearTimeout(_safetyTimer);return;}
       if(isAdLevel(prevLv)&&!isAdFree()) await showAdPromise();
-      if(!_iifeSafe())return;
-      clearTimeout(_safetyTimer); beginLevel();
+      if(S._winAborted){clearTimeout(_safetyTimer);return;}
+      clearTimeout(_safetyTimer);
+      _doBeginLevel();
     }catch(err){
       clearTimeout(_safetyTimer);
-      const _raOv=document.getElementById('rank-anim-overlay');
-      if(_raOv)_raOv.style.display='none';
-      if(_skipBtn)_skipBtn.style.display='none';
-      ov.style.display='none';
-      if(_iifeSafe()) beginLevel();
+      _doBeginLevel();
     }
   })();
 }
