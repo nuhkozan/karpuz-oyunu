@@ -3057,7 +3057,7 @@ function showBadgeCelebration(bd, lv){
     const btn=ov.querySelector('button');
     const finish=()=>{if(ov.parentElement)ov.remove();resolve();};
     if(btn)btn.onclick=finish;
-    setTimeout(finish,8000);
+    setTimeout(finish,4000); /* 4sn max */
     document.body.appendChild(ov);
   });
 }
@@ -3411,7 +3411,10 @@ window.showFallbackAd=function(){
 };
 
 function showAdPromise(){
-  return new Promise(resolve=>showAd(resolve));
+  return new Promise(resolve=>{
+    const _adTimer=setTimeout(()=>{resolve();},4000); /* 4sn max */
+    showAd(()=>{clearTimeout(_adTimer);resolve();});
+  });
 }
 function showAd(onDone){
   /* Gercek AdMob (Flutter icinde) */
@@ -3688,6 +3691,13 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
   overlay.style.display='flex';
   msg.style.opacity='0'; msg.textContent='';
   setTimeout(()=>{overlay.style.opacity='1';},20);
+  /* Güvenlik: showRankAnim sonunda overlay mutlaka kapansın */
+  let _raCleanup=false;
+  const _closeOverlay=()=>{
+    if(_raCleanup)return; _raCleanup=true;
+    overlay.style.transition='opacity .2s'; overlay.style.opacity='0';
+    setTimeout(()=>{overlay.style.display='none'; overlay.style.transition=''; msg.style.opacity='0';},200);
+  };
 
   if(!improved){
     counter.textContent='#'+newRank;
@@ -3838,12 +3848,8 @@ async function winLevel(){
     try{
       await new Promise(r=>setTimeout(r,2000));
       if(!_iifeSafe()){return;}
-      /* Geçiş boşluğu olmadan rank-anim overlay hemen aç */
-      const raOv=document.getElementById('rank-anim-overlay');
-      if(raOv){raOv.style.opacity='0';raOv.style.display='flex';}
-      ov.style.display='none';
-      if(raOv){await new Promise(r=>setTimeout(r,20));raOv.style.opacity='1';}
-      if(!_iifeSafe()){if(raOv)raOv.style.display='none';return;}
+      ov.style.display='none'; /* Overlay kapat */
+      if(!_iifeSafe())return;
       await showRankAnim(oldRank, rank, lbEntries, S.user);
       try{localStorage.setItem('karpuz_lastrank_'+S.user, rank);}catch(e){}
       if(!_iifeSafe())return;
@@ -3854,6 +3860,8 @@ async function winLevel(){
       beginLevel();
     }catch(err){
       ov.style.display='none';
+      const _raOv=document.getElementById('rank-anim-overlay');
+      if(_raOv)_raOv.style.display='none';
       if(_iifeSafe()) beginLevel();
     }
   })();
