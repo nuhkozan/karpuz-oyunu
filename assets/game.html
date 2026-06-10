@@ -2005,7 +2005,7 @@ function checkAndRegister(name){
         delete window._regCallbacks[id];
         reject(new Error('zaman aşımı'));
       }
-    },15000);
+    },5000);
   });
 }
 
@@ -3779,11 +3779,21 @@ async function winLevel(){
   S._winOldRank=0; S._winEntries=null; S._winRank=0;
 
   /* Yeni sıra + tüm liste */
-  const lbResult = _savedRank
-    ? {rank:_savedRank, entries:_savedEntr||getLB()}
-    : await submitLBFull(S.user,S.totSc,S.lv);
-  const rank = lbResult.rank;
-  const lbEntries = lbResult.entries;
+  /* Firebase beklemesiz — WA'dan gelen sonucu kullan, yoksa local */
+  let rank, lbEntries;
+  if(_savedRank){
+    rank=_savedRank; lbEntries=_savedEntr||getLB();
+  } else {
+    /* WA henüz Firebase'den cevap almadıysa local rank kullan */
+    const _lb=getLB();
+    const _li=_lb.findIndex(e=>e.name===S.user);
+    rank=_li>=0?_li+1:0;
+    lbEntries=_lb;
+    /* Arka planda yine de gönder (UI'ı bloklamadan) */
+    submitLBFull(S.user,S.totSc,S.lv).then(r=>{
+      try{localStorage.setItem('karpuz_lastrank_'+S.user,r.rank);}catch(e){}
+    }).catch(()=>{});
+  }
   const nextLvNum = S.lv + 1;
 
   /* Yeni rekor kontrolü */
@@ -3808,6 +3818,9 @@ async function winLevel(){
   const lvCompl={tr:`${S.timeElapsed}s'de tamamlandı · ${S.lvSc.toLocaleString()} level puanı`,en:`Completed in ${S.timeElapsed}s · ${S.lvSc.toLocaleString()} level pts`,ru:`Завершено за ${S.timeElapsed}с · ${S.lvSc.toLocaleString()} очков`,ar:`أكملت في ${S.timeElapsed}ث · ${S.lvSc.toLocaleString()} نقطة`};
   if(statsEl) statsEl.textContent=lvCompl[_lang]||lvCompl.tr;
   ov.style.display = 'flex';
+  /* Tap-to-skip: kullanıcı dokunursa 2sn beklemeden hemen geç */
+  let _ovSkipped=false;
+  ov.onclick=()=>{ _ovSkipped=true; ov.onclick=null; };
   requestAnimationFrame(()=>{ document.getElementById('lv-bar').style.width='100%'; });
   if(isNewRecord){const _rk={tr:'🏆 YENİ REKOR! ',en:'🏆 NEW RECORD! ',ru:'🏆 НОВЫЙ РЕКОРД! ',ar:'🏆 رقم قياسي! '};showToast((_rk[_lang]||_rk.tr)+S.totSc.toLocaleString());}
 
@@ -3847,10 +3860,14 @@ async function winLevel(){
   /* Güvenlik: 15sn içinde IIFE bitmezse zorla beginLevel */
   const _safetyTimer=setTimeout(()=>{
     if(_iifeSafe()){ const ro=document.getElementById('rank-anim-overlay');if(ro)ro.style.display='none'; const lo=document.getElementById('lv-overlay');if(lo)lo.style.display='none'; beginLevel(); }
-  }, 15000);
+  }, 8000);
   (async()=>{
     try{
-      await new Promise(r=>setTimeout(r,2000));
+      /* 2sn bekle — ya da kullanıcı dokunursa hemen geç */
+      await new Promise(r=>{
+        const _t=setTimeout(r,2000);
+        const _ch=setInterval(()=>{if(_ovSkipped){clearInterval(_ch);clearTimeout(_t);r();}},80);
+      });
       if(!_iifeSafe()){return;}
       ov.style.display='none'; /* Overlay kapat */
       if(!_iifeSafe())return;
