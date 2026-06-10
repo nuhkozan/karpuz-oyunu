@@ -2258,7 +2258,12 @@ function beginLevel(){
   /* Hedef meyve giriş animasyonu */
   setTimeout(()=>animateTargetIntro(FR[cfg.target][0]), 200);
   /* Müzik + ambient */
-  if(musicOn){MUS.stop();setTimeout(()=>{MUS.start();playAmbient((S.lv-1)%8);},200);}
+  if(musicOn&&!MUS.muted){
+    try{MUS.stop();}catch(e){}
+    setTimeout(()=>{
+      if(musicOn&&!MUS.muted){MUS.start();playAmbient((S.lv-1)%8);}
+    },300);
+  }
 }
 
 function rndDrop(){
@@ -3412,7 +3417,9 @@ window.showFallbackAd=function(){
 
 function showAdPromise(){
   return new Promise(resolve=>{
-    const _adTimer=setTimeout(()=>{resolve();},4000); /* 4sn max */
+    /* Reklam sırasında: oyun sesi ve müzik dursun */
+    MUS.stop(); stopGameLoop();
+    const _adTimer=setTimeout(()=>{resolve();},4000);
     showAd(()=>{clearTimeout(_adTimer);resolve();});
   });
 }
@@ -3440,7 +3447,15 @@ function adClick(){
   /* Gerçek reklamda: izleme URL'i + Google Play yönlendirmesi */
   alert('🎮 Uygulama mağazasına yönlendiriliyor...\n(Gerçek reklamda Google Play açılacak)');
 }
-function stop(){S.dead=true;cancelAnimationFrame(S.rafId);clearInterval(S.timerId);MUS.stop();hideDangerCountdown();}
+function stopGameLoop(){
+  /* Level bitti: loop dur ama dead=true YAPMA, müzik DURDURMA */
+  cancelAnimationFrame(S.rafId); clearInterval(S.timerId); hideDangerCountdown();
+}
+function stop(){
+  /* Game over / killGame: tam durdur */
+  S.dead=true; cancelAnimationFrame(S.rafId); clearInterval(S.timerId);
+  MUS.stop(); hideDangerCountdown();
+}
 
 /* ══════════════════════════════════════════
    OYUN DURUMU KAYDET / YÜKLE
@@ -3653,7 +3668,7 @@ async function _showRankAnimInner(oldRank, newRank, entries, playerName){
     if(!e&&!isMe)return'<div style="height:52px;margin:4px 0;border-radius:14px;background:rgba(255,255,255,.04)"></div>';
     const fe=e||me;
     const num=rank===1?'\uD83E\uDD47':rank===2?'\uD83E\uDD48':rank===3?'\uD83E\uDD49':'#'+rank;
-    const bs=(!isMe&&improved)?'filter:blur(2px);opacity:0.5;':'';
+    const bs=false?'filter:blur(2px);opacity:0.5;':''; /* Blur kaldırıldı — kalkış/varış net */
     return'<div class="ra-row'+(isMe?' ra-me':'')+'" style="'+bs+'">'+
       '<span class="ra-rank-num">'+num+'</span>'+
       '<span class="ra-name-txt">'+fe.name+'</span>'+
@@ -3727,7 +3742,7 @@ async function _showRankAnimInner(oldRank, newRank, entries, playerName){
 }
 
 async function winLevel(){
-  if(S.dead)return; stop();
+  if(S.dead)return; stopGameLoop();
   S.totSc = S._winScore ?? S.totSc;
 
   /* Eski sıra — WA başlamadan önce yakalandı */
@@ -3828,8 +3843,9 @@ async function winLevel(){
       if(!S._winAborted) ov.style.display='none';
       if(S._winAborted){clearTimeout(_safetyTimer);return;}
       await showRankAnim(oldRank, rank, lbEntries, S.user);
+      clearTimeout(_safetyTimer); /* Rank anim bitti, safety artık gerekmez */
       try{localStorage.setItem('karpuz_lastrank_'+S.user, rank);}catch(e){}
-      if(S._winAborted){clearTimeout(_safetyTimer);return;}
+      if(S._winAborted)return;
       await checkBadgeUnlock(prevLv, S.lv);
       if(S._winAborted){clearTimeout(_safetyTimer);return;}
       if(isAdLevel(prevLv)&&!isAdFree()) await showAdPromise();
