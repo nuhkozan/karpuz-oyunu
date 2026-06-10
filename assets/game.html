@@ -2604,15 +2604,15 @@ function physics(dt){
     f.vy+=c.gravity*dt;f.y+=f.vy*dt;f.age+=dt;
     /* Yatay sönüm — titreşim yok ama sürtünme var */
     if(true){
-      f.vx*=0.90; /* yatay sönüm */
+      f.vx*=0.88; /* yatay sönüm */
       f.vy*=0.992;
-      if(Math.abs(f.vx)<0.8)f.vx=0; /* dikey hafif sönüm — sonsuz zıplamayı önler */
+      if(Math.abs(f.vx)<1.5)f.vx=0; /* dikey hafif sönüm — sonsuz zıplamayı önler */
       if(Math.abs(f.vx)<0.5) f.vx=0;
     }
     f.x+=f.vx*dt;
     if(f.y+f.r>c.floor){f.y=c.floor-f.r;f.vy=-Math.abs(f.vy)*.20;f.vx*=.68;if(Math.abs(f.vy)<20)f.vy=0;}
-    if(f.x-f.r<c.wL){f.x=c.wL+f.r;f.vx=Math.abs(f.vx)*.18;}
-    if(f.x+f.r>c.wR){f.x=c.wR-f.r;f.vx=-Math.abs(f.vx)*.18;}
+    if(f.x-f.r<c.wL){f.x=c.wL+f.r;f.vx=Math.abs(f.vx)*.12;f.vy*=0.96;}
+    if(f.x+f.r>c.wR){f.x=c.wR-f.r;f.vx=-Math.abs(f.vx)*.12;f.vy*=0.96;}
   }
 
   /* Freeze aktifse birleşim fizik durdur */
@@ -3704,12 +3704,12 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
     list.innerHTML=buildList(newRank,newRank,false,0);
     var meEl=document.getElementById('ra-me-fixed');
     if(meEl)meEl.style.animation='raFadeIn .4s ease forwards, raPulse 1.2s ease .4s infinite';
-    await new Promise(r=>setTimeout(r,200));
+    await new Promise(r=>setTimeout(r,500));
     var txt=oldRank>0
       ?(_lang==='en'?'\uD83D\uDCCC Rank unchanged':_lang==='ru'?'\uD83D\uDCCC \u041c\u0435\u0441\u0442\u043e \u043d\u0435 \u0438\u0437\u043c\u0435\u043d\u0438\u043b\u043e\u0441\u044c':_lang==='ar'?'\uD83D\uDCCC \u0627\u043b\u0645\u0631\u0643\u0632 \u0644\u0645 \u064a\u062a\u063a\u064a\u0631':'\uD83D\uDCCC S\u0131ra de\u011fi\u015fmedi')
       :(_lang==='en'?'\uD83C\uDF89 Welcome!':_lang==='ru'?'\uD83C\uDF89 \u0414\u043e\u0431\u0440\u043e \u043f\u043e\u0436\u0430\u043b\u043e\u0432\u0430\u0442\u044c!':_lang==='ar'?'\uD83C\uDF89 \u0645\u0631\u062d\u0628\u0627!':'\uD83C\uDF89 Ligaya ho\u015f geldin!');
     msg.textContent=txt; msg.style.opacity='1';
-    await new Promise(r=>setTimeout(r,2200));
+    await new Promise(r=>setTimeout(r,1800));
 
   } else {
     /* ── RULET ANIMASYONU ── */
@@ -3719,11 +3719,11 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
     list.innerHTML=buildList(oldRank,oldRank,false,0);
     var meS=document.getElementById('ra-me-fixed');
     if(meS)meS.style.animation='raPulse 0.8s ease infinite';
-    await new Promise(r=>setTimeout(r,300));
+    await new Promise(r=>setTimeout(r,1200)); /* Kalkış yeri oku */
 
     /* Faz 2: Rulet — me sabit ortada, sayaç + etraf kayar */
-    var totalSteps=Math.min(6,diff);
-    var stepDur=Math.max(90, Math.min(140, 900/totalSteps));
+    var totalSteps=Math.min(8,diff);
+    var stepDur=150; /* Her adım sabit 150ms — toplam uçuş ~1200ms */
 
     for(var step=1;step<=totalSteps;step++){
       var progress=step/totalSteps;
@@ -3742,14 +3742,14 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
         curRank, curRank, !isFinal
       );
       if(isFinal)break;
-      await new Promise(r=>setTimeout(r,stepDur-440));
+      await new Promise(r=>setTimeout(r,Math.max(0,stepDur-138))); /* adımlar arası */
     }
 
     /* Faz 3: Varış vurgu */
     counter.textContent='#'+newRank;
     var finalMe=document.getElementById('ra-me-fixed');
     if(finalMe) finalMe.style.animation='raFadeIn .4s ease forwards, raPulse 1s ease .4s infinite';
-    await new Promise(r=>setTimeout(r,200));
+    await new Promise(r=>setTimeout(r,700)); /* Varış yeri oku */
 
     /* Faz 4: Mesaj */
     var riseMsg=_lang==='en'?('\u2b06 '+diff+' ranks up! \uD83D\uDE80')
@@ -3757,7 +3757,7 @@ async function showRankAnim(oldRank, newRank, entries, playerName){
       :_lang==='ar'?('\u2b06 \u0627\u0440\u062a\u0641\u0639\u062a '+diff+' \u0645\u0440\u0627\u043a\u0632! \uD83D\uDE80')
       :('\u2191 '+diff+' s\u0131ra y\u00FCkseldin! \uD83D\uDE80');
     msg.textContent=riseMsg; msg.style.opacity='1';
-    await new Promise(r=>setTimeout(r,500));
+    await new Promise(r=>setTimeout(r,900)); /* Mesaj oku */
   }
 
   overlay.style.transition='opacity .2s';
@@ -3844,6 +3844,10 @@ async function winLevel(){
   S._winSeqId = (S._winSeqId||0)+1;
   const _thisSeq = S._winSeqId;
   const _iifeSafe = ()=> _thisSeq===S._winSeqId && !S._winAborted;
+  /* Güvenlik: 15sn içinde IIFE bitmezse zorla beginLevel */
+  const _safetyTimer=setTimeout(()=>{
+    if(_iifeSafe()){ const ro=document.getElementById('rank-anim-overlay');if(ro)ro.style.display='none'; const lo=document.getElementById('lv-overlay');if(lo)lo.style.display='none'; beginLevel(); }
+  }, 15000);
   (async()=>{
     try{
       await new Promise(r=>setTimeout(r,2000));
@@ -3857,8 +3861,9 @@ async function winLevel(){
       if(!_iifeSafe())return;
       if(isAdLevel(prevLv)&&!isAdFree()) await showAdPromise();
       if(!_iifeSafe())return;
-      beginLevel();
+      clearTimeout(_safetyTimer); beginLevel();
     }catch(err){
+      clearTimeout(_safetyTimer);
       ov.style.display='none';
       const _raOv=document.getElementById('rank-anim-overlay');
       if(_raOv)_raOv.style.display='none';
