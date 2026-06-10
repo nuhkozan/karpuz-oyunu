@@ -461,6 +461,8 @@ function setLang(lang){
   // HEDEF row
   var hedefRow=document.getElementById('lbl-hedef-row');
   if(hedefRow)hedefRow.textContent=lang==='en'?'TARGET:':lang==='ru'?'ЦЕЛЬ:':lang==='ar'?'الهدف:':'HEDEF:';
+  /* Continue button alt yazısını da güncelle */
+  if(typeof checkContinueButton==='function') checkContinueButton();
 }
 </script>
 </head>
@@ -1299,12 +1301,16 @@ const MUS={
     if(this.playing||!AC||this.muted)return;
     this.playing=true;
     this.step=0;
+    let _started=false;
     const _go=()=>{
-      if(!this.playing)return;
+      if(_started||!this.playing)return; _started=true;
       this.nextT=AC.currentTime+0.05;
       this.sched();
     };
-    if(AC.state==='suspended'){ AC.resume().then(_go).catch(_go); }
+    if(AC.state==='suspended'){
+      AC.resume().then(_go).catch(_go);
+      setTimeout(_go,300); /* Promise hiç resolve olmazsa fallback */
+    }
     else _go();
   },
 
@@ -2624,8 +2630,8 @@ function physics(dt){
     }
     f.x+=f.vx*dt;
     if(f.y+f.r>c.floor){f.y=c.floor-f.r;f.vy=-Math.abs(f.vy)*.20;f.vx*=.68;if(Math.abs(f.vy)<20)f.vy=0;}
-    if(f.x-f.r<c.wL){f.x=c.wL+f.r;f.vx=Math.abs(f.vx)*.12;f.vy*=0.96;}
-    if(f.x+f.r>c.wR){f.x=c.wR-f.r;f.vx=-Math.abs(f.vx)*.12;f.vy*=0.96;}
+    if(f.x-f.r<c.wL){f.x=c.wL+f.r;f.vx=Math.abs(f.vx)*.12;f.vy*=0.96;if(Math.abs(f.vx)<1.5)f.vx=0;}
+    if(f.x+f.r>c.wR){f.x=c.wR-f.r;f.vx=-Math.abs(f.vx)*.12;f.vy*=0.96;if(Math.abs(f.vx)<1.5)f.vx=0;}
   }
 
   /* Freeze aktifse birleşim fizik durdur */
@@ -2685,6 +2691,8 @@ function physics(dt){
         /* Resting damping: düşük hızda sıkışmayı önle */
         const spd=Math.abs(rv);
         if(spd<3){const d=0.82; a.vx*=d;a.vy*=d;b.vx*=d;b.vy*=d;}
+        /* Yatay sıkışma: nx baskınsa (yan yana komşular) ekstra sönüm */
+        if(Math.abs(nx)>0.7 && spd<5){const hd=0.55; a.vx*=hd;b.vx*=hd;}
       }
     }
   }
@@ -4449,7 +4457,13 @@ setInterval(()=>{if(S.cfg&&!S.dead&&!_paused)saveGameState();},5000);
 
 /* Uygulama kapanınca/arka plana geçince kaydet */
 document.addEventListener('visibilitychange',()=>{
-  if(!document.hidden){ensureAC();if(MUS.playing&&!MUS.muted)setTimeout(()=>MUS.play(),300);}
+  if(!document.hidden){
+    ensureAC();
+    if(musicOn&&!MUS.muted&&S.cfg&&!S.dead){
+      MUS.playing=false; /* zorla restart */
+      setTimeout(()=>MUS.start(),300);
+    }
+  }
   if(document.visibilityState==='hidden'){
     try{
       if(S.cfg && !S.dead) saveGameState();
@@ -4457,6 +4471,17 @@ document.addEventListener('visibilitychange',()=>{
     }catch(e){}
   }
 });
+
+/* Global müzik watchdog — sahne her 3sn'de bir kontrol et, kopmuşsa yeniden başlat */
+setInterval(()=>{
+  if(musicOn && !MUS.muted && S.cfg && !S.dead && S.cfg && document.getElementById('s-game') && document.getElementById('s-game').classList.contains('active')){
+    if(!MUS.playing || (AC && AC.state==='suspended')){
+      ensureAC();
+      MUS.playing=false;
+      MUS.start();
+    }
+  }
+},3000);
 window.addEventListener('pagehide',()=>{
   try{if(S.cfg&&!S.dead)saveGameState();}catch(e){}
 });
