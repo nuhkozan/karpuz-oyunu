@@ -3823,40 +3823,16 @@ async function winLevel(){
     try{saveGameState();break;}catch(e){}
   }
 
-  /* SIRAYLA: overlay → rank anim → badge → reklam → beginLevel */
-  /* _blCalled: beginLevel sadece 1 kez çağrılsın */
-  let _blCalled=false;
-  const _doBeginLevel=()=>{
-    if(_blCalled)return; _blCalled=true;
-    const ro=document.getElementById('rank-anim-overlay');if(ro)ro.style.display='none';
+  /* Sıralı geçiş: 2sn overlay → rank anim → badge → reklam → beginLevel
+     Her await kendi timeout'una sahip, beginLevel tek kez çağrılır */
+  setTimeout(async()=>{
     ov.style.display='none';
+    try{ await showRankAnim(oldRank, rank, lbEntries, S.user); }catch(e){}
+    try{ localStorage.setItem('karpuz_lastrank_'+S.user, rank); }catch(e){}
+    try{ await checkBadgeUnlock(prevLv, S.lv); }catch(e){}
+    try{ if(isAdLevel(prevLv)&&!isAdFree()) await showAdPromise(); }catch(e){}
     beginLevel();
-  };
-
-  /* Güvenlik: 12sn içinde bitmezse zorla geç */
-  const _safetyTimer=setTimeout(_doBeginLevel, 12000);
-
-  /* 2sn overlay → rank anim → badge → reklam → beginLevel */
-  (async()=>{
-    try{
-      await new Promise(r=>setTimeout(r,2000));
-      if(!S._winAborted) ov.style.display='none';
-      if(S._winAborted){clearTimeout(_safetyTimer);return;}
-      await showRankAnim(oldRank, rank, lbEntries, S.user);
-      clearTimeout(_safetyTimer); /* Rank anim bitti, safety artık gerekmez */
-      try{localStorage.setItem('karpuz_lastrank_'+S.user, rank);}catch(e){}
-      if(S._winAborted)return;
-      await checkBadgeUnlock(prevLv, S.lv);
-      if(S._winAborted){clearTimeout(_safetyTimer);return;}
-      if(isAdLevel(prevLv)&&!isAdFree()) await showAdPromise();
-      if(S._winAborted){clearTimeout(_safetyTimer);return;}
-      clearTimeout(_safetyTimer);
-      _doBeginLevel();
-    }catch(err){
-      clearTimeout(_safetyTimer);
-      _doBeginLevel();
-    }
-  })();
+  }, 2000);
 }
 
 
