@@ -3818,9 +3818,6 @@ async function winLevel(){
   const lvCompl={tr:`${S.timeElapsed}s'de tamamlandı · ${S.lvSc.toLocaleString()} level puanı`,en:`Completed in ${S.timeElapsed}s · ${S.lvSc.toLocaleString()} level pts`,ru:`Завершено за ${S.timeElapsed}с · ${S.lvSc.toLocaleString()} очков`,ar:`أكملت في ${S.timeElapsed}ث · ${S.lvSc.toLocaleString()} نقطة`};
   if(statsEl) statsEl.textContent=lvCompl[_lang]||lvCompl.tr;
   ov.style.display = 'flex';
-  /* Tap-to-skip: kullanıcı dokunursa 2sn beklemeden hemen geç */
-  let _ovSkipped=false;
-  ov.onclick=()=>{ _ovSkipped=true; ov.onclick=null; };
   requestAnimationFrame(()=>{ document.getElementById('lv-bar').style.width='100%'; });
   if(isNewRecord){const _rk={tr:'🏆 YENİ REKOR! ',en:'🏆 NEW RECORD! ',ru:'🏆 НОВЫЙ РЕКОРД! ',ar:'🏆 رقم قياسي! '};showToast((_rk[_lang]||_rk.tr)+S.totSc.toLocaleString());}
 
@@ -3853,37 +3850,43 @@ async function winLevel(){
     try{saveGameState();break;}catch(e){}
   }
 
-  /* SIRAYLA: overlay(2sn) → KAPAT → rank anim → badge → reklam → beginLevel */
+  /* SIRAYLA: overlay → rank anim → badge → reklam → beginLevel */
   S._winSeqId = (S._winSeqId||0)+1;
   const _thisSeq = S._winSeqId;
   const _iifeSafe = ()=> _thisSeq===S._winSeqId && !S._winAborted;
-  /* Güvenlik: 15sn içinde IIFE bitmezse zorla beginLevel */
+
+  /* Güvenlik: 10sn içinde bitmezse zorla geç */
   const _safetyTimer=setTimeout(()=>{
-    if(_iifeSafe()){ const ro=document.getElementById('rank-anim-overlay');if(ro)ro.style.display='none'; const lo=document.getElementById('lv-overlay');if(lo)lo.style.display='none'; beginLevel(); }
-  }, 8000);
+    if(_iifeSafe()){
+      const ro=document.getElementById('rank-anim-overlay');if(ro)ro.style.display='none';
+      const lo=document.getElementById('lv-overlay');if(lo)lo.style.display='none';
+      beginLevel();
+    }
+  }, 10000);
+
+  /* 2sn sonra otomatik geç */
   (async()=>{
     try{
-      /* 2sn bekle — ya da kullanıcı dokunursa hemen geç */
-      await new Promise(r=>{
-        const _t=setTimeout(r,2000);
-        const _ch=setInterval(()=>{if(_ovSkipped){clearInterval(_ch);clearTimeout(_t);r();}},80);
-      });
-      if(!_iifeSafe()){return;}
-      ov.style.display='none'; /* Overlay kapat */
+      await new Promise(r=>setTimeout(r,2000));
       if(!_iifeSafe())return;
-      await showRankAnim(oldRank, rank, lbEntries, S.user);
+      ov.onclick=null; ov.style.display='none';
+      /* Rank animasyonu */
+      if(_iifeSafe()) await showRankAnim(oldRank, rank, lbEntries, S.user);
       try{localStorage.setItem('karpuz_lastrank_'+S.user, rank);}catch(e){}
       if(!_iifeSafe())return;
+      /* Badge */
       await checkBadgeUnlock(prevLv, S.lv);
       if(!_iifeSafe())return;
+      /* Reklam */
       if(isAdLevel(prevLv)&&!isAdFree()) await showAdPromise();
       if(!_iifeSafe())return;
       clearTimeout(_safetyTimer); beginLevel();
     }catch(err){
       clearTimeout(_safetyTimer);
-      ov.style.display='none';
       const _raOv=document.getElementById('rank-anim-overlay');
       if(_raOv)_raOv.style.display='none';
+      if(_skipBtn)_skipBtn.style.display='none';
+      ov.style.display='none';
       if(_iifeSafe()) beginLevel();
     }
   })();
