@@ -1298,20 +1298,14 @@ const MUS={
 
   start(){
     this.init();
-    if(this.playing||!AC||this.muted)return;
+    if(!AC||this.muted)return;
+    /* Önceki schedule'ı temizle, baştan başlat */
     this.playing=true;
+    clearTimeout(this.schedId);
     this.step=0;
-    let _started=false;
-    const _go=()=>{
-      if(_started||!this.playing)return; _started=true;
-      this.nextT=AC.currentTime+0.05;
-      this.sched();
-    };
-    if(AC.state==='suspended'){
-      AC.resume().then(_go).catch(_go);
-      setTimeout(_go,300); /* Promise hiç resolve olmazsa fallback */
-    }
-    else _go();
+    this.nextT=AC.currentTime+0.05;
+    if(AC.state==='suspended'){ AC.resume().catch(()=>{}); }
+    this.sched();
   },
 
   stop(){
@@ -2629,7 +2623,12 @@ function physics(dt){
       if(Math.abs(f.vx)<0.5) f.vx=0;
     }
     f.x+=f.vx*dt;
-    if(f.y+f.r>c.floor){f.y=c.floor-f.r;f.vy=-Math.abs(f.vy)*.20;f.vx*=.68;if(Math.abs(f.vy)<20)f.vy=0;}
+    if(f.y+f.r>c.floor){
+      f.y=c.floor-f.r;
+      const bounceVy=Math.abs(f.vy)*.20;
+      f.vy = bounceVy<35 ? 0 : -bounceVy; /* küçük zıplamaları tamamen durdur */
+      f.vx*=.68;
+    }
     if(f.x-f.r<c.wL){f.x=c.wL+f.r;f.vx=Math.abs(f.vx)*.12;f.vy*=0.96;if(Math.abs(f.vx)<1.5)f.vx=0;}
     if(f.x+f.r>c.wR){f.x=c.wR-f.r;f.vx=-Math.abs(f.vx)*.12;f.vy*=0.96;if(Math.abs(f.vx)<1.5)f.vx=0;}
   }
@@ -2680,7 +2679,7 @@ function physics(dt){
       }
       const nx=dx/d,ny=dy/d,ov=(md-d)*.5;
       /* Pozisyon düzeltme: slop ile (küçük overlap tolere et, büyükleri düzelt) */
-      const slop=0.4, bias=0.45;
+      const slop=1.0, bias=0.4;
       const corr=Math.max(0, ov-slop)*bias;
       a.x-=nx*corr; a.y-=ny*corr; b.x+=nx*corr; b.y+=ny*corr;
       /* Velocity impulse: yaklaşma varsa momentum transfer et */
