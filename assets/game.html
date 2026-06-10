@@ -127,6 +127,7 @@ canvas { display:block; cursor:crosshair; touch-action:none; border-radius:14px;
 .ra-me .ra-score-txt{color:#f5a623;}
 .ra-empty{height:52px;background:rgba(255,255,255,.03);border-radius:14px;margin:5px 0;}
 #rank-anim-list{position:relative;overflow:visible;}
+.ra-surround-wrap{overflow:hidden;}
 @keyframes raFlyOver{0%{transform:translateY(0) scale(1);opacity:1;z-index:50;}15%{transform:translateY(-25px) scale(1.07);opacity:1;z-index:50;}85%{transform:translateY(-320px) scale(1.1);opacity:.3;z-index:50;}100%{transform:translateY(-360px) scale(1.05);opacity:0;z-index:50;}}
 @keyframes raPulse{0%,100%{box-shadow:0 0 0 0 rgba(245,166,35,.5);}50%{box-shadow:0 0 0 8px rgba(245,166,35,0);}}
 @keyframes raFadeIn{from{opacity:0;transform:translateY(20px) scale(.96);}to{opacity:1;transform:translateY(0) scale(1);}}
@@ -1298,8 +1299,13 @@ const MUS={
     if(this.playing||!AC||this.muted)return;
     this.playing=true;
     this.step=0;
-    this.nextT=AC.currentTime+0.05;
-    this.sched();
+    const _go=()=>{
+      if(!this.playing)return;
+      this.nextT=AC.currentTime+0.05;
+      this.sched();
+    };
+    if(AC.state==='suspended'){ AC.resume().then(_go).catch(_go); }
+    else _go();
   },
 
   stop(){
@@ -1311,6 +1317,8 @@ const MUS={
 
   sched(){
     if(!this.playing)return;
+    /* Watchdog: AC suspend olup nextT çok geride kaldıysa resetle */
+    if(this.nextT < AC.currentTime - 1){ this.nextT = AC.currentTime + 0.05; }
     while(this.nextT<AC.currentTime+0.18){
       this.playStep(this.step,this.nextT);
       this.nextT+=this.SD();
@@ -3417,10 +3425,25 @@ window.showFallbackAd=function(){
 
 function showAdPromise(){
   return new Promise(resolve=>{
-    /* Reklam sırasında: oyun sesi ve müzik dursun */
+    /* Reklam sırasında: oyun sesi ve müzik dursun, ekran tamamen donsun */
     MUS.stop(); stopGameLoop();
-    const _adTimer=setTimeout(()=>{resolve();},4000);
-    showAd(()=>{clearTimeout(_adTimer);resolve();});
+    let _done=false;
+    const _finish=()=>{
+      if(_done)return; _done=true;
+      resolve();
+    };
+    const _isReal = (typeof FlutterAd!=='undefined');
+    if(_isReal){
+      /* Gerçek reklam: SADECE Flutter _adDone callback'ine güven.
+         Reklam 5-15sn sürebilir — fallback yok, oyun reklam bitene kadar başlamaz.
+         Aşırı durumda 25sn güvenlik. */
+      const _safety=setTimeout(_finish,25000);
+      showAd(()=>{clearTimeout(_safety);_finish();});
+    }else{
+      /* Sahte/preview reklam: 4.5sn */
+      const _adTimer=setTimeout(_finish,4500);
+      showAd(()=>{clearTimeout(_adTimer);_finish();});
+    }
   });
 }
 function showAd(onDone){
@@ -3676,12 +3699,10 @@ async function _showRankAnimInner(oldRank, newRank, entries, playerName){
     '</div>';
   };
 
-  const showRows=(centerRank,blurOthers)=>
-    makeRow(centerRank-2,getEntry(centerRank-2),false)+
-    makeRow(centerRank-1,getEntry(centerRank-1),false)+
-    makeRow(centerRank,  getEntry(centerRank),  true)+
-    makeRow(centerRank+1,getEntry(centerRank+1),false)+
-    makeRow(centerRank+2,getEntry(centerRank+2),false);
+  const showRows=(centerRank)=>
+    '<div class="ra-surround-wrap">'+makeRow(centerRank-2,getEntry(centerRank-2),false)+makeRow(centerRank-1,getEntry(centerRank-1),false)+'</div>'+
+    makeRow(centerRank,getEntry(centerRank),true)+
+    '<div class="ra-surround-wrap">'+makeRow(centerRank+1,getEntry(centerRank+1),false)+makeRow(centerRank+2,getEntry(centerRank+2),false)+'</div>';
 
   /* Overlay aç */
   overlay.style.opacity='0'; overlay.style.display='flex';
@@ -3691,7 +3712,7 @@ async function _showRankAnimInner(oldRank, newRank, entries, playerName){
   if(!improved){
     /* Sıra değişmedi veya yeni oyuncu */
     counter.textContent='#'+newRank;
-    list.innerHTML=showRows(newRank,false);
+    list.innerHTML=showRows(newRank);
     const meEl=list.querySelector('.ra-me');
     if(meEl)meEl.style.animation='raFadeIn .4s ease forwards, raPulse 1s ease .4s infinite';
     await new Promise(r=>setTimeout(r,600));
@@ -3703,19 +3724,46 @@ async function _showRankAnimInner(oldRank, newRank, entries, playerName){
   } else {
     /* Kalkış */
     counter.textContent='#'+oldRank;
-    list.innerHTML=showRows(oldRank,false);
+    list.innerHTML=showRows(oldRank);
     const meS=list.querySelector('.ra-me');
     if(meS)meS.style.animation='raPulse 0.8s ease infinite';
     await new Promise(r=>setTimeout(r,1200));
 
-    /* Sayaç animasyonu — DOM manipülasyonu YOK, sadece counter */
+    /* Sayaç + slot makinesi kayma — eşzamanlı */
     const t0=performance.now();
-    const dur=Math.min(1500,diff*60+600);
+    const dur=Math.min(2200,diff*90+800);
+    let lastShown=oldRank;
     await new Promise(resolve=>{
       const tick=(now)=>{
         const p=Math.min((now-t0)/dur,1);
         const ease=1-Math.pow(1-p,3);
-        counter.textContent='#'+Math.round(oldRank-(oldRank-newRank)*ease);
+        const curRank=Math.round(oldRank-(oldRank-newRank)*ease);
+        counter.textContent='#'+curRank;
+        const meFx=list.querySelector('.ra-me');
+        if(meFx){
+          const rn=curRank===1?'\uD83E\uDD47':curRank===2?'\uD83E\uDD48':curRank===3?'\uD83E\uDD49':'#'+curRank;
+          const rnEl=meFx.querySelector('.ra-rank-num');
+          if(rnEl)rnEl.textContent=rn;
+        }
+        if(curRank!==lastShown){
+          /* Komşu satırlar değişti — kayma efekti */
+          const wraps=list.querySelectorAll('.ra-surround-wrap');
+          wraps.forEach(w=>{w.style.transition='transform .12s linear';w.style.transform='translateY(36px)';});
+          setTimeout(()=>{
+            list.querySelectorAll('.ra-surround-wrap').forEach((w,wi)=>{
+              const isTop = wi===0;
+              const r1=isTop?curRank-2:curRank+1, r2=isTop?curRank-1:curRank+2;
+              w.innerHTML=makeRow(r1,getEntry(r1),false)+makeRow(r2,getEntry(r2),false);
+              w.style.transition='none'; w.style.transform='translateY(-36px)';
+            });
+            requestAnimationFrame(()=>{
+              list.querySelectorAll('.ra-surround-wrap').forEach(w=>{
+                w.style.transition='transform .12s linear'; w.style.transform='translateY(0)';
+              });
+            });
+          },60);
+          lastShown=curRank;
+        }
         if(p<1)requestAnimationFrame(tick); else resolve();
       };
       requestAnimationFrame(tick);
@@ -3723,7 +3771,7 @@ async function _showRankAnimInner(oldRank, newRank, entries, playerName){
 
     /* Varış */
     counter.textContent='#'+newRank;
-    list.innerHTML=showRows(newRank,false);
+    list.innerHTML=showRows(newRank);
     const meE=list.querySelector('.ra-me');
     if(meE)meE.style.animation='raFadeIn .4s ease forwards, raPulse 1s ease .4s infinite';
     await new Promise(r=>setTimeout(r,700));
