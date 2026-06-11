@@ -1290,7 +1290,7 @@ function snd(type,merge){
 ══════════════════════════════════════════ */
 const MUS={
   playing:false, muted:false,
-  step:0, nextT:0, schedId:null, masterG:null, _heartbeat:0,
+  step:0, nextT:0, schedId:null, masterG:null,
 
   init(){
     if(!AC)return;
@@ -1321,7 +1321,6 @@ const MUS={
 
   sched(){
     if(!this.playing)return;
-    this._heartbeat++;
     /* Watchdog: AC suspend olup nextT çok geride kaldıysa resetle */
     if(this.nextT < AC.currentTime - 1){ this.nextT = AC.currentTime + 0.05; }
     while(this.nextT<AC.currentTime+0.18){
@@ -1901,7 +1900,7 @@ class Fruit{
   constructor(x,y,t){
     this.x=x;this.y=y;this.t=t;
     this.r=FR[t][1];this.vx=0;this.vy=80;
-    this.merged=false;this.age=0;this.restT=0;
+    this.merged=false;this.age=0;
     /* Zigzag */
     this.zzAmp=(1+Math.random()*2)*(Math.random()>.5?1:-1);
     this.zzFreq=1+Math.random()*1;
@@ -2270,13 +2269,8 @@ function beginLevel(){
   stopHomeAnim();
   /* Hedef meyve giriş animasyonu */
   setTimeout(()=>animateTargetIntro(FR[cfg.target][0]), 200);
-  /* Müzik + ambient */
-  if(musicOn&&!MUS.muted){
-    try{MUS.stop();}catch(e){}
-    setTimeout(()=>{
-      if(musicOn&&!MUS.muted){MUS.start();playAmbient((S.lv-1)%8);}
-    },300);
-  }
+  /* Müzik: loop() otomatik başlatır, sadece ambient'ı güncelle */
+  if(musicOn&&!MUS.muted) playAmbient((S.lv-1)%8);
 }
 
 function rndDrop(){
@@ -2619,25 +2613,14 @@ function physics(dt){
 
   for(const f of S.fruits){
     if(f.merged)continue;
-    /* Uyuma durumu: hız çok düşükse ve uzun süredir öyleyse, tamamen dondur */
-    const isSlow = Math.abs(f.vx)<0.6 && Math.abs(f.vy)<0.6;
-    if(isSlow) f.restT+=dt; else f.restT=0;
-    const sleeping = f.restT>0.12;
-
-    if(sleeping){
-      /* Tamamen dondur — pozisyon/hız değişmez, sub-pixel titreşim sıfır */
-      f.vx=0; f.vy=0; f.age+=dt;
-      continue;
-    }
-
     f.vy+=c.gravity*dt;
     f.y+=f.vy*dt;f.age+=dt;
 
-    /* Yatay sönüm — titreşim yok ama sürtünme var */
-    f.vx*=0.88;
-    f.vy*=0.992;
-    if(Math.abs(f.vx)<1.5)f.vx=0;
-    if(Math.abs(f.vx)<0.5) f.vx=0;
+    /* Yatay sönüm — güçlü, titreşimi azaltır */
+    f.vx*=0.85;
+    f.vy*=0.985;
+    if(Math.abs(f.vx)<1.0)f.vx=0;
+    if(Math.abs(f.vy)<1.0)f.vy=0;
     f.x+=f.vx*dt;
     if(f.y+f.r>c.floor){
       f.y=c.floor-f.r;
@@ -2694,11 +2677,8 @@ function physics(dt){
         continue outer;
       }
       const nx=dx/d,ny=dy/d,ov=(md-d)*.5;
-      const aSleep=a.restT>0.12, bSleep=b.restT>0.12;
-      /* İkisi de uyuyorsa: pozisyon/hız tamamen sabit kalsın — titreşim sıfır */
-      if(aSleep&&bSleep) continue;
       /* Pozisyon düzeltme: slop ile (küçük overlap tolere et, büyükleri düzelt) */
-      const slop=1.0, bias=0.4;
+      const slop=1.5, bias=0.35;
       const corr=Math.max(0, ov-slop)*bias;
       a.x-=nx*corr; a.y-=ny*corr; b.x+=nx*corr; b.y+=ny*corr;
       /* Velocity impulse: yaklaşma varsa momentum transfer et */
@@ -2707,9 +2687,8 @@ function physics(dt){
         const im=rv*.35;
         a.vx+=im*nx; a.vy+=im*ny; b.vx-=im*nx; b.vy-=im*ny;
         const spd=Math.abs(rv);
-        if(spd>=3){a.restT=0;b.restT=0;} /* belirgin çarpışma — uyandır */
-        if(spd<3){const d=0.82; a.vx*=d;a.vy*=d;b.vx*=d;b.vy*=d;}
-        if(Math.abs(nx)>0.7 && spd<5){const hd=0.55; a.vx*=hd;b.vx*=hd;}
+        if(spd<4){const d=0.65; a.vx*=d;a.vy*=d;b.vx*=d;b.vy*=d;}
+        if(Math.abs(nx)>0.7 && spd<6){const hd=0.4; a.vx*=hd;b.vx*=hd;}
       }
     }
   }
@@ -2902,6 +2881,10 @@ function render(){
 ══════════════════════════════════════════ */
 function loop(ts){
   if(S.dead||_paused)return;
+  /* Müzik: oyun aktifken çalmalı, durduysa başlat */
+  if(musicOn && !MUS.muted && !MUS.playing){
+    MUS.start();
+  }
   if(!S.lastTs)S.lastTs=ts;
   const dt=Math.min((ts-S.lastTs)/1000,.033); /* max 33ms = 30fps floor */
   S.lastTs=ts;
@@ -4475,13 +4458,7 @@ setInterval(()=>{if(S.cfg&&!S.dead&&!_paused)saveGameState();},5000);
 
 /* Uygulama kapanınca/arka plana geçince kaydet */
 document.addEventListener('visibilitychange',()=>{
-  if(!document.hidden){
-    ensureAC();
-    if(musicOn&&!MUS.muted&&S.cfg&&!S.dead){
-      MUS.playing=false; /* zorla restart */
-      setTimeout(()=>MUS.start(),300);
-    }
-  }
+  if(!document.hidden){ ensureAC(); /* loop() müziği gerekirse başlatır */ }
   if(document.visibilityState==='hidden'){
     try{
       if(S.cfg && !S.dead) saveGameState();
@@ -4490,32 +4467,7 @@ document.addEventListener('visibilitychange',()=>{
   }
 });
 
-/* Global müzik watchdog — heartbeat tabanlı zombi tespiti */
-let _lastHeartbeat=-1, _heartbeatStuckCount=0;
-setInterval(()=>{
-  const inGame = musicOn && !MUS.muted && S.cfg && !S.dead
-    && document.getElementById('s-game') && document.getElementById('s-game').classList.contains('active');
-  if(!inGame){_lastHeartbeat=-1;_heartbeatStuckCount=0;return;}
-
-  ensureAC();
-
-  if(!MUS.playing || (AC && (AC.state==='suspended'||AC.state==='closed'))){
-    MUS.start(); return;
-  }
-
-  /* Heartbeat ilerlemiyor mu? (sched() çağrılmıyor = zombi) */
-  if(MUS._heartbeat===_lastHeartbeat){
-    _heartbeatStuckCount++;
-    if(_heartbeatStuckCount>=2){ /* ~3sn boyunca ilerlemedi */
-      MUS.playing=false;
-      MUS.start();
-      _heartbeatStuckCount=0;
-    }
-  } else {
-    _heartbeatStuckCount=0;
-  }
-  _lastHeartbeat=MUS._heartbeat;
-},1500);
+/* Müzik artık doğrudan oyun döngüsüne bağlı (loop fonksiyonunda) */
 window.addEventListener('pagehide',()=>{
   try{if(S.cfg&&!S.dead)saveGameState();}catch(e){}
 });
