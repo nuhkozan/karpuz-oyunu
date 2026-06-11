@@ -1260,8 +1260,11 @@ function mulberry32(a){
 ══════════════════════════════════════════ */
 let AC=null;
 function ensureAC(){
-  if(!AC)try{AC=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}
-  if(AC&&AC.state==='suspended')AC.resume();
+  if(!AC || AC.state==='closed'){
+    try{AC=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}
+    MUS.masterG=null; /* yeni context — masterG'yi yeniden oluştur */
+  }
+  if(AC&&AC.state==='suspended')AC.resume().catch(()=>{});
 }
 
 /* Meyve sesi */
@@ -1287,19 +1290,20 @@ function snd(type,merge){
 ══════════════════════════════════════════ */
 const MUS={
   playing:false, muted:false,
-  step:0, nextT:0, schedId:null, masterG:null,
+  step:0, nextT:0, schedId:null, masterG:null, _heartbeat:0,
 
   init(){
-    if(!AC||this.masterG)return;
+    if(!AC)return;
+    if(this.masterG)return;
     this.masterG=AC.createGain();
     this.masterG.gain.value=0.42;
     this.masterG.connect(AC.destination);
   },
 
   start(){
+    ensureAC(); /* AC kapalı/yoksa yeniden oluştur, masterG sıfırlanır */
     this.init();
     if(!AC||this.muted)return;
-    /* Önceki schedule'ı temizle, baştan başlat */
     this.playing=true;
     clearTimeout(this.schedId);
     this.step=0;
@@ -1317,6 +1321,7 @@ const MUS={
 
   sched(){
     if(!this.playing)return;
+    this._heartbeat++;
     /* Watchdog: AC suspend olup nextT çok geride kaldıysa resetle */
     if(this.nextT < AC.currentTime - 1){ this.nextT = AC.currentTime + 0.05; }
     while(this.nextT<AC.currentTime+0.18){
@@ -2614,22 +2619,25 @@ function physics(dt){
 
   for(const f of S.fruits){
     if(f.merged)continue;
-    /* Uyuma durumu: hız çok düşükse ve uzun süredir öyleyse, gravity uygulamayı azalt */
+    /* Uyuma durumu: hız çok düşükse ve uzun süredir öyleyse, tamamen dondur */
     const isSlow = Math.abs(f.vx)<0.6 && Math.abs(f.vy)<0.6;
     if(isSlow) f.restT+=dt; else f.restT=0;
     const sleeping = f.restT>0.12;
 
-    if(!sleeping) f.vy+=c.gravity*dt;
-    else f.vy=Math.min(f.vy+c.gravity*dt*0.15, 8); /* uyuyan meyveye minimal yerçekimi — yapışık kalır ama titremez */
+    if(sleeping){
+      /* Tamamen dondur — pozisyon/hız değişmez, sub-pixel titreşim sıfır */
+      f.vx=0; f.vy=0; f.age+=dt;
+      continue;
+    }
+
+    f.vy+=c.gravity*dt;
     f.y+=f.vy*dt;f.age+=dt;
 
     /* Yatay sönüm — titreşim yok ama sürtünme var */
-    if(true){
-      f.vx*=sleeping?0.5:0.88;
-      f.vy*=0.992;
-      if(Math.abs(f.vx)<1.5)f.vx=0;
-      if(Math.abs(f.vx)<0.5) f.vx=0;
-    }
+    f.vx*=0.88;
+    f.vy*=0.992;
+    if(Math.abs(f.vx)<1.5)f.vx=0;
+    if(Math.abs(f.vx)<0.5) f.vx=0;
     f.x+=f.vx*dt;
     if(f.y+f.r>c.floor){
       f.y=c.floor-f.r;
@@ -2686,6 +2694,9 @@ function physics(dt){
         continue outer;
       }
       const nx=dx/d,ny=dy/d,ov=(md-d)*.5;
+      const aSleep=a.restT>0.12, bSleep=b.restT>0.12;
+      /* İkisi de uyuyorsa: pozisyon/hız tamamen sabit kalsın — titreşim sıfır */
+      if(aSleep&&bSleep) continue;
       /* Pozisyon düzeltme: slop ile (küçük overlap tolere et, büyükleri düzelt) */
       const slop=1.0, bias=0.4;
       const corr=Math.max(0, ov-slop)*bias;
@@ -4479,14 +4490,31 @@ document.addEventListener('visibilitychange',()=>{
   }
 });
 
-/* Global müzik watchdog — sahne her 1.5sn kontrol et, kopmuşsa yeniden başlat */
+/* Global müzik watchdog — heartbeat tabanlı zombi tespiti */
+let _lastHeartbeat=-1, _heartbeatStuckCount=0;
 setInterval(()=>{
-  if(musicOn && !MUS.muted && S.cfg && !S.dead && document.getElementById('s-game') && document.getElementById('s-game').classList.contains('active')){
-    ensureAC();
-    if(!MUS.playing || !MUS.schedId || (AC && AC.state==='suspended')){
-      MUS.start();
-    }
+  const inGame = musicOn && !MUS.muted && S.cfg && !S.dead
+    && document.getElementById('s-game') && document.getElementById('s-game').classList.contains('active');
+  if(!inGame){_lastHeartbeat=-1;_heartbeatStuckCount=0;return;}
+
+  ensureAC();
+
+  if(!MUS.playing || (AC && (AC.state==='suspended'||AC.state==='closed'))){
+    MUS.start(); return;
   }
+
+  /* Heartbeat ilerlemiyor mu? (sched() çağrılmıyor = zombi) */
+  if(MUS._heartbeat===_lastHeartbeat){
+    _heartbeatStuckCount++;
+    if(_heartbeatStuckCount>=2){ /* ~3sn boyunca ilerlemedi */
+      MUS.playing=false;
+      MUS.start();
+      _heartbeatStuckCount=0;
+    }
+  } else {
+    _heartbeatStuckCount=0;
+  }
+  _lastHeartbeat=MUS._heartbeat;
 },1500);
 window.addEventListener('pagehide',()=>{
   try{if(S.cfg&&!S.dead)saveGameState();}catch(e){}
