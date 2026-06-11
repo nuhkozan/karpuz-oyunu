@@ -2858,9 +2858,23 @@ function render(){
   /* Meyveler + gölge */
   for(const f of S.fruits){
     if(f.merged)continue;
+    /* Görsel titreşim engelleme: hız çok düşükse render pozisyonunu
+       önceki frame'in pozisyonuna kilitle (fizik x/y değişmeye devam eder
+       ama ekranda mikro-salınım gizlenir) */
+    if(f._dx===undefined){f._dx=f.x; f._dy=f.y;}
+    const slow = Math.abs(f.vx)<2 && Math.abs(f.vy)<2;
+    if(slow){
+      /* Sadece gerçek bir kayma varsa (>0.6px) görsel pozisyonu güncelle */
+      if(Math.abs(f.x-f._dx)>0.6) f._dx=f.x;
+      if(Math.abs(f.y-f._dy)>0.6) f._dy=f.y;
+    } else {
+      f._dx=f.x; f._dy=f.y;
+    }
+    const dx=f._dx, dy=f._dy;
+
     /* Zemine düşen gölge */
     const shadowY=S.cfg.floor-2;
-    const dist=Math.max(0,shadowY-f.y);
+    const dist=Math.max(0,shadowY-dy);
     const shadowAlpha=Math.max(0,0.15-dist/400);
     const shadowScale=Math.max(0.3,1-dist/400);
     if(shadowAlpha>0.02){
@@ -2868,11 +2882,11 @@ function render(){
       ctx.globalAlpha=shadowAlpha;
       ctx.fillStyle='rgba(0,0,0,.6)';
       ctx.beginPath();
-      ctx.ellipse(f.x,shadowY,f.r*shadowScale,f.r*shadowScale*0.3,0,0,Math.PI*2);
+      ctx.ellipse(dx,shadowY,f.r*shadowScale,f.r*shadowScale*0.3,0,0,Math.PI*2);
       ctx.fill();
       ctx.restore();
     }
-    drawFruit(f.x,f.y,f.t,1);
+    drawFruit(dx,dy,f.t,1);
   }
 }
 
