@@ -1896,7 +1896,7 @@ class Fruit{
   constructor(x,y,t){
     this.x=x;this.y=y;this.t=t;
     this.r=FR[t][1];this.vx=0;this.vy=80;
-    this.merged=false;this.age=0;
+    this.merged=false;this.age=0;this.restT=0;
     /* Zigzag */
     this.zzAmp=(1+Math.random()*2)*(Math.random()>.5?1:-1);
     this.zzFreq=1+Math.random()*1;
@@ -2614,12 +2614,20 @@ function physics(dt){
 
   for(const f of S.fruits){
     if(f.merged)continue;
-    f.vy+=c.gravity*dt;f.y+=f.vy*dt;f.age+=dt;
+    /* Uyuma durumu: hız çok düşükse ve uzun süredir öyleyse, gravity uygulamayı azalt */
+    const isSlow = Math.abs(f.vx)<0.6 && Math.abs(f.vy)<0.6;
+    if(isSlow) f.restT+=dt; else f.restT=0;
+    const sleeping = f.restT>0.12;
+
+    if(!sleeping) f.vy+=c.gravity*dt;
+    else f.vy=Math.min(f.vy+c.gravity*dt*0.15, 8); /* uyuyan meyveye minimal yerçekimi — yapışık kalır ama titremez */
+    f.y+=f.vy*dt;f.age+=dt;
+
     /* Yatay sönüm — titreşim yok ama sürtünme var */
     if(true){
-      f.vx*=0.88; /* yatay sönüm */
+      f.vx*=sleeping?0.5:0.88;
       f.vy*=0.992;
-      if(Math.abs(f.vx)<1.5)f.vx=0; /* dikey hafif sönüm — sonsuz zıplamayı önler */
+      if(Math.abs(f.vx)<1.5)f.vx=0;
       if(Math.abs(f.vx)<0.5) f.vx=0;
     }
     f.x+=f.vx*dt;
@@ -2687,10 +2695,9 @@ function physics(dt){
       if(rv<0){
         const im=rv*.35;
         a.vx+=im*nx; a.vy+=im*ny; b.vx-=im*nx; b.vy-=im*ny;
-        /* Resting damping: düşük hızda sıkışmayı önle */
         const spd=Math.abs(rv);
+        if(spd>=3){a.restT=0;b.restT=0;} /* belirgin çarpışma — uyandır */
         if(spd<3){const d=0.82; a.vx*=d;a.vy*=d;b.vx*=d;b.vy*=d;}
-        /* Yatay sıkışma: nx baskınsa (yan yana komşular) ekstra sönüm */
         if(Math.abs(nx)>0.7 && spd<5){const hd=0.55; a.vx*=hd;b.vx*=hd;}
       }
     }
@@ -3437,6 +3444,7 @@ function showAdPromise(){
     let _done=false;
     const _finish=()=>{
       if(_done)return; _done=true;
+      ensureAC(); /* Reklam audio focus'u almış olabilir — hemen resume dene */
       resolve();
     };
     const _isReal = (typeof FlutterAd!=='undefined');
@@ -4471,16 +4479,15 @@ document.addEventListener('visibilitychange',()=>{
   }
 });
 
-/* Global müzik watchdog — sahne her 3sn'de bir kontrol et, kopmuşsa yeniden başlat */
+/* Global müzik watchdog — sahne her 1.5sn kontrol et, kopmuşsa yeniden başlat */
 setInterval(()=>{
-  if(musicOn && !MUS.muted && S.cfg && !S.dead && S.cfg && document.getElementById('s-game') && document.getElementById('s-game').classList.contains('active')){
-    if(!MUS.playing || (AC && AC.state==='suspended')){
-      ensureAC();
-      MUS.playing=false;
+  if(musicOn && !MUS.muted && S.cfg && !S.dead && document.getElementById('s-game') && document.getElementById('s-game').classList.contains('active')){
+    ensureAC();
+    if(!MUS.playing || !MUS.schedId || (AC && AC.state==='suspended')){
       MUS.start();
     }
   }
-},3000);
+},1500);
 window.addEventListener('pagehide',()=>{
   try{if(S.cfg&&!S.dead)saveGameState();}catch(e){}
 });
