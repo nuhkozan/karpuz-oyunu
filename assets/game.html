@@ -2678,7 +2678,7 @@ function physics(dt){
       }
       const nx=dx/d,ny=dy/d,ov=(md-d)*.5;
       /* Pozisyon düzeltme: slop ile (küçük overlap tolere et, büyükleri düzelt) */
-      const slop=1.5, bias=0.35;
+      const slop=0.5, bias=0.5;
       const corr=Math.max(0, ov-slop)*bias;
       a.x-=nx*corr; a.y-=ny*corr; b.x+=nx*corr; b.y+=ny*corr;
       /* Velocity impulse: yaklaşma varsa momentum transfer et */
@@ -2693,6 +2693,29 @@ function physics(dt){
     }
   }
   S.fruits=S.fruits.filter(f=>!f.merged);
+
+  /* ── Ekstra pozisyon-düzeltme geçişleri ──
+     Büyük meyveler/yığınlar tek geçişte tam ayrışmayabilir.
+     Sadece x/y düzelt (hız değiştirme) — overlap'leri aynı frame'de tam çöz. */
+  const live2=S.fruits;
+  for(let iter=0;iter<3;iter++){
+    let any=false;
+    for(let i=0;i<live2.length;i++){
+      for(let j=i+1;j<live2.length;j++){
+        const a=live2[i],b=live2[j];
+        const dx=b.x-a.x,dy=b.y-a.y,d=Math.sqrt(dx*dx+dy*dy),md=a.r+b.r;
+        if(d>=md||d===0)continue;
+        const nx=dx/d,ny=dy/d,ov=(md-d)*.5;
+        const slop=0.5, bias=0.5;
+        const corr=Math.max(0, ov-slop)*bias;
+        if(corr>0.01){
+          a.x-=nx*corr; a.y-=ny*corr; b.x+=nx*corr; b.y+=ny*corr;
+          any=true;
+        }
+      }
+    }
+    if(!any)break;
+  }
 
   /* ── Hareketli tehlike çizgisi güncellemesi ── */
   if(S.dangerLineMoving){
