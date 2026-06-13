@@ -2685,7 +2685,7 @@ function physics(dt){
       a.x-=nx*corr; a.y-=ny*corr; b.x+=nx*corr; b.y+=ny*corr;
       /* Velocity impulse: yaklaşma varsa momentum transfer et */
       const rv=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;
-      if(rv<0){
+      if(rv<-0.3){
         const im=rv*.35;
         a.vx+=im*nx; a.vy+=im*ny; b.vx-=im*nx; b.vy-=im*ny;
         const spd=Math.abs(rv);
@@ -2897,8 +2897,8 @@ function render(){
     const slow = Math.abs(f.vx)<2 && Math.abs(f.vy)<2;
     if(slow){
       /* Yumuşatma: salınımlı düzeltmeleri ortalayarak titreşimi gizle */
-      f._dx += (f.x-f._dx)*0.25;
-      f._dy += (f.y-f._dy)*0.25;
+      f._dx += (f.x-f._dx)*0.15;
+      f._dy += (f.y-f._dy)*0.15;
       if(Math.abs(f.x-f._dx)<0.05) f._dx=f.x;
       if(Math.abs(f.y-f._dy)<0.05) f._dy=f.y;
     } else {
@@ -3896,6 +3896,7 @@ async function winLevel(){
   const lvCompl={tr:`${S.timeElapsed}s'de tamamlandı · ${S.lvSc.toLocaleString()} level puanı`,en:`Completed in ${S.timeElapsed}s · ${S.lvSc.toLocaleString()} level pts`,ru:`Завершено за ${S.timeElapsed}с · ${S.lvSc.toLocaleString()} очков`,ar:`أكملت في ${S.timeElapsed}ث · ${S.lvSc.toLocaleString()} نقطة`};
   if(statsEl) statsEl.textContent=lvCompl[_lang]||lvCompl.tr;
   ov.style.display = 'flex';
+  MUS.stop(); /* Level bitti — overlay/animasyon/reklam boyunca müzik dursun */
   requestAnimationFrame(()=>{ document.getElementById('lv-bar').style.width='100%'; });
   if(isNewRecord){const _rk={tr:'🏆 YENİ REKOR! ',en:'🏆 NEW RECORD! ',ru:'🏆 НОВЫЙ РЕКОРД! ',ar:'🏆 رقم قياسي! '};showToast((_rk[_lang]||_rk.tr)+S.totSc.toLocaleString());}
 
