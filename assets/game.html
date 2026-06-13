@@ -2682,15 +2682,18 @@ function physics(dt){
       /* Pozisyon düzeltme: slop ile (küçük overlap tolere et, büyükleri düzelt) */
       const slop=0.5, bias=0.5;
       const corr=Math.max(0, ov-slop)*bias;
-      a.x-=nx*corr; a.y-=ny*corr; b.x+=nx*corr; b.y+=ny*corr;
+      const horiz1 = Math.abs(nx)>0.85; /* yan yana komşu — sadece x düzelt */
+      a.x-=nx*corr; b.x+=nx*corr;
+      if(!horiz1){ a.y-=ny*corr; b.y+=ny*corr; }
       /* Velocity impulse: yaklaşma varsa momentum transfer et */
       const rv=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;
       if(rv<-0.3){
         const im=rv*.35;
-        a.vx+=im*nx; a.vy+=im*ny; b.vx-=im*nx; b.vy-=im*ny;
+        a.vx+=im*nx; b.vx-=im*nx;
+        if(!horiz1){ a.vy+=im*ny; b.vy-=im*ny; }
         const spd=Math.abs(rv);
         if(spd<4){const d=0.65; a.vx*=d;a.vy*=d;b.vx*=d;b.vy*=d;}
-        if(Math.abs(nx)>0.7 && spd<6){const hd=0.4; a.vx*=hd;b.vx*=hd;}
+        if(horiz1 && spd<6){const hd=0.4; a.vx*=hd;b.vx*=hd;}
       }
     }
   }
@@ -2710,7 +2713,12 @@ function physics(dt){
         const nx=dx/d,ny=dy/d,ov=(md-d)*.5;
         const corr=ov; /* tam ayrışma — slop yok, hiçbir overlap kalmasın */
         if(corr>0.01){
-          a.x-=nx*corr; a.y-=ny*corr; b.x+=nx*corr; b.y+=ny*corr;
+          /* Yatay-baskın çiftlerde y'ye dokunma — dikey zıplama/titreşim önlenir */
+          if(Math.abs(nx)>0.85){
+            a.x-=nx*corr; b.x+=nx*corr;
+          } else {
+            a.x-=nx*corr; a.y-=ny*corr; b.x+=nx*corr; b.y+=ny*corr;
+          }
           any=true;
         }
       }
@@ -2930,7 +2938,7 @@ function render(){
 function loop(ts){
   if(S.dead||_paused)return;
   /* Müzik: oyun aktifken çalmalı, durduysa başlat */
-  if(musicOn && !MUS.muted && !MUS.playing){
+  if(musicOn && !MUS.muted && (!MUS.playing || (AC && AC.state==='suspended'))){
     MUS.start();
   }
   if(!S.lastTs)S.lastTs=ts;
