@@ -1928,6 +1928,8 @@ function show(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   try{ FlutterGameState.postMessage(id==='s-game'?'game':'menu'); }catch(e){}
+  /* Müzik: oyun ekranı dışında dursun, oyun ekranına geçince loop() restart eder */
+  if(id!=='s-game'){ MUS.stop(); }
 }
 
 /* ══════════════════════════════════════════
@@ -2696,9 +2698,9 @@ function physics(dt){
 
   /* ── Ekstra pozisyon-düzeltme geçişleri ──
      Büyük meyveler/yığınlar tek geçişte tam ayrışmayabilir.
-     Sadece x/y düzelt (hız değiştirme) — overlap'leri aynı frame'de tam çöz. */
+     Sadece x/y düzelt (hız değiştirme) — overlap'leri TAM çöz + duvarları koru. */
   const live2=S.fruits;
-  for(let iter=0;iter<3;iter++){
+  for(let iter=0;iter<6;iter++){
     let any=false;
     for(let i=0;i<live2.length;i++){
       for(let j=i+1;j<live2.length;j++){
@@ -2706,13 +2708,20 @@ function physics(dt){
         const dx=b.x-a.x,dy=b.y-a.y,d=Math.sqrt(dx*dx+dy*dy),md=a.r+b.r;
         if(d>=md||d===0)continue;
         const nx=dx/d,ny=dy/d,ov=(md-d)*.5;
-        const slop=0.5, bias=0.5;
-        const corr=Math.max(0, ov-slop)*bias;
+        const corr=ov; /* tam ayrışma — slop yok, hiçbir overlap kalmasın */
         if(corr>0.01){
           a.x-=nx*corr; a.y-=ny*corr; b.x+=nx*corr; b.y+=ny*corr;
           any=true;
         }
       }
+    }
+    /* Her iterasyonda duvar/zemin sınırlarını yeniden uygula —
+       meyveler asla ekran dışına itilmesin */
+    for(const f of live2){
+      if(f.x-f.r<c.wL) f.x=c.wL+f.r;
+      if(f.x+f.r>c.wR) f.x=c.wR-f.r;
+      if(f.y+f.r>c.floor) f.y=c.floor-f.r;
+      if(f.y-f.r<0) f.y=f.r;
     }
     if(!any)break;
   }
@@ -2887,9 +2896,11 @@ function render(){
     if(f._dx===undefined){f._dx=f.x; f._dy=f.y;}
     const slow = Math.abs(f.vx)<2 && Math.abs(f.vy)<2;
     if(slow){
-      /* Sadece gerçek bir kayma varsa (>0.6px) görsel pozisyonu güncelle */
-      if(Math.abs(f.x-f._dx)>0.6) f._dx=f.x;
-      if(Math.abs(f.y-f._dy)>0.6) f._dy=f.y;
+      /* Yumuşatma: salınımlı düzeltmeleri ortalayarak titreşimi gizle */
+      f._dx += (f.x-f._dx)*0.25;
+      f._dy += (f.y-f._dy)*0.25;
+      if(Math.abs(f.x-f._dx)<0.05) f._dx=f.x;
+      if(Math.abs(f.y-f._dy)<0.05) f._dy=f.y;
     } else {
       f._dx=f.x; f._dy=f.y;
     }
