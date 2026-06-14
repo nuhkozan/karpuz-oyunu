@@ -1,4 +1,16 @@
 <!DOCTYPE html>
+<!-- ════════════════════════════════════════════════════════════
+     KARPUZ OYUNU — game.html
+     BASE VERSION: 2.0.0
+     Bu sürüm sabit referans noktasıdır. Sonraki tüm değişiklikler
+     bu versiyondaki özellik/davranışları KORUMALI, geriye gitmemeli:
+     - Level geçiş akışı: overlay(2sn)→rank anim→badge→reklam→beginLevel
+     - Rank animasyonu: Promise.race 8sn timeout, slot-kayma efekti
+     - Fizik: merge + 6 iterasyonlu solver, duvar/zemin clamp
+     - Görsel lerp (_dx/_dy) titreşim azaltma
+     - Müzik: loop() tabanlı otomatik start/stop, ensureAC closed-state kurtarma
+     - Save/resume: nxt2Type/nxt3Type dahil, retry'lı saveGameState
+     ════════════════════════════════════════════════════════════ -->
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
@@ -3673,7 +3685,7 @@ function resumeGame(){
   cancelAnimationFrame(S.rafId);
   S.lastTs = null;
   S.rafId = requestAnimationFrame(loop);
-  if(musicOn){ MUS.stop(); setTimeout(()=>MUS.start(), 200); }
+  /* Müzik: loop() otomatik başlatır */
   showToast(_lang==='en'?'▶ Resuming...':_lang==='ru'?'▶ Продолжаем...':_lang==='ar'?'▶ استئناف...':'▶ Kaldığın yerden devam ediliyor…');
   setTimeout(()=>checkDailyReward(), 1000);
   if(st.winPending){ clearInterval(S.timerId); cancelAnimationFrame(S.rafId); setTimeout(()=>winLevel(), 600); }
@@ -3904,7 +3916,7 @@ async function winLevel(){
   const lvCompl={tr:`${S.timeElapsed}s'de tamamlandı · ${S.lvSc.toLocaleString()} level puanı`,en:`Completed in ${S.timeElapsed}s · ${S.lvSc.toLocaleString()} level pts`,ru:`Завершено за ${S.timeElapsed}с · ${S.lvSc.toLocaleString()} очков`,ar:`أكملت في ${S.timeElapsed}ث · ${S.lvSc.toLocaleString()} نقطة`};
   if(statsEl) statsEl.textContent=lvCompl[_lang]||lvCompl.tr;
   ov.style.display = 'flex';
-  MUS.stop(); /* Level bitti — overlay/animasyon/reklam boyunca müzik dursun */
+  MUS.stop(); clearInterval(ambientInterval); /* Level bitti — overlay/animasyon/reklam boyunca müzik+ambient dursun */
   requestAnimationFrame(()=>{ document.getElementById('lv-bar').style.width='100%'; });
   if(isNewRecord){const _rk={tr:'🏆 YENİ REKOR! ',en:'🏆 NEW RECORD! ',ru:'🏆 НОВЫЙ РЕКОРД! ',ar:'🏆 رقم قياسي! '};showToast((_rk[_lang]||_rk.tr)+S.totSc.toLocaleString());}
 
