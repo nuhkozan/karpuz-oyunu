@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!-- ════════════════════════════════════════════════════════════
      KARPUZ OYUNU — game.html
-     BASE VERSION: 2.0.0
+     BASE VERSION: 2.0.3
      Bu sürüm sabit referans noktasıdır. Sonraki tüm değişiklikler
      bu versiyondaki özellik/davranışları KORUMALI, geriye gitmemeli:
      - Level geçiş akışı: overlay(2sn)→rank anim→badge→reklam→beginLevel
@@ -4524,6 +4524,13 @@ setInterval(()=>{if(S.user)_checkIncomingChallenge();},3000);
 
 /* Otomatik kayıt - her 5 saniyede bir */
 setInterval(()=>{if(S.cfg&&!S.dead&&!_paused)saveGameState();},5000);
+
+/* Firebase skor senkronizasyonu - her 30 saniyede bir (level bitmese bile güncel tutar) */
+setInterval(()=>{
+  if(S.user&&S.cfg&&!S.dead&&!_paused&&S.totSc>0){
+    submitLBFull(S.user,S.totSc,S.lv).catch(()=>{});
+  }
+},30000);
 
 /* Uygulama kapanınca/arka plana geçince kaydet */
 document.addEventListener('visibilitychange',()=>{
